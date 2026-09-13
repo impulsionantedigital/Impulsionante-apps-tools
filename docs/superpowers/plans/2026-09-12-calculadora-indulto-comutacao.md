@@ -1381,8 +1381,12 @@ Três coisas a corrigir ao adaptar:
 
 ```
 # validacao/requirements.txt
-formulas==1.2.10
+formulas==1.3.4
 ```
+
+Verificado nesta máquina: a `formulas` 1.3.4 instala e importa em **Python 3.9.6**, que é o
+que está disponível aqui. Não use uma versão mais nova sem testar — a lib mexe com internals
+do openpyxl e quebra com frequência entre releases.
 
 - [ ] **Step 3: Escrever o oráculo**
 
