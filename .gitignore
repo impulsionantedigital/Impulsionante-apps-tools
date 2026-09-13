@@ -51,3 +51,7 @@ Thumbs.db
 test-results/
 playwright-report/
 fotos/
+
+# ambiente e cache do harness Python de validacao (validacao/oraculo.py)
+.venv/
+__pycache__/

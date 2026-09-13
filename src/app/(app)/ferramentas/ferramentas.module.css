@@ -1,0 +1,96 @@
+/* ferramentas.module.css — /ferramentas (o hub).
+ *
+ * `.destinos`/`.destino`/`.destinoIcone`/`.destinoTexto`/`.destinoNome`/`.destinoSub`/
+ * `.destinoSeta` são CÓPIA DECLARADA das de `../config/config.module.css` (já replicadas em
+ * `../agentes/agentes.module.css`) — mexeu numa, confira as outras duas. Mesmo objeto (linha
+ * clicável para outra tela, sem caixa, com seta que aparece no hover): hover
+ * `--superficie-hover`, ícone em `--icone-mudo` porque o nome já está escrito ao lado.
+ *
+ * 🔴 Sem cor em hexadecimal e sem `opacity` para texto secundário: só token
+ * (`--tinta-2`/`--tinta-3`), como o resto do kit (ver a nota no topo de `globals.css`).
+ */
+
+.pagina {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-6);
+}
+
+.destinos {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: var(--s-6);
+  row-gap: var(--s-2);
+}
+
+@media (max-width: 720px) {
+  .destinos { grid-template-columns: minmax(0, 1fr); }
+}
+
+.destino {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-3);
+  padding: var(--s-3);
+  border-radius: var(--r-controle);
+  text-decoration: none;
+  color: inherit;
+  transition: background-color var(--t-rapido) var(--suave);
+}
+
+.destino:hover { background: var(--superficie-hover); }
+
+.destino:focus-visible {
+  outline: 2px solid var(--acento);
+  outline-offset: 2px;
+}
+
+.destinoIcone {
+  flex-shrink: 0;
+  color: var(--icone-mudo);
+  margin-top: var(--s-1);
+}
+
+.destinoTexto {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  min-width: 0;
+}
+
+.destinoNome {
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  font-weight: 500;
+  color: var(--tinta);
+}
+
+.destinoSub {
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  color: var(--tinta-3);
+}
+
+/* O rótulo do decreto em uso (`REGISTRO[0].rotulo`, vindo do motor) — um degrau abaixo do
+ * `.destinoSub`, mesma receita de `.itemMeta` de `../indulto-comutacao/calculadora.module.css`. */
+.destinoMeta {
+  font-size: var(--fs-micro);
+  line-height: var(--lh-micro);
+  color: var(--tinta-3);
+}
+
+.destinoSeta {
+  flex-shrink: 0;
+  margin-left: auto;
+  margin-top: var(--s-1);
+  color: var(--icone-mudo);
+  opacity: 0;
+  transform: translateX(-3px);
+  transition: opacity var(--t-rapido) var(--suave), transform var(--t-rapido) var(--mola);
+}
+
+.destino:hover .destinoSeta,
+.destino:focus-visible .destinoSeta {
+  opacity: 1;
+  transform: none;
+}

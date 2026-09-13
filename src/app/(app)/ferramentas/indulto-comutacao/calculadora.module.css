@@ -1,0 +1,260 @@
+/* calculadora.module.css — o questionário ao lado do resultado.
+ *
+ * Mesma regra de contenção do resultado.module.css: todo bloco de conteúdo é
+ * um PAINEL (`--superficie` + `--linha` + `--r-painel` juntos). Os controles
+ * em si (input/select, rótulo, texto de ajuda) vêm de `@/components/ui/Campo`
+ * — não duplicados aqui — daí este módulo só ter layout e a seção que os
+ * agrupa.
+ *
+ * 🔴 Sem cor em hexadecimal e sem `--borda` (não existe no kit): só token.
+ */
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--s-6);
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.coluna {
+  min-width: 0;
+}
+
+.questionario {
+  display: grid;
+  gap: var(--s-5);
+}
+
+.secao {
+  display: grid;
+  gap: var(--s-4);
+  padding: var(--s-5);
+  background: var(--superficie);
+  border: 1px solid var(--linha);
+  border-radius: var(--r-painel);
+  box-shadow: var(--elev-1);
+}
+
+.tituloSecao {
+  padding: 0 var(--s-2);
+  font-size: var(--fs-title);
+  font-weight: 600;
+  color: var(--tinta);
+}
+
+/* O aviso de veto ("responder NÃO bloqueia...") — mesmo vocabulário de banner
+ * de alerta do resto do produto: wash + borda sólida do próprio token. */
+.aviso {
+  margin: 0;
+  padding: var(--s-3) var(--s-4);
+  background: var(--aviso-wash);
+  border: 1px solid var(--aviso);
+  border-radius: var(--r-controle);
+  font-size: var(--fs-body);
+  font-weight: 500;
+  color: var(--tinta);
+}
+
+.descricao {
+  margin: 0;
+  font-size: var(--fs-body);
+  color: var(--tinta-3);
+}
+
+.campos {
+  display: grid;
+  gap: var(--s-4);
+}
+
+.campoTempo {
+  display: grid;
+  gap: var(--s-2);
+}
+
+.rotuloGrupo {
+  font-size: var(--fs-body);
+  font-weight: 500;
+  color: var(--tinta-2);
+}
+
+.ajudaGrupo {
+  font-size: var(--fs-body);
+  color: var(--tinta-3);
+}
+
+.tempo {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--s-3);
+}
+
+/* Ao imprimir, o questionário não vai junto: o anexo é o resultado. */
+@media print {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+  .coluna:first-child {
+    display: none;
+  }
+}
+
+/* ── Task 12: a nota de dado pessoal (spec §9) ───────────────────────────
+ * Logo abaixo do `CabecalhoPagina` de "Novo cálculo": lembra o membro que o cálculo é dele
+ * (nenhum outro membro o vê), que ele pode excluí-lo quando quiser, e que o nº de execução
+ * evita gravar o nome do sentenciado. Texto secundário — mesma receita de `.ajuda`/`.frase`
+ * do resto do produto: `--tinta-2`, nunca `opacity`. */
+.notaPrivacidade {
+  max-width: 68ch;
+  margin: 0;
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  color: var(--tinta-2);
+}
+
+/* ── Task 11: a barra de salvar e a exclusão ─────────────────────────────
+ *
+ * Mesma regra de token do resto do módulo: nada de hex solto nem de
+ * `var(--borda, …)` — `--borda` não existe neste kit, e o tema padrão é
+ * escuro, então uma cor pensada para fundo claro dá contraste ruim aqui. */
+
+.barra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--s-3);
+  margin-bottom: var(--s-5);
+}
+
+.campoTitulo {
+  flex: 1;
+  min-width: 240px;
+}
+
+/* Aviso local que some sozinho (padrão de `Board.tsx`) e erro da exclusão —
+ * mesmo vocabulário de wash + tom que `_crm/crm.module.css` já usa. */
+.mensagem {
+  flex-basis: 100%;
+  margin: 0;
+  padding: var(--s-2) var(--s-4);
+  border-radius: var(--r-controle);
+  font-size: var(--fs-body);
+  font-weight: 500;
+}
+.mensagem[data-tom='erro'] {
+  background: var(--erro-wash);
+  color: var(--erro);
+}
+.mensagem[data-tom='ok'] {
+  background: var(--ok-wash);
+  color: var(--ok);
+}
+
+/* A confirmação de exclusão em duas etapas — espelha `_crm/crm.module.css`
+ * (`.excluirWrap`/`.confirmaExcluir`/`.confirmaTexto`/`.confirmaAcoes`). */
+.excluirWrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
+.confirmaExcluir {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  padding: var(--s-4);
+  border: 1px solid var(--erro);
+  border-radius: var(--r-controle);
+  background: var(--erro-wash);
+}
+
+.confirmaTexto {
+  margin: 0;
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  color: var(--tinta);
+}
+
+.confirmaAcoes {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  flex-wrap: wrap;
+}
+
+/* A barra e a exclusão são da tela, não do anexo: somem na impressão — o
+ * anexo é só o `Resultado` (ver a regra de `.layout`/`.coluna` acima). */
+@media print {
+  .barra,
+  .excluirWrap {
+    display: none;
+  }
+}
+
+/* ── Task 11: a lista "Meus cálculos" ────────────────────────────────────
+ * Mesma regra de contenção do resto do produto: cada item é um PAINEL
+ * (`--superficie` + `--linha` + `--r-painel` + `--elev-1`), como em
+ * `agentes.module.css` (`.agente`/`.linha`). */
+
+.pagina {
+  display: grid;
+  gap: var(--s-6);
+}
+
+.lista {
+  display: grid;
+  gap: var(--s-3);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.item {
+  padding: var(--s-4) var(--s-5);
+  background: var(--superficie);
+  border: 1px solid var(--linha);
+  border-radius: var(--r-painel);
+  box-shadow: var(--elev-1);
+  transition: border-color var(--t-rapido) var(--suave);
+}
+.item:hover {
+  border-color: var(--linha-forte);
+}
+
+.itemLink {
+  color: inherit;
+  text-decoration: none;
+}
+.itemLink:focus-visible {
+  outline: 2px solid var(--acento);
+  outline-offset: 2px;
+  border-radius: var(--r-pequeno);
+}
+
+.itemTitulo {
+  margin: 0 0 var(--s-1);
+  font-size: var(--fs-body);
+  font-weight: 600;
+  color: var(--tinta);
+}
+
+.itemMeta {
+  font-size: var(--fs-micro);
+  color: var(--tinta-3);
+}
+
+/* O aviso "Este cálculo mudou" — mesmo tom de atenção de `.aviso` acima,
+ * mas em painel próprio: não é um alerta do questionário, é da tela. */
+.avisoVersao {
+  padding: var(--s-4) var(--s-5);
+  background: var(--aviso-wash);
+  border: 1px solid var(--aviso);
+  border-radius: var(--r-painel);
+  color: var(--tinta);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+}

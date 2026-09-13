@@ -3,7 +3,7 @@ import {
   LayoutGrid, LayoutDashboard, Target, CalendarClock, BarChart3,
   Contact, Building2, Settings, Zap, MessageSquare, BookOpen,
   Wallet, FileText, Package, Truck, Receipt, Users,
-  Bot, Boxes, ClipboardList, Landmark, Sparkles, Puzzle,
+  Bot, Boxes, ClipboardList, Landmark, Sparkles, Puzzle, Scale,
 } from 'lucide-react'
 import { lerMenuCustom } from '@/server/custom/menu'
 import { ICONE_PADRAO, type IconePermitido } from '@/lib/menu-custom'
@@ -104,6 +104,9 @@ export default async function Rail({ user, wsAtivo, workspaces, avisoAtualizacao
         {}
         <ItemNav href="/agentes" rotulo="Agentes de IA"><Bot size={16} strokeWidth={2} /></ItemNav>
         <ItemNav href="/relatorios" rotulo="Relatórios"><BarChart3 size={16} strokeWidth={2} /></ItemNav>
+
+        <div className={estilos.sec}>Ferramentas</div>
+        <ItemNav href="/ferramentas" rotulo="Ferramentas"><Scale size={16} strokeWidth={2} /></ItemNav>
 
         {}
         {grupos.map(([grupo, itens]) => (
