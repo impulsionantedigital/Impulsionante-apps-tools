@@ -839,3 +839,40 @@
 /* O texto de vazio NUNCA trunca: 'Nenhum arquivo escolhi…' lê como defeito da tela, não
    como estado. O corte existe pra nome de arquivo longo, que é o caso real. */
 .arquivoNome[data-vazio='sim'] { color: var(--tinta-3); max-width: none; }
+
+/* ── Modelos de e-mail (aba Servidor) ─────────────────────────────────────────────────
+ *
+ * A lista de tipos usa `.lista`/`.item`/`.acoes` como qualquer outra desta tela — o card
+ * não inventa uma segunda linha clicável quando a de credenciais/membros já existe. Só o
+ * editor que abre abaixo da lista (um de cada vez) precisa de vocabulário novo: nenhum bloco
+ * anterior tinha "campos que você copia para dentro do texto". */
+
+/* O corpo do editor aberto: mesma receita de `.campo` (coluna, gap), mas um nível acima —
+ * ele agrupa VÁRIOS `.campo` (assunto, corpo, campos disponíveis) e não é, ele mesmo, um
+ * rótulo + controle. */
+.modeloEditor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+
+/* Os campos de mesclagem (`[MEMBER_NAME]` etc.) que este modelo aceita. `flex-wrap` porque
+ * `entrega_produto` e `pagamento_recebido` chegam a 6-7 campos — numa linha só eles
+ * estourariam os 760px do `.pagina`. */
+.camposDisponiveis {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+}
+
+/* Mesma receita de `.licencaDados code`: monoespaçada, fundo `--trilho` — é valor que se
+ * copia, não texto corrido. */
+.campoTag {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  color: var(--tinta-2);
+  background: var(--trilho);
+  padding: var(--s-1) var(--s-2);
+  border-radius: var(--r-pequeno);
+}

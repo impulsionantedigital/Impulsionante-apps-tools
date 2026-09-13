@@ -11,6 +11,8 @@ import { lerEquipe } from './acoes-equipe'
 import EquipeCard from './EquipeCard'
 import { lerMarcaConfig } from './acoes-marca'
 import MarcaCard from './MarcaCard'
+import { lerModelosEmail } from './acoes-email'
+import ModelosEmailCard from './ModelosEmailCard'
 import estilos from './config.module.css'
 import CabecalhoPagina from '@/components/ui/CabecalhoPagina'
 import { tituloDaPagina, lerMarca } from '@/server/marca'
@@ -71,6 +73,8 @@ export default async function ConfigPage({
   const atualizacao = rAtualizacao && !('erro' in rAtualizacao) ? rAtualizacao : null
   const rMarca = mostrarServidor ? await lerMarcaConfig() : null
   const marca = rMarca && !('erro' in rMarca) ? rMarca : null
+  const rModelos = mostrarServidor ? await lerModelosEmail() : null
+  const modelos = rModelos && !('erro' in rModelos) ? rModelos : null
 
   
   
@@ -138,6 +142,7 @@ export default async function ConfigPage({
           {}
           {}
           {marca ? <MarcaCard inicial={marca} /> : null}
+          {modelos ? <ModelosEmailCard vista={modelos} /> : null}
 
           {licenca ? <LicencaCard inicial={licenca} /> : null}
           {atualizacao ? <AtualizacoesCard inicial={atualizacao} /> : null}

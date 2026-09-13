@@ -41,8 +41,10 @@ export const PIORES_CASOS = {
   perfis: 20_000,
   
   custom: 10_000,
-  
+
   expurgo: 5_000,
+
+  email: 8_000,
 } as const
 
 export type NomeDeBraco = keyof typeof PIORES_CASOS
@@ -58,6 +60,7 @@ export const PORTOES: Record<NomeDeBraco, number> = {
   perfis: PIORES_CASOS.perfis,
   custom: PIORES_CASOS.custom,
   expurgo: PIORES_CASOS.expurgo,
+  email: PIORES_CASOS.email,
 }
 
 export interface Orcamento {
