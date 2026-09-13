@@ -2054,6 +2054,17 @@ create index if not exists indulto_comutacao_calculos_dono_idx
 
 alter table public.indulto_comutacao_calculos enable row level security;
 
+-- Privilégio de tabela, explícito. Numa instalação normal ele já viria herdado: a `0061` faz
+-- `alter default privileges`, e toda tabela criada depois dela nasce com grant. Concedemos
+-- mesmo assim pelo motivo da própria `0061` — o produto não depende de privilégio que não
+-- concedeu. E concedemos o MESMO que ela (`all` aos três papéis), não o mínimo: grant
+-- diferente criaria dois mundos de instalação.
+--
+-- 🔴 O grant NÃO é o que protege esta tabela. Quem isola é a RLS abaixo (leitura só do próprio
+-- membro) e a AUSÊNCIA de policy de escrita — sem policy, `authenticated` não escreve nada,
+-- tenha o grant que tiver. Idempotente: conceder o que já está concedido é no-op.
+grant all on table public.indulto_comutacao_calculos to anon, authenticated, service_role;
+
 -- 🔴 SÓ LEITURA, e só do próprio dono.
 --
 -- `e_membro(workspace_id)` sozinho deixaria um membro ler o caso de outro dentro
