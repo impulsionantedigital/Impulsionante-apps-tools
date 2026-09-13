@@ -45,6 +45,11 @@ describe('renderizarHtml', () => {
   it('ignora colchetes que não são campo', () => {
     expect(renderizarHtml('[nao-campo] [A1] [ ]', { A: 'x' })).toBe('[nao-campo] [A1] [ ]')
   })
+
+  it('exige MAIÚSCULAS — campo em minúscula não é substituído mesmo com chave em valores', () => {
+    expect(renderizarHtml('[campo] [Campo] [CAMPO]', { campo: 'a', Campo: 'b', CAMPO: 'c' }))
+      .toBe('[campo] [Campo] c')
+  })
 })
 
 describe('renderizarTexto', () => {
@@ -55,5 +60,10 @@ describe('renderizarTexto', () => {
 
   it('deixa literal o campo sem valor', () => {
     expect(renderizarTexto('[X]', {})).toBe('[X]')
+  })
+
+  it('exige MAIÚSCULAS — campo em minúscula não é substituído mesmo com chave em valores', () => {
+    expect(renderizarTexto('[campo] [Campo] [CAMPO]', { campo: 'a', Campo: 'b', CAMPO: 'c' }))
+      .toBe('[campo] [Campo] c')
   })
 })
