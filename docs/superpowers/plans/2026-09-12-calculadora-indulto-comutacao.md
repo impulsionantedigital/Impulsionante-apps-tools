@@ -1467,7 +1467,11 @@ cada cálculo na planilha é caro):
    planilha ou do `engine.js`.
 3. **Art. 11, III** — mulher, reincidente, filho até 16 anos, pena cumprida **entre 1/5 e 1/2** do
    não impeditivo. Decide se a planilha exige mesmo 1/5 como o `engine.js`.
-4. **Art. 13 na fronteira exata** (`D6 + G7 + G8 == N13`, onde o Art. 13 usa `<` e o §4º usa `<=`).
+4. **Art. 13 na fronteira exata** (`D6 + G7 + G8 == N13`). Na planilha, o Art. 13 compara com `<`
+   estrito (`Cálculo!H138`) e o §4º com `<=` (`H141`). ⚠️ Isto **não** é dado confiável: o `H138` é a
+   única das comparações de fração da aba com `<` estrito, e o texto do artigo diz "que tenham
+   cumprido um quinto". É provável erro da planilha — o motor o reproduz fielmente e ele é exibido
+   em "Pontos a validar juridicamente", mas a decisão é do dono do produto.
 
 🔴 **Se a planilha divergir do `engine.js` no cenário 2 ou 3, PARE e relate.** Não ajuste o motor,
 não ajuste o cenário: é questão jurídica, e decide quem é dono do produto.
