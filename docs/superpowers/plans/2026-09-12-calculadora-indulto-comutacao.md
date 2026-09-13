@@ -1374,8 +1374,19 @@ Três coisas a corrigir ao adaptar:
    rodar em qualquer máquina.
 2. **`PFX` embute o nome do arquivo** da planilha, que mudou ao entrar no repositório. O prefixo
    tem que casar com o nome real do arquivo, senão `formulas` não acha a célula.
-3. **Python 3.9 é o que está instalado nesta máquina** (`python3 --version`). Se a `formulas`
-   exigir mais novo, diga isso no README em vez de contornar.
+3. **Python 3.9 é o que está instalado nesta máquina** (`python3 --version`), e já está
+   verificado que basta: `formulas[excel]==1.3.4` instala, importa e abre a planilha nele.
+
+**O que já foi medido nesta planilha**, para você não descobrir na tentativa e erro:
+
+- Montar o modelo (`ExcelModel().loads(...).finish()`) leva **~16 s**; `calculate()` devolve
+  **1731 células**.
+- As abas são `CÁLCULO`, `QUESTIONARIO`, `RESULTADO`, `SOMAR TEMPO - CALCULAR DATA` e
+  `VALID_DADOS`. As duas que o harness endereça (`QUESTIONARIO` e `RESULTADO`) existem com
+  esses nomes exatos.
+- 🔴 **Monte o modelo UMA vez e reaproveite-o em todos os cenários**, como o
+  `validate-original.py` já faz. Remontar por cenário multiplica os 16 s pelo número de
+  cenários e transforma um harness de segundos num de minutos.
 
 - [ ] **Step 2: Declarar a dependência**
 
