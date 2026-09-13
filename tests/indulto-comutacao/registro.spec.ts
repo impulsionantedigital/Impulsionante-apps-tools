@@ -21,6 +21,8 @@ describe('REGISTRO', () => {
 describe.each(REGISTRO.map((m) => [m.id, m] as const))('contrato — %s', (_id, motor) => {
   it('preenche a identificação', () => {
     expect(motor.id).toMatch(/^indulto-comutacao-\d{4}$/)
+    const anoDoId = parseInt(motor.id.slice(-4), 10)
+    expect(anoDoId, `Ano extraído do id (${anoDoId}) deve corresponder ao campo ano (${motor.ano}). Ao plugar um novo decreto, eles precisam estar sincronizados.`).toBe(motor.ano)
     expect(motor.ano).toBeGreaterThan(2000)
     expect(motor.rotulo.length).toBeGreaterThan(0)
     expect(motor.versao).toMatch(/^\d+\.\d+\.\d+$/)
@@ -34,11 +36,14 @@ describe.each(REGISTRO.map((m) => [m.id, m] as const))('contrato — %s', (_id, 
   it('tem questionário com seções e campos, sem chave repetida', () => {
     expect(motor.questionario.length).toBeGreaterThan(0)
     const chaves: string[] = []
+    const idsSecao: string[] = []
     for (const secao of motor.questionario) {
       expect(secao.campos.length).toBeGreaterThan(0)
+      idsSecao.push(secao.id)
       for (const campo of secao.campos) chaves.push(campo.chave)
     }
-    expect(new Set(chaves).size).toBe(chaves.length)
+    expect(new Set(chaves).size, 'Nenhum campo.chave deve repetir entre seções').toBe(chaves.length)
+    expect(new Set(idsSecao).size, 'Nenhum secao.id deve repetir entre seções. Ao plugar um novo decreto, cada seção precisa de um identificador único.').toBe(idsSecao.length)
   })
 
   it('tem metadados de inciso sem id repetido', () => {
