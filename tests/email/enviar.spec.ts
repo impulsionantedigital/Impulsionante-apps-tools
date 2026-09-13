@@ -74,4 +74,38 @@ describe('enviarEnvelope', () => {
     if ('ok' in r) throw new Error('inesperado')
     expect(r.erro).not.toContain('super-secreta')
   })
+
+  it('repassa a segurança da config quando seguro é true', async () => {
+    sendMail.mockResolvedValue({ messageId: '1' })
+    await enviarEnvelope(ENVELOPE, { ...CONFIG, seguro: true, porta: 465 })
+    expect(createTransport).toHaveBeenCalledWith({
+      host: 'smtp.exemplo.com',
+      port: 465,
+      secure: true,
+      auth: { user: 'u', pass: 's' },
+    })
+  })
+
+  it('corta a mensagem de erro em 300 caracteres', async () => {
+    sendMail.mockRejectedValue(new Error('x'.repeat(400)))
+    const r = await enviarEnvelope(ENVELOPE, CONFIG)
+    if ('ok' in r) throw new Error('inesperado')
+    expect(r.erro.length).toBeLessThanOrEqual(300)
+  })
+
+  it('remove todas as ocorrências da senha, não só a primeira', async () => {
+    sendMail.mockRejectedValue(
+      new Error('senha super-secreta inválida; tente novamente com super-secreta'),
+    )
+    const r = await enviarEnvelope(ENVELOPE, { ...CONFIG, senha: 'super-secreta' })
+    if ('ok' in r) throw new Error('inesperado')
+    expect(r.erro).not.toContain('super-secreta')
+  })
+
+  it('não corrompe a mensagem de erro quando a senha está vazia', async () => {
+    sendMail.mockRejectedValue(new Error('falha de conexão com o servidor'))
+    const r = await enviarEnvelope(ENVELOPE, { ...CONFIG, senha: '' })
+    if ('ok' in r) throw new Error('inesperado')
+    expect(r.erro).toBe('falha de conexão com o servidor')
+  })
 })

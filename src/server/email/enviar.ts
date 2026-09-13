@@ -3,8 +3,6 @@ import nodemailer from 'nodemailer'
 import { lerConfigSmtp, type ConfigSmtp, type LeituraSmtp } from '@/lib/email/smtp'
 import type { Envelope } from '@/lib/email/envelope'
 
-const TIMEOUT_MS = 15_000
-
 export type ResultadoEnvio = { ok: true } | { erro: string }
 
 export function configAtual(): LeituraSmtp {
