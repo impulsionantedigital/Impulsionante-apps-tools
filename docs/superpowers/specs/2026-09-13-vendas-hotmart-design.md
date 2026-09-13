@@ -45,9 +45,10 @@ Hotmart  ──POST──▶  /api/webhook/hotmart
                      ├─ 3. acha oferta por (plataforma, codigo) ──▶ ofertas
                      │      └─ desconhecida ─▶ marca e devolve 200
                      ├─ 4. resolve membro: cpf_cnpj → email → cria
-                     │      └─ criou? ─▶ enfileira e-mail de boas-vindas
+                     │      └─ criou? ─▶ senha temporária + e-mail de boas-vindas
                      ├─ 5. cria venda (fotografia da oferta) ──▶ vendas
-                     │      └─ enfileira e-mail de entrega de produto
+                     │      ├─ expira_em empilha sobre a venda vigente
+                     │      └─ produto novo? entrega : pagamento recebido
                      └─ 6. 200
 
 relógio (30s) ─▶ drenarEmail ─▶ emails_fila ─▶ SMTP
@@ -63,8 +64,8 @@ membro ─▶ /ferramentas ─▶ acesso.ts ─▶ vendas (status ativa, prazo v
 |---|---|---|
 | `cpf_cnpj` | `text null` | a chave pela qual a compra encontra a pessoa |
 | `nome` | `text null` | o payload traz; uma lista de clientes só com e-mail é ilegível |
-| `senha_provisoria` | `boolean not null default false` | força a troca no primeiro login |
-| `senha_provisoria_expira_em` | `timestamptz null` | validade de 7 dias da senha temporária |
+| `senha_temporaria_hash` | `text null` | `scrypt` da senha temporária, com sal |
+| `senha_temporaria_expira_em` | `timestamptz null` | validade de 7 dias da senha temporária |
 
 Todas nascem nulas ou falsas para os membros que já existem, o que lê como "não
 se aplica a mim" — que é a verdade para quem entrou por convite.
@@ -218,6 +219,33 @@ O mapa vive em código, como `interval` do Postgres:
 cálculo é feito pelo banco no `insert` da venda, para existir **uma** regra em vez de uma por
 call site.
 
+#### 6.3.1 Renovação empilha
+
+O intervalo não conta sempre da aprovação. A base é:
+
+```
+base = maior( aprovada_em , maior expira_em entre as vendas do membro que
+                            partilham produto com esta oferta,
+                            com status = 'ativa' e expira_em > now() )
+
+expira_em = base + intervalo(duracao)
+```
+
+Quem renova **antes** de vencer não perde os dias que já tinha; quem renova **depois** começa
+na data do pagamento.
+
+🔴 **A base é o `expira_em` anterior, não `expira_em + 1 dia`.** `expira_em` é fronteira
+**exclusiva** — o acesso vale enquanto `agora < expira_em`. Uma mensal aprovada a 01/01 vence
+a 01/02, o último dia de uso é 31/01, e a renovação a começar em 01/02 é o dia seguinte, sem
+buraco e sem sobreposição. Somar mais um dia abriria uma lacuna de 24 h a cada renovação.
+
+Duas restrições:
+
+- **Só venda `ativa` e ainda vigente serve de base.** Uma venda reembolsada ou com chargeback
+  não pode doar o tempo dela à seguinte.
+- **Vitalício vigente não empilha** — não há vencimento a bater. A venda nova conta de si
+  mesma e o e-mail é `pagamento_recebido` (§7.5.2).
+
 ### 6.4 `ativa` aposenta sem apagar
 
 Oferta nunca é apagada: `ativa = false` faz o webhook parar de aceitar compras novas com aquele
@@ -363,17 +391,41 @@ forma de reconstituir o que a oferta dizia no dia da compra.
    - `auth.admin.createUser` com o e-mail do payload, `email_confirm: true` e **senha forte
      aleatória** (32 bytes, base64url) — ninguém a conhece, e ela existe só para a conta não
      nascer aberta;
-   - linha em `membros` com `papel = 'membro'`, `cpf_cnpj`, `nome`, `senha_provisoria = true` e
-     `senha_provisoria_expira_em = now() + 7 days`;
-   - enfileira o e-mail `boas_vindas` com a senha temporária.
-3. Cria a venda, com a fotografia da oferta e
-   `expira_em = aprovada_em + intervalo(duracao)` (nulo se `vitalicio`).
-4. Enfileira o e-mail `entrega_produto`.
+   - linha em `membros` com `papel = 'membro'`, `cpf_cnpj` e `nome`;
+   - emite a senha temporária (§8.5).
+3. **Calcula `novos` antes de gravar a venda** (§7.5.2).
+4. Cria a venda, com a fotografia da oferta e o `expira_em` empilhado (§6.3.1).
+5. Enfileira os e-mails que a árvore de §7.5.2 mandar.
 
 `data.purchase.approved_date` vem em **milissegundos de época** e é convertido; o valor sai de
 `data.purchase.price.value` e `.currency_value`.
 
-#### 7.5.2 Encerramento
+#### 7.5.2 Que e-mail cada aprovação dispara
+
+Cada cobrança de uma assinatura chega como um `PURCHASE_APPROVED` **novo**, com transação
+nova — a Hotmart não emite atualização de assinatura. É por isso que a decisão não pode ser
+"é a primeira compra?", e sim:
+
+```
+novos = produtos(oferta) − produtos que o membro JÁ TEVE
+                           (qualquer venda anterior, ativa OU não)
+
+membro acabou de ser criado  →  boas_vindas + entrega_produto(novos)
+novos não está vazio         →  entrega_produto(novos)
+novos está vazio             →  pagamento_recebido
+```
+
+O cálculo é feito **antes** do `insert`, senão a venda que está a ser criada entraria na
+própria conta e `novos` seria sempre vazio.
+
+**A subtração é o que acerta o combo**: se uma oferta libertar 2024+2025 e o membro já tiver
+2025, ele recebe a liberação só do 2024 — em vez de um "produto liberado" a anunciar o que ele
+já usava, ou de um recibo a esconder um produto novo.
+
+Membro que já existe **nunca** recebe `boas_vindas`: ele já tem acesso, e mandar dados de
+acesso a cada mensalidade seria ruído — e, pior, sugeriria que a senha dele mudou.
+
+#### 7.5.3 Encerramento
 
 Acha a venda por `(plataforma, transacao)`. Não achou → `transacao_desconhecida` e `200` (pode
 ser compra de outro produto seu). Achou → grava o `status` do evento e `encerrada_em = now()`.
@@ -429,9 +481,10 @@ create table if not exists public.modelos_email (
 );
 ```
 
-`tipo` ∈ `boas_vindas` · `recuperacao_senha` · `entrega_produto`, com `check` nomeada.
+`tipo` ∈ `boas_vindas` · `recuperacao_senha` · `entrega_produto` · `pagamento_recebido`, com
+`check` nomeada.
 
-Os três nascem **semeados com HTML padrão funcional**, para o recurso funcionar antes de
+Os quatro nascem **semeados com HTML padrão funcional**, para o recurso funcionar antes de
 você escrever qualquer coisa. O HTML definitivo de cada um fica para depois.
 
 ### 8.3 Campos de merge
@@ -443,6 +496,9 @@ Declarados em código, por tipo, em `src/lib/email/campos.ts`:
 | `boas_vindas` | `[MEMBER_NAME]` `[MEMBER_EMAIL]` `[TEMP_PASSWORD]` `[LOGIN_URL]` |
 | `recuperacao_senha` | `[MEMBER_NAME]` `[TEMP_PASSWORD]` `[LOGIN_URL]` |
 | `entrega_produto` | `[MEMBER_NAME]` `[PRODUCT_NAME]` `[OFFER_NAME]` `[EXPIRES_AT]` `[TOOL_URL]` `[LOGIN_URL]` |
+| `pagamento_recebido` | `[MEMBER_NAME]` `[OFFER_NAME]` `[PRODUCT_NAME]` `[EXPIRES_AT]` `[VALUE]` `[TRANSACTION]` `[LOGIN_URL]` |
+
+Em `entrega_produto`, `[PRODUCT_NAME]` rende a lista de `novos`, não a lista inteira da oferta.
 
 A tela lista os campos disponíveis ao lado do editor — um campo mal escrito sai como texto cru
 no e-mail do cliente.
@@ -488,17 +544,38 @@ sem retentativa e sem rasto. Recuo exponencial, e desistência registada depois 
 
 ### 8.5 Senha temporária e recuperação
 
-A conta nasce com senha forte aleatória; o e-mail de boas-vindas leva a senha temporária;
-`senha_provisoria = true` força a troca no primeiro login, via redirecionamento para
-`/trocar-senha` enquanto a flag estiver ligada.
+**A senha temporária é uma credencial PARALELA, não uma substituição.** Emitir uma não toca na
+senha principal: quem a lembrar continua a entrar com ela.
 
-**Validade de 7 dias.** Depois do login bem-sucedido, se `senha_provisoria` e
-`senha_provisoria_expira_em < now()`, a sessão é encerrada e a tela manda usar "recuperar
-senha". Uma senha que abre a conta e fica para sempre numa caixa de entrada é o ponto fraco
-que sobraria.
+Emitir consiste em gerar texto claro aleatório, guardar `scrypt(texto, sal)` em
+`senha_temporaria_hash`, marcar `senha_temporaria_expira_em = now() + 7 days` e enfileirar o
+e-mail com o texto claro. **O texto claro existe só no e-mail**; o banco nunca o vê. O `scrypt`
+vem de `node:crypto` — sem dependência nova, e é KDF de verdade, não um digest.
 
-**Recuperação** reaproveita a mesma máquina: gera nova senha temporária, marca a flag, renova
-o prazo e enfileira `recuperacao_senha`. Não há tabela de tokens.
+**O login ganha um segundo caminho.** `entrar()` (`src/server/auth/sessao.ts`) tenta o
+`signInWithPassword` de sempre; se falhar, confere a senha oferecida contra o hash, em
+comparação de tempo constante. Batendo e dentro do prazo, a sessão nasce **sem tocar na senha
+principal**: `auth.admin.generateLink({ type: 'magiclink' })` no servidor, seguido de
+`verifyOtp` com o `hashed_token` devolvido — que é como se emite sessão no Supabase sem
+conhecer a senha do utilizador. Mudar a senha principal aqui destruiria exatamente o que este
+desenho protege.
+
+**O que acontece depois de entrar**, e é onde os dois caminhos divergem:
+
+| entrou com | efeito |
+|---|---|
+| senha **temporária** | fica preso em `/trocar-senha` até definir a senha dele; definir apaga o hash |
+| senha **principal** | o hash é apagado e **não** se força troca nenhuma |
+
+O segundo caso é decisão de desenho: ele provou que sabe a senha, e a temporária pendente
+deixa de ter função. Forçar a troca ali seria punir quem lembrou.
+
+**Validade de 7 dias.** Hash expirado não autentica — a tela manda usar "recuperar senha".
+Uma credencial que abre a conta e fica para sempre numa caixa de entrada é o ponto fraco que
+sobraria.
+
+**Recuperação** é a mesma máquina: emite nova senha temporária e enfileira `recuperacao_senha`.
+Não há tabela de tokens, e a senha principal do membro continua válida durante todo o processo.
 
 A recuperação vive em `/recuperar`, rota pública ao lado de `/entrar`, e responde **sempre a
 mesma coisa**, exista o e-mail ou não — senão vira um oráculo de quem é cliente.
@@ -580,7 +657,7 @@ blocos `do $$ ... end $$` que perguntam a `pg_policies`, `pg_trigger` e `pg_cons
 
 Cinco tabelas novas (`ofertas`, `vendas`, `webhook_compras_recebidas`, `modelos_email`,
 `emails_fila`), quatro colunas em `membros`, `grant all` aos três papéis em cada tabela nova, e
-o seed dos três modelos de e-mail.
+o seed dos quatro modelos de e-mail.
 
 ## 11. Testes
 
@@ -589,9 +666,13 @@ o seed dos três modelos de e-mail.
 | `src/lib/documento.ts` | dígito verificador de CPF e CNPJ, repetidos rejeitados, normalização e formatação |
 | catálogo × `REGISTRO` | todo `decretoId` do catálogo existe no registo de decretos, e vice-versa |
 | duração → `expira_em` | os sete valores, incluindo `31/01 + 1 mês` e `vitalicio` → nulo |
+| empilhamento | renova antes de vencer (base = `expira_em` anterior, **sem** +1 dia); renova depois (base = aprovação); venda reembolsada não serve de base; vitalício vigente não empilha |
+| senha temporária | emitir não altera a senha principal; entrar com a principal apaga o hash e não força troca; entrar com a temporária força; hash expirado não autentica |
 | merge de e-mail | substituição por tipo, campo desconhecido intacto, **escape de HTML no valor** |
 | webhook: aprovação, comprador novo | cria membro, cria venda, fotografa a oferta, enfileira boas-vindas **e** entrega |
-| webhook: aprovação, comprador conhecido | não cria membro, enfileira **só** a entrega |
+| webhook: aprovação, produto que ele **não** tinha | não cria membro, enfileira **só** `entrega_produto` |
+| webhook: renovação do mesmo produto | enfileira **só** `pagamento_recebido`; nada de boas-vindas |
+| webhook: combo parcial | `entrega_produto` cita **só** os produtos novos |
 | webhook: idempotência | o **mesmo** `PURCHASE_APPROVED` duas vezes cria **uma** venda |
 | webhook: oferta desconhecida | devolve `200` e não cria nada |
 | webhook: hottok | ausente → `503`; errado → `401`; certo → `200` |
@@ -606,8 +687,10 @@ o seed dos três modelos de e-mail.
    tabela não tem policy para `authenticated`: só o servidor lê. Fica registado como ponto a
    decidir depois se `webhook_compras_recebidas` deve ter expurgo por idade, como a `0045` faz
    para canais.
-2. **A senha temporária viaja em texto no e-mail.** É o preço do fluxo escolhido, mitigado pela
-   troca obrigatória e pela validade de 7 dias.
+2. **A senha temporária viaja em texto no e-mail**, e só ali: no banco vive como `scrypt` com
+   sal. O risco fica confinado à caixa de entrada do próprio membro, mitigado pela troca
+   obrigatória e pela validade de 7 dias. A senha principal nunca é alterada por este fluxo,
+   então uma temporária interceptada não expulsa o dono da conta.
 3. **O hottok é o único guarda do endpoint.** Não há assinatura criptográfica no webhook da
    Hotmart: quem souber o token pode forjar uma compra. O token fica no cofre, nunca em código
    nem em log, e o corpo recebido nunca é ecoado na resposta.
@@ -630,10 +713,6 @@ passo que **tira** acesso de alguém.
 
 ## 14. Pontos a validar
 
-- **Reincidência de cobrança**: uma assinatura mensal da Hotmart emite `PURCHASE_APPROVED` a
-  cada cobrança, e cada uma vira uma venda nova, com prazo próprio. O acesso é a união delas, o
-  que funciona; falta confirmar que a Hotmart de facto reemite o evento em vez de um específico
-  de recorrência.
 - **Expurgo do payload** (§12.1).
 - **Reembolso parcial e compra em garantia** — não tratados; entram como encerramento manual.
 
@@ -641,4 +720,4 @@ passo que **tira** acesso de alguém.
 
 Segunda plataforma de vendas (a rota é parametrizada, mas só Hotmart é implementada);
 tela de vitrine ou de checkout dentro do CRM; renovação automática iniciada pelo CRM;
-relatórios de faturação; e-mail transacional fora dos três modelos.
+relatórios de faturação; e-mail transacional fora dos quatro modelos.
