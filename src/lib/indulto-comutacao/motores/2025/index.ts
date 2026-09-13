@@ -1,5 +1,6 @@
 import type { MotorDecreto } from '../../tipos'
 import { QUESTIONARIO_2025 } from './questionario'
+import { INCISOS_INDULTO_2025, INCISOS_COMUTACAO_2025, AVISOS_2025 } from './incisos'
 
 /**
  * Decreto nº 12.970/2025 — indulto natalino.
@@ -7,8 +8,7 @@ import { QUESTIONARIO_2025 } from './questionario'
  * `versao` sobe a cada mudança de fórmula: é ela que fica gravada junto do
  * cálculo salvo e permite avisar o membro quando um resultado antigo muda.
  *
- * ⚠️ ESQUELETO. As Tasks 5 e 6 substituem incisos, avisos e calcular pelos
- * transcritos de validacao/2025/.
+ * ⚠️ ESQUELETO. A Task 6 substitui `calcular` pelo transcrito de validacao/2025/.
  */
 export const motor2025: MotorDecreto = {
   id: 'indulto-comutacao-2025',
@@ -17,26 +17,16 @@ export const motor2025: MotorDecreto = {
   versao: '0.1.0',
   dataBase: '2025-12-25',
   questionario: QUESTIONARIO_2025,
-  incisos: {
-    indulto: [
-      {
-        id: 'art9_I',
-        rotulo: 'Art. 9º, I',
-        descricao: 'Pena ≤ 8 anos, sem violência: 1/5 (não reinc.) ou 1/3 (reinc.).',
-        temRegraEspecial: true,
-      },
-    ],
-    comutacao: [],
-  },
-  avisos: {
-    fixos: ['Esta ferramenta não dispensa conhecimento técnico sobre o assunto.'],
-    validarJuridicamente: [
-      'A "pena após a comutação" usa a pena total imposta como base (fórmula original).',
-    ],
-  },
+  incisos: { indulto: INCISOS_INDULTO_2025, comutacao: INCISOS_COMUTACAO_2025 },
+  avisos: AVISOS_2025,
   calcular() {
+    const todos = [...INCISOS_INDULTO_2025, ...INCISOS_COMUTACAO_2025]
     return {
-      incisos: [{ id: 'art9_I', geral: 'nao_preenche', especial: 'nao_preenche' }],
+      incisos: todos.map((m) => ({
+        id: m.id,
+        geral: 'nao_preenche' as const,
+        especial: m.temRegraEspecial ? ('nao_preenche' as const) : ('sem_previsao' as const),
+      })),
       resumo: {
         totalImposto: 0,
         totalCumprido: 0,
