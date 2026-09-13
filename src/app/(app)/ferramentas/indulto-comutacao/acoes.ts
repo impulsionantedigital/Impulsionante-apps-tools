@@ -8,21 +8,11 @@ import { resolverWorkspaceAtivo } from '@/server/auth/workspace-ativo'
 import { admin } from '@/server/supabase'
 import { fraseDeBanco } from '@/lib/erro-de-banco'
 import { detalheSeguro } from '@/lib/sanitizar-erro'
-import { motorPorId } from '@/lib/indulto-comutacao/registro'
-import type { Entrada, MotorDecreto, Resultado } from '@/lib/indulto-comutacao/tipos'
+import { preparar } from './preparar'
+import type { Entrada } from '@/lib/indulto-comutacao/tipos'
 
 const BASE = '/ferramentas/indulto-comutacao'
 const TABELA = 'indulto_comutacao_calculos'
-
-const Dados = z.object({
-  titulo: z
-    .string()
-    .trim()
-    .min(1, 'Dê um título ao cálculo — o nº de execução serve.')
-    .max(200, 'Use no máximo 200 caracteres no título.'),
-  decretoId: z.string().trim().min(1, 'Escolha o decreto.'),
-  entrada: z.record(z.string(), z.unknown()),
-})
 
 const Id = z.string().uuid()
 
@@ -35,26 +25,6 @@ async function contexto(): Promise<{ userId: string; ws: string } | { erro: stri
   const ws = await resolverWorkspaceAtivo()
   if (!ws) return { erro: 'Escolha um espaço de trabalho antes de salvar.' }
   return { userId: user.id, ws }
-}
-
-/**
- * Valida e RECALCULA no servidor.
- *
- * O cliente manda a entrada, nunca o resultado: o que fica gravado é sempre
- * produto do motor desta versão, e um cliente adulterado não consegue escrever
- * um resultado inventado com aparência de auditoria.
- */
-function preparar(
-  bruto: unknown,
-): { erro: string } | { motor: MotorDecreto; titulo: string; entrada: Entrada; resultado: Resultado } {
-  const r = Dados.safeParse(bruto)
-  if (!r.success) {
-    return { erro: r.error.issues[0]?.message ?? 'Confira os dados do cálculo.' }
-  }
-  const motor = motorPorId(r.data.decretoId)
-  if (!motor) return { erro: 'Este decreto não está disponível na calculadora.' }
-  const entrada = r.data.entrada as Entrada
-  return { motor, titulo: r.data.titulo, entrada, resultado: motor.calcular(entrada) }
 }
 
 export async function salvarCalculo(input: {
