@@ -285,8 +285,13 @@ some da tela (ela vira inútil, mesmo que alguém a leia no log).
 > tipo de acesso e clique em **Gerar link**. Mande o link para a pessoa por onde preferir —
 > ela abre, cria a senha dela e já entra no seu espaço de trabalho. **Trate o link como uma
 > senha:** quem tiver ele entra. Vale 7 dias, some depois de usado, e dá para cancelar na
-> mesma tela. Nada é enviado por e-mail pelo CRM — ele roda no **seu** servidor e não assume
-> que você tem um serviço de e-mail configurado.
+> mesma tela. Esse convite continua sendo um link que você copia e manda por onde preferir —
+> o CRM só envia e-mail de verdade (boas-vindas, recuperação de senha, liberação de produto,
+> confirmação de pagamento) depois que você configurar um servidor SMTP. São seis variáveis
+> **opcionais** (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`,
+> `SMTP_SECURE` — veja o `.env.example`), e sem elas nada quebra: os quatro modelos continuam
+> editáveis em **Configurações → Servidor**, e a própria tela mostra ali o que ainda falta
+> configurar.
 >
 > **Não** reabra o cadastro para isso: enquanto ele estiver aberto, qualquer um que descubra o
 > endereço do seu CRM pode criar uma conta.
