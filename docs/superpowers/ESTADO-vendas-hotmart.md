@@ -63,3 +63,17 @@ mas persiste em disco). As que mudam comportamento:
   é fino de propósito.
 - **Migration que falha impede o contentor de subir** em toda instalação que atualizar. A guarda
   em `tests/migracoes/idempotencia.spec.ts` varre as migrations da `0063` para cima.
+
+## Ressalvas que sobraram (não bloqueiam, mas ficam registadas)
+
+A re-revisão da ronda final deu as dez correções como endereçadas, sem quebras novas. Duas
+ficaram **corretas no código mas sem teste automatizado**, porque o repositório não tem
+precedente para as cobrir:
+
+- `lerModelo` propagar o erro do banco (`src/server/email/modelos.ts`) — remover essa linha não
+  faz nenhum teste falhar. Cobri-la exigiria mockar a cadeia do cliente Supabase, coisa que
+  nenhum teste deste repositório faz.
+- A ressincronização da tela (`ModelosEmailCard.tsx`) — não há testes de componente React aqui.
+
+Ambas seguem padrões já estabelecidos ao lado (`gravarModelo` e `MarcaCard.tsx`). O risco é que
+alguém as reverta no futuro sem nada acusar.
