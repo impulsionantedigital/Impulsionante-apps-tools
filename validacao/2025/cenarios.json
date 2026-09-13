@@ -111,5 +111,10 @@
     "penaCumpridaSEEU":{"anos":2,"meses":6,"dias":0},
     "dataNascimento":"1980-01-01","dataUltimaPrisao":"2022-06-01",
     "reincidente":"SIM","regime":"FECHADO"
-  }
+  },
+  {"_nome": "Posicionado contra a planilha 1a: justiça restaurativa SIM como único perfil do §2º (Inciso I especial só preenche por ela)", "penaSemViolencia": {"anos": 6, "meses": 0, "dias": 0}, "penaCumpridaSEEU": {"anos": 1, "meses": 0, "dias": 0}, "justicaRestaurativa": "SIM", "dataNascimento": "1980-01-01", "dataUltimaPrisao": "2024-06-01", "reincidente": "NÃO", "regime": "FECHADO"},
+  {"_nome": "Posicionado contra a planilha 1b: controle do 1a — justiça restaurativa NÃO", "penaSemViolencia": {"anos": 6, "meses": 0, "dias": 0}, "penaCumpridaSEEU": {"anos": 1, "meses": 0, "dias": 0}, "justicaRestaurativa": "NÃO", "dataNascimento": "1980-01-01", "dataUltimaPrisao": "2024-06-01", "reincidente": "NÃO", "regime": "FECHADO"},
+  {"_nome": "Posicionado contra a planilha 2: Inciso VIII §2º, remanescente 8a entre teto geral 6a e teto dobrado 12a (idoso, aberto)", "penaSemViolencia": {"anos": 10, "meses": 6, "dias": 0}, "penaCumpridaSEEU": {"anos": 2, "meses": 6, "dias": 0}, "dataNascimento": "1958-01-01", "dataUltimaPrisao": "2023-12-25", "reincidente": "NÃO", "regime": "ABERTO"},
+  {"_nome": "Posicionado contra a planilha 3: Art. 11, III mulher reincidente com filho, cumprido 1a8m entre 1/5 e 1/2 de 6a", "sexo": "FEMININO", "penaSemViolencia": {"anos": 6, "meses": 0, "dias": 0}, "penaCumpridaSEEU": {"anos": 1, "meses": 8, "dias": 0}, "filhoAte16": "SIM", "dataNascimento": "1985-01-01", "dataUltimaPrisao": "2024-04-25", "reincidente": "SIM", "regime": "FECHADO"},
+  {"_nome": "Posicionado contra a planilha 4: Art. 13 na fronteira exata D6+G7+G8 == N13 (10a, cumprido 2a, idoso)", "penaSemViolencia": {"anos": 10, "meses": 0, "dias": 0}, "penaCumpridaSEEU": {"anos": 2, "meses": 0, "dias": 0}, "dataNascimento": "1958-01-01", "dataUltimaPrisao": "2023-12-25", "reincidente": "NÃO", "regime": "FECHADO"}
 ]

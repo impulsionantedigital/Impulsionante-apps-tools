@@ -1,0 +1,6 @@
+# O extra [excel] NÃO é opcional: sem ele a formulas instala e importa normalmente,
+# e só quebra na hora de abrir o .xlsx, com ModuleNotFoundError: openpyxl.
+#
+# Verificado em Python 3.9.6. Não suba de versão sem testar: a lib mexe com
+# internals do openpyxl e quebra com frequência entre releases.
+formulas[excel]==1.3.4
