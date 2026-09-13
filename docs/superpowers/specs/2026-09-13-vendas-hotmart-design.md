@@ -458,8 +458,16 @@ SMTP_HOST=      SMTP_PORT=      SMTP_SECURE=
 SMTP_USER=      SMTP_PASS=      SMTP_FROM=
 ```
 
-Ausentes → nada é enfileirado, e a aba comercial mostra o motivo. O recurso nasce **desligado**,
+Ausentes → o envio não acontece e a aba comercial mostra o motivo. O recurso nasce **desligado**,
 nunca quebrado.
+
+🔴 **Mas enfileirar acontece na mesma, mesmo sem SMTP** — corrigido face à redação anterior desta
+secção, que dizia o contrário. A §8.4 promete que a fila não perde a credencial de acesso de quem
+comprou, e é esse o compromisso que vale: uma venda que entre por webhook enquanto o SMTP ainda não
+está configurado não pode perder o e-mail de boas-vindas, senão o comprador paga e nunca entra.
+`drenarEmail` sai cedo quando falta configuração, então as linhas esperam em segurança até alguém
+configurar — e envelhecem por `IDADE_MAX_MS`, para não despejarem credenciais expiradas meses
+depois.
 
 `.env.example` e `docs/DEPLOY.md` mudam: a frase "Nada é enviado por e-mail pelo CRM" passa a
 "não envia, a menos que você configure SMTP".
