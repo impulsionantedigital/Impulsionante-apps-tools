@@ -10,55 +10,19 @@
 // comportamento dele, não o da planilha, que é o oráculo.
 
 import { describe, it, expect } from 'vitest'
-import { runInThisContext } from 'node:vm'
 import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
 import { calcular2025 } from '@/lib/indulto-comutacao/motores/2025/motor'
 import { VEREDITOS } from '@/lib/indulto-comutacao/tipos'
 import { fmtDias } from '@/lib/indulto-comutacao/tempo'
 import type { Entrada } from '@/lib/indulto-comutacao/tipos'
+// O oráculo vem de `_oraculo.ts`, que é o ÚNICO carregador do engine.js — com o
+// guard que reprova se o invólucro CommonJS não expuser `calcular`. Não copie o
+// carregador para cá: foi uma cópia sem o guard que existiu aqui antes.
+import { RAIZ, engineOriginal } from './_oraculo'
 
-const raiz = fileURLToPath(new URL('../../', import.meta.url))
-
-type IncisoOriginal = {
-  geral?: string
-  situacao?: string
-  especial?: string
-  comutacao?: number | null
-  penaApos?: number | null
-}
-type SaidaOriginal = {
-  incisos: Record<string, IncisoOriginal>
-  resumo: {
-    totalPenasImpostas: string
-    totalPenaCumprida: string
-    penaCumpridaImpeditivos: string
-    penaRemanescente: string
-    fracoes: Record<string, string>
-  }
-  avisos: string[]
-}
 const cenarios = JSON.parse(
-  readFileSync(raiz + 'validacao/2025/cenarios.json', 'utf8'),
+  readFileSync(RAIZ + 'validacao/2025/cenarios.json', 'utf8'),
 ) as Array<Entrada & { _nome: string }>
-
-// 🔴 O engine.js é carregado à mão, pelo MESMO invólucro que o Node usa para
-// CommonJS, e não por `import`/`createRequire`. Dois motivos, os dois já sentidos
-// aqui: o transform do Vitest entrega o arquivo sem `module`, e o `package.json`
-// da raiz é `"type": "module"`, então um `require` normal trataria o `.js` como
-// ESM e devolveria um namespace vazio. Nos dois casos o UMD cai no ramo
-// `root.MotorIndulto` e o oráculo some. Assim ele roda exatamente como está em
-// disco, byte por byte, sem transform nenhum no meio.
-const engineOriginal = (() => {
-  const fonte = readFileSync(raiz + 'validacao/2025/engine.js', 'utf8')
-  const mod = { exports: {} as { calcular(input: unknown): SaidaOriginal } }
-  const invólucro = runInThisContext(
-    `(function (exports, module) {\n${fonte}\n})`,
-    { filename: raiz + 'validacao/2025/engine.js' },
-  ) as (exports: unknown, module: unknown) => void
-  invólucro(mod.exports, mod)
-  return mod.exports
-})()
 
 describe('paridade com validacao/2025/engine.js', () => {
   it('carrega os cenários de validação', () => {

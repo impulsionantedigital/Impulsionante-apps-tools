@@ -18,7 +18,13 @@
  *
  * Desvios em relação à planilha, todos marcados no corpo:
  *  - ⚠️ dois BUGS de fórmula, corrigidos (L145:L149 e G149);
- *  - ⚖️ duas AMBIGUIDADES jurídicas, PRESERVADAS e sinalizadas em `avisos`.
+ *  - ⚖️ três AMBIGUIDADES jurídicas, PRESERVADAS — nenhuma "consertada":
+ *     1. Inciso VIII: o `Rhalf` do §2º DOBRA o teto da pena remanescente em vez
+ *        de reduzi-lo à metade — único ponto do decreto em que "metade" se inverte;
+ *     2. `baseComut` (Art. 13 e §4º): base é o max entre cumprida e remanescente;
+ *     3. `montaComut`: a "pena após" desconta da pena TOTAL imposta (P9).
+ *    As duas últimas saem também no `avisos` do resultado (literais do engine.js);
+ *    as três estão em `AVISOS_2025.validarJuridicamente`, que é o que a tela mostra.
  */
 
 import type { Entrada, Resultado, ResultadoInciso, Veredito } from '../../tipos'

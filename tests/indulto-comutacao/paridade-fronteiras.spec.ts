@@ -210,10 +210,18 @@ describe('paridade nos demais limiares', () => {
 // ---------------------------------------------------------------------------
 // Fuzz diferencial — SEMENTE FIXA.
 // ---------------------------------------------------------------------------
-// 🔴 O gerador é um LCG próprio, com semente constante, e não `Math.random()`:
-// um teste que sorteia diferente a cada execução falha intermitente e, pior,
-// falha com um caso que ninguém consegue reproduzir. Aqui a sequência é sempre a
-// mesma; mudar a semente é mudar o teste, e deve ser deliberado.
+// 🔴 O gerador tem semente constante, e não `Math.random()`: um teste que sorteia
+// diferente a cada execução falha intermitente e, pior, falha com um caso que
+// ninguém consegue reproduzir. Aqui a sequência é sempre a mesma; mudar a semente
+// é mudar o teste, e deve ser deliberado.
+//
+// 🔴 E o gerador é mulberry32, de INTEIROS de 32 bits — não troque por um LCG
+// escrito com `*` e `%` em `number`. Foi o que houve aqui antes: `s * 1103515245`
+// passa de 2^53, os bits baixos se perdem em ponto flutuante, a sequência cai num
+// ciclo curto de estados pares, e como cada caso consome ~55 sorteios os casos se
+// repetem. MEDIDO: 1200 casos anunciados, 457 distintos (uniforme) e 421
+// (enviesado). O teste passava verde anunciando uma cobertura que não tinha. Com o
+// mulberry32, os 1200 são distintos nas duas rodadas.
 //
 // Cobre o que a varredura não cobre: combinações de flags entre si, e entrada
 // SUJA (`undefined`, `''`, `'lixo'`, número em string) — que é o que chega de um
@@ -233,8 +241,15 @@ describe('fuzz diferencial (semente fixa)', () => {
 
   function roda(nome: string, semente: number, casos: number, vies: boolean) {
     it(`${nome} · ${casos} casos`, () => {
-      let s = semente
-      const rnd = () => ((s = (s * 1103515245 + 12345) % 2147483648) / 2147483648)
+      // mulberry32: estado de 32 bits, só aritmética INTEIRA (`Math.imul`, `>>> 0`).
+      let s = semente >>> 0
+      const rnd = () => {
+        s = (s + 0x6d2b79f5) >>> 0
+        let t = s
+        t = Math.imul(t ^ (t >>> 15), t | 1)
+        t ^= t + Math.imul(t ^ (t >>> 7), t | 61)
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+      }
       const pick = <T>(xs: readonly T[]): T => xs[Math.floor(rnd() * xs.length)]
       const tempo = () => ({ anos: Math.floor(rnd() * (vies ? 8 : 30)), meses: Math.floor(rnd() * 13), dias: Math.floor(rnd() * 31) })
 
