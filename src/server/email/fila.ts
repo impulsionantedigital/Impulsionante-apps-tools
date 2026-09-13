@@ -2,12 +2,27 @@ import 'server-only'
 import { criarOrcamento, type Orcamento } from '@/lib/orcamento-tick'
 import { admin } from '@/server/supabase'
 import { backoff, deveDesistir } from '@/lib/retentativa'
-import { montarEnvelope, htmlParaTexto } from '@/lib/email/envelope'
+import { htmlParaTexto } from '@/lib/email/envelope'
+import { renderizarHtml, renderizarTexto } from '@/lib/email/merge'
+import type { Modelo } from '@/lib/email/padroes'
 import type { TipoModelo } from '@/lib/email/tipos'
 import { lerModelo } from '@/server/email/modelos'
 import { configAtual, enviarEnvelope } from '@/server/email/enviar'
 
 const LIMITE_POR_TICK = 20
+
+// Função pura: renderiza o que vai para a fila sem depender de configuração de SMTP.
+// enfileirar() não pode falhar por falta de config — o remetente só é lido de novo, na hora
+// do envio, dentro de drenarEmail.
+export function renderizarParaFila(
+  modelo: Modelo,
+  valores: Record<string, string>,
+): { assunto: string; html: string } {
+  return {
+    assunto: renderizarTexto(modelo.assunto, valores),
+    html: renderizarHtml(modelo.html, valores),
+  }
+}
 
 type LinhaFila = {
   id: string
@@ -25,17 +40,14 @@ export async function enfileirar(args: {
   para: string
   valores: Record<string, string>
 }): Promise<{ ok: true } | { erro: string }> {
-  const leitura = configAtual()
-  if (!leitura.ok) return { erro: 'smtp_nao_configurado' }
-
   const modelo = await lerModelo(args.workspaceId, args.tipo)
-  const envelope = montarEnvelope(leitura.config, args.para, modelo, args.valores)
+  const { assunto, html } = renderizarParaFila(modelo, args.valores)
 
   const { error } = await admin().from('emails_fila').insert({
     workspace_id: args.workspaceId,
-    destinatario: envelope.para,
-    assunto: envelope.assunto,
-    html: envelope.html,
+    destinatario: args.para,
+    assunto,
+    html,
   })
   if (error) return { erro: 'falha_enfileirar' }
   return { ok: true }
