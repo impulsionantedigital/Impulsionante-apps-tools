@@ -1,0 +1,165 @@
+'use server'
+
+import { revalidatePath } from 'next/cache'
+import { z } from 'zod'
+import { exigirEngineLiberado } from '@/server/license/exigir'
+import { exigirSessao } from '@/server/auth/sessao'
+import { resolverWorkspaceAtivo } from '@/server/auth/workspace-ativo'
+import { admin } from '@/server/supabase'
+import { fraseDeBanco } from '@/lib/erro-de-banco'
+import { detalheSeguro } from '@/lib/sanitizar-erro'
+import { motorPorId } from '@/lib/indulto-comutacao/registro'
+import type { Entrada, MotorDecreto, Resultado } from '@/lib/indulto-comutacao/tipos'
+
+const BASE = '/ferramentas/indulto-comutacao'
+const TABELA = 'indulto_comutacao_calculos'
+
+const Dados = z.object({
+  titulo: z
+    .string()
+    .trim()
+    .min(1, 'Dê um título ao cálculo — o nº de execução serve.')
+    .max(200, 'Use no máximo 200 caracteres no título.'),
+  decretoId: z.string().trim().min(1, 'Escolha o decreto.'),
+  entrada: z.record(z.string(), z.unknown()),
+})
+
+const Id = z.string().uuid()
+
+const NAO_ACHOU =
+  'Este cálculo não existe mais, ou não está na sua conta. Recarregue a lista e tente de novo.'
+
+/** Quem está salvando. Chamada FORA do `try`: `exigirSessao` redireciona lançando. */
+async function contexto(): Promise<{ userId: string; ws: string } | { erro: string }> {
+  const user = await exigirSessao()
+  const ws = await resolverWorkspaceAtivo()
+  if (!ws) return { erro: 'Escolha um espaço de trabalho antes de salvar.' }
+  return { userId: user.id, ws }
+}
+
+/**
+ * Valida e RECALCULA no servidor.
+ *
+ * O cliente manda a entrada, nunca o resultado: o que fica gravado é sempre
+ * produto do motor desta versão, e um cliente adulterado não consegue escrever
+ * um resultado inventado com aparência de auditoria.
+ */
+function preparar(
+  bruto: unknown,
+): { erro: string } | { motor: MotorDecreto; titulo: string; entrada: Entrada; resultado: Resultado } {
+  const r = Dados.safeParse(bruto)
+  if (!r.success) {
+    return { erro: r.error.issues[0]?.message ?? 'Confira os dados do cálculo.' }
+  }
+  const motor = motorPorId(r.data.decretoId)
+  if (!motor) return { erro: 'Este decreto não está disponível na calculadora.' }
+  const entrada = r.data.entrada as Entrada
+  return { motor, titulo: r.data.titulo, entrada, resultado: motor.calcular(entrada) }
+}
+
+export async function salvarCalculo(input: {
+  titulo: string
+  decretoId: string
+  entrada: Entrada
+}): Promise<{ ok: true; id: string } | { erro: string }> {
+  await exigirEngineLiberado()
+  const ctx = await contexto()
+  if ('erro' in ctx) return ctx
+  const p = preparar(input)
+  if ('erro' in p) return { erro: p.erro }
+
+  try {
+    // 🔴 workspace_id e user_id vêm da SESSÃO, nunca do input: admin() é
+    // service-role e não passa por RLS, então o isolamento acontece aqui.
+    const { data, error } = await admin()
+      .from(TABELA)
+      .insert({
+        workspace_id: ctx.ws,
+        user_id: ctx.userId,
+        decreto_id: p.motor.id,
+        motor_versao: p.motor.versao,
+        titulo: p.titulo,
+        entrada: p.entrada,
+        resultado: p.resultado,
+      })
+      .select('id')
+      .single()
+    if (error) throw error
+
+    revalidatePath(BASE)
+    return { ok: true, id: (data as { id: string }).id }
+  } catch (err) {
+    console.error('[indulto-comutacao] salvarCalculo', detalheSeguro(err))
+    return { erro: fraseDeBanco(err) }
+  }
+}
+
+export async function atualizarCalculo(input: {
+  id: string
+  titulo: string
+  decretoId: string
+  entrada: Entrada
+}): Promise<{ ok: true } | { erro: string }> {
+  await exigirEngineLiberado()
+  const ctx = await contexto()
+  if ('erro' in ctx) return ctx
+  const id = Id.safeParse(input.id)
+  if (!id.success) return { erro: NAO_ACHOU }
+  const p = preparar(input)
+  if ('erro' in p) return { erro: p.erro }
+
+  try {
+    // 🔴 O filtro por user_id NÃO é redundante: service-role não passa por RLS.
+    // E o `.select('id')` também não: sem ele, atualizar o id de OUTRO membro
+    // não afeta linha nenhuma, não dá erro, e a action devolveria ok.
+    const { data, error } = await admin()
+      .from(TABELA)
+      .update({
+        decreto_id: p.motor.id,
+        motor_versao: p.motor.versao,
+        titulo: p.titulo,
+        entrada: p.entrada,
+        resultado: p.resultado,
+        atualizado_em: new Date().toISOString(),
+      })
+      .eq('id', id.data)
+      .eq('workspace_id', ctx.ws)
+      .eq('user_id', ctx.userId)
+      .select('id')
+    if (error) throw error
+    if (!data?.length) return { erro: NAO_ACHOU }
+
+    revalidatePath(BASE)
+    revalidatePath(`${BASE}/${id.data}`)
+    return { ok: true }
+  } catch (err) {
+    console.error('[indulto-comutacao] atualizarCalculo', detalheSeguro(err))
+    return { erro: fraseDeBanco(err) }
+  }
+}
+
+export async function excluirCalculo(idBruto: string): Promise<{ ok: true } | { erro: string }> {
+  await exigirEngineLiberado()
+  const ctx = await contexto()
+  if ('erro' in ctx) return ctx
+  const id = Id.safeParse(idBruto)
+  if (!id.success) return { erro: NAO_ACHOU }
+
+  try {
+    const { data, error } = await admin()
+      .from(TABELA)
+      .delete()
+      .eq('id', id.data)
+      .eq('workspace_id', ctx.ws)
+      .eq('user_id', ctx.userId)
+      .select('id')
+    if (error) throw error
+    if (!data?.length) return { erro: NAO_ACHOU }
+
+    revalidatePath(BASE)
+    return { ok: true }
+  } catch (err) {
+    console.error('[indulto-comutacao] excluirCalculo', detalheSeguro(err))
+    return { erro: fraseDeBanco(err) }
+  }
+}
