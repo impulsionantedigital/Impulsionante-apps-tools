@@ -7,6 +7,7 @@ import { drenarMidia } from '@/server/canais/midia-tick'
 import { drenarPerfis } from '@/server/canais/perfil-tick'
 import { tickCustom } from '@/server/custom/tick'
 import { expurgar } from '@/server/canais/expurgo'
+import { drenarEmail } from '@/server/email/fila'
 import { criarOrcamento } from '@/lib/orcamento-tick'
 import { detalheSeguro } from '@/lib/sanitizar-erro'
 
@@ -52,7 +53,12 @@ export async function POST(req: Request) {
   await drenarFila(orcamento).catch((err) => {
     console.warn('[tick] braço da fila de saída falhou:', detalheSeguro(err))
   })
-  
+
+  const email = await drenarEmail(orcamento).catch((err) => {
+    console.warn('[tick] braço de e-mail falhou:', detalheSeguro(err))
+    return { enviados: 0, falhas: 0, pulados: 0 }
+  })
+
   
   
   
@@ -105,6 +111,6 @@ export async function POST(req: Request) {
     return { rodou: false, jobs: 0, custos: 0, conversasSimulador: 0, objetos: 0 }
   })
   return Response.json({
-    data: { automacao, entrega, licenca, agente, midia, perfis, custom, expurgo },
+    data: { automacao, entrega, licenca, agente, midia, perfis, custom, expurgo, email },
   })
 }
