@@ -291,7 +291,9 @@ de esconder o seletor. Quando 2024 entrar, não há mudança de fluxo.
 
 Componentes reaproveitados de `src/components/ui/`: `CabecalhoPagina`, `Campo`, `Botao`,
 `Pill`, `ListCard`, `EstadoVazio`, `KpiCard`. Menu: um `<ItemNav>` em
-`src/components/shell/Rail.tsx` e outro em `NavMobile.tsx`.
+`src/components/shell/Rail.tsx` — e só ali. `NavMobile` não tem lista própria: ele envolve o
+mesmo `Rail` como `children` (`src/app/(app)/layout.tsx:61-68`), então o item aparece nos dois
+tamanhos de tela a partir de uma única edição.
 
 ## 8. Testes
 
@@ -322,8 +324,8 @@ Retenção automática e exportação ficam **fora do escopo** desta entrega.
    **Portão: zero divergências** fora dos dois bugs documentados. Nada avança sem isso.
 3. **Questionário e resultado** — telas, cálculo no navegador, impressão. Ainda sem salvar.
 4. **Persistência** — migration, server actions, lista, abrir, editar, excluir, aviso de versão.
-5. **Acabamento** — hub `/ferramentas`, itens de menu em `Rail.tsx` e `NavMobile.tsx`, linha
-   `validacao` no `.dockerignore`.
+5. **Acabamento** — hub `/ferramentas`, item de menu em `Rail.tsx`, linha `validacao` no
+   `.dockerignore`.
 
 O passo 2 depende da entrega da planilha, do `engine.js` e do `scenarios.json`. Os passos 1 e 3
 não dependem: a forma do resultado está definida no contrato da seção 4.2.
