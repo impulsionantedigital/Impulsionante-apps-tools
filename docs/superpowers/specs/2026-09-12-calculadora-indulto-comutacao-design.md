@@ -289,8 +289,10 @@ Requisitos de tela herdados do decreto:
 Com um motor só no registro, a tela **pré-seleciona e mostra** qual decreto está em uso, em vez
 de esconder o seletor. Quando 2024 entrar, não há mudança de fluxo.
 
-Componentes reaproveitados de `src/components/ui/`: `CabecalhoPagina`, `Campo`, `Botao`,
-`Pill`, `ListCard`, `EstadoVazio`, `KpiCard`. Menu: um `<ItemNav>` em
+Componentes reaproveitados de `src/components/ui/`: `CabecalhoPagina` e `EstadoVazio` — a API
+de cada um é conferida no arquivo antes do uso, nunca presumida. Os campos do questionário são
+próprios da ferramenta: o `Campo` do produto é de formulário comum e não cobre o campo de tempo
+(anos/meses/dias), que é o tipo mais usado aqui. Menu: um `<ItemNav>` em
 `src/components/shell/Rail.tsx` — e só ali. `NavMobile` não tem lista própria: ele envolve o
 mesmo `Rail` como `children` (`src/app/(app)/layout.tsx:61-68`), então o item aparece nos dois
 tamanhos de tela a partir de uma única edição.
