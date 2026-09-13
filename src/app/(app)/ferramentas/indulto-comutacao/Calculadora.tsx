@@ -5,6 +5,7 @@ import type { Entrada, MotorDecreto } from '@/lib/indulto-comutacao/tipos'
 import { padraoDoCampo } from '@/lib/indulto-comutacao/padrao'
 import Questionario from './Questionario'
 import Resultado from './Resultado'
+import BarraSalvar from './BarraSalvar'
 import estilos from './calculadora.module.css'
 
 /**
@@ -30,9 +31,13 @@ export function entradaInicial(motor: MotorDecreto): Entrada {
 export default function Calculadora({
   motor,
   inicial,
+  calculoId,
+  tituloInicial,
 }: {
   motor: MotorDecreto
   inicial?: Entrada
+  calculoId?: string
+  tituloInicial?: string
 }) {
   const [entrada, setEntrada] = useState<Entrada>(() => inicial ?? entradaInicial(motor))
 
@@ -49,6 +54,12 @@ export default function Calculadora({
         <Questionario secoes={motor.questionario} entrada={entrada} aoMudar={aoMudar} />
       </div>
       <div className={estilos.coluna}>
+        <BarraSalvar
+          motor={motor}
+          entrada={entrada}
+          calculoId={calculoId}
+          tituloInicial={tituloInicial}
+        />
         <Resultado motor={motor} resultado={resultado} />
       </div>
     </div>
