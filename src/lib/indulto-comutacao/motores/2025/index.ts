@@ -1,4 +1,5 @@
 import type { MotorDecreto } from '../../tipos'
+import { QUESTIONARIO_2025 } from './questionario'
 
 /**
  * Decreto nº 12.970/2025 — indulto natalino.
@@ -6,8 +7,8 @@ import type { MotorDecreto } from '../../tipos'
  * `versao` sobe a cada mudança de fórmula: é ela que fica gravada junto do
  * cálculo salvo e permite avisar o membro quando um resultado antigo muda.
  *
- * ⚠️ ESQUELETO. As Tasks 4, 5 e 6 substituem questionario, incisos, avisos e
- * calcular pelos transcritos de validacao/2025/.
+ * ⚠️ ESQUELETO. As Tasks 5 e 6 substituem incisos, avisos e calcular pelos
+ * transcritos de validacao/2025/.
  */
 export const motor2025: MotorDecreto = {
   id: 'indulto-comutacao-2025',
@@ -15,13 +16,7 @@ export const motor2025: MotorDecreto = {
   rotulo: 'Decreto 12.970/2025 — indulto natalino',
   versao: '0.1.0',
   dataBase: '2025-12-25',
-  questionario: [
-    {
-      id: 'identificacao',
-      titulo: 'Identificação',
-      campos: [{ tipo: 'texto', chave: 'sentenciado', rotulo: 'Sentenciado' }],
-    },
-  ],
+  questionario: QUESTIONARIO_2025,
   incisos: {
     indulto: [
       {
