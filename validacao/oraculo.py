@@ -23,6 +23,7 @@ O mapeamento de células (`build_inputs` e `OUT_MAP`) é o deles, sem alteraçã
 o que mudou está marcado com "ADAPTAÇÃO".
 """
 import datetime
+import hashlib
 import json
 import os
 import sys
@@ -225,6 +226,9 @@ def main():
             'teste passar apaga a única evidência independente que o motor tem.'
         ),
         'planilha': ARQUIVO,
+        # O teste compara com o sha256 do arquivo na árvore: planilha trocada sem
+        # rodar o oráculo de novo reprova, em vez de passar contra o congelado velho.
+        'planilhaSha256': hashlib.sha256(open(SRC, 'rb').read()).hexdigest(),
         'celulas': {k: 'RESULTADO!' + cel for k, cel in OUT_MAP.items()},
         'celulasApoio': ['CÁLCULO!' + cel for cel in APOIO],
         'cenarios': saida,

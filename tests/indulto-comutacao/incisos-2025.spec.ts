@@ -45,15 +45,17 @@ describe('incisos de comutação', () => {
 })
 
 describe('avisos', () => {
-  it('traz as quatro ambiguidades jurídicas a validar', () => {
-    // As duas primeiras vêm do `avisos` do engine.js; as duas últimas saíram da
-    // auditoria do porte (Task 6) e não têm contraparte no engine.
-    expect(AVISOS_2025.validarJuridicamente).toHaveLength(4)
+  it('traz as cinco ambiguidades jurídicas a validar', () => {
+    // As duas primeiras vêm do `avisos` do engine.js; a terceira e a quarta saíram
+    // da auditoria do porte (Task 6); a quinta, da validação contra a planilha
+    // (Task 7). Só as duas primeiras têm contraparte no engine.
+    expect(AVISOS_2025.validarJuridicamente).toHaveLength(5)
     const texto = AVISOS_2025.validarJuridicamente.join(' ')
     expect(texto).toMatch(/pena total imposta/i)
     expect(texto).toMatch(/remanescente/i)
     expect(texto).toMatch(/DOBRA o teto/i)
     expect(texto).toMatch(/NÃO SE APLICA/i)
+    expect(texto).toMatch(/Art\. 13.*comparação estrita/i)
   })
 
   it('traz as quatro notas fixas da POC', () => {

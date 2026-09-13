@@ -10,7 +10,7 @@ validacao/
 ├── requirements.txt      formulas[excel]==1.3.4
 └── 2025/
     ├── planilha.xlsx     a planilha original do Decreto 12.970/2025 — NÃO EDITAR
-    ├── cenarios.json     as entradas: 15 da POC + 5 posicionados
+    ├── cenarios.json     as entradas: 15 da POC + 6 posicionados
     ├── esperado.json     GERADO pelo oraculo.py — NÃO EDITAR À MÃO
     ├── engine.js         a POC em JS de onde o motor foi portado
     ├── validate-original.py, run_engine.js, ui.js   o harness e a tela da POC, como vieram
@@ -58,7 +58,9 @@ Rode o oráculo de novo quando:
 
 - **acrescentar ou mudar um cenário** em `cenarios.json`. O teste
   "o congelado está em dia com cenarios.json" reprova até você rodar;
-- **chegar uma planilha nova ou corrigida** dos autores do método;
+- **chegar uma planilha nova ou corrigida** dos autores do método. O `esperado.json` guarda o
+  sha256 da planilha, e o teste "o congelado é da planilha que está na árvore" reprova até você
+  rodar;
 - **surgir um motor novo** (decreto de outro ano). Nesse caso a planilha nova traz células novas,
   e o `build_inputs`/`OUT_MAP` do `oraculo.py` precisa de revisão, porque não serve para outro ano.
 
@@ -71,9 +73,21 @@ Duas são **bugs de fórmula da planilha**, que o motor corrige de propósito:
 - **G149**: o quantum do §4º do Art. 13 é condicionado a `F148` (o Art. 13) em vez de `F149`
   (o próprio §4º). O erro tem dois lados, e o teste trata os dois:
   1. Art. 13 preenche e §4º não: a planilha **mostra** um quantum de 2/3 indevido. O motor não mostra.
-  2. §4º preenche e Art. 13 não (fronteira `==`, já que o Art. 13 usa `<` e o §4º usa `<=`): a
-     planilha **esconde** o quantum devido. O motor mostra, e o teste confere o valor contra a
-     fórmula do G149 com `F148→F149`, aplicada às bases que a planilha avaliou (`Cálculo!P6…P17`).
+  2. §4º preenche e Art. 13 não: a planilha **esconde** o quantum devido. O motor mostra, e o
+     teste confere o valor contra a fórmula do G149 com `F148→F149`, aplicada às bases que a
+     planilha avaliou (`Cálculo!P6…P17`). Este lado é **consequência** do `<` estrito do Art. 13
+     (ver abaixo): F148 e F149 só divergem assim quando a pena cumprida é exatamente a fração.
+
+Outra é **provável erro da planilha, preservado** (não corrigido, porque a decisão é jurídica):
+
+- **`Cálculo!H138`, Art. 13**: exige pena cumprida **maior** que 1/5 (1/4 se reincidente), com `<`
+  estrito. Todos os demais dispositivos comparam com `<=`, inclusive o §4º do mesmo artigo
+  (`H141`) e os incisos do Art. 11 (`L129`, `L132`, `L135`). O texto do dispositivo
+  (`Cálculo!C138`) fala em "tenham cumprido […] um quinto da pena", o que inclui o cumprimento
+  exato. Efeito: quem cumpriu **exatamente** a fração tem a comutação do Art. 13 negada. O motor é
+  fiel à planilha, e o ponto é exibido ao advogado em "Pontos a validar juridicamente". O cenário
+  posicionado 4 fica nessa fronteira: ele prova que o motor reproduz a planilha, **não** que o
+  `<` está certo.
 
 A outra é **arredondamento**. Quantum e pena após saem da planilha como texto
 (`"X anos Y meses Z dias"`, com `ROUNDDOWN`/`ROUND`), e o teste compara em dias com
@@ -87,8 +101,8 @@ A outra é **arredondamento**. Quantum e pena após saem da planilha como texto
 - **Não resolva ambiguidade jurídica sozinho.** Se a planilha divergir do motor por algo que não é
   porte, nem um dos bugs acima, nem erro do harness (célula, prefixo, tipo), é **bug novo da
   planilha**. Pare e leve ao dono do produto. Corrigir a planilha é decisão dos autores do método.
-  As ambiguidades já conhecidas (o teto dobrado do Inciso VIII, a base da comutação, a base da pena
-  após) são preservadas no motor e sinalizadas na tela.
+  As ambiguidades já conhecidas (o teto dobrado do Inciso VIII, o `<` estrito do Art. 13, a base da
+  comutação, a base da pena após) são preservadas no motor e sinalizadas na tela.
 - **Não contorne uma fórmula que a `formulas` não entende.** Anote-a, reduza o cenário e trate como
   achado: é exatamente ali que o porte pode estar errado.
 

@@ -16,10 +16,11 @@
 
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
+import { createHash } from 'node:crypto'
 import { calcular2025 } from '@/lib/indulto-comutacao/motores/2025/motor'
 import { VEREDITOS } from '@/lib/indulto-comutacao/tipos'
-import { fmtDias } from '@/lib/indulto-comutacao/tempo'
-import type { Entrada, ResultadoInciso } from '@/lib/indulto-comutacao/tipos'
+import { dias, fmtDias } from '@/lib/indulto-comutacao/tempo'
+import type { Entrada, ResultadoInciso, Tempo } from '@/lib/indulto-comutacao/tipos'
 import { RAIZ } from './_oraculo'
 
 type Celula = string | number | boolean
@@ -34,9 +35,18 @@ type CenarioCongelado = {
 }
 
 const esperado = JSON.parse(readFileSync(RAIZ + 'validacao/2025/esperado.json', 'utf8')) as {
+  /** sha256 do planilha.xlsx que o oráculo avaliou. */
+  planilhaSha256: string
   celulas: Record<string, string>
   cenarios: CenarioCongelado[]
 }
+
+/**
+ * Os sufixos que este teste sabe comparar. Chave da planilha com sufixo fora desta
+ * lista seria ignorada EM SILÊNCIO pelo laço de comparação — por isso há um teste
+ * que reprova se aparecer uma.
+ */
+const SUFIXOS_COMPARADOS = new Set(['geral', 'especial', 'comutacaoTxt', 'penaAposTxt'])
 const cenariosFonte = JSON.parse(readFileSync(RAIZ + 'validacao/2025/cenarios.json', 'utf8')) as Array<
   Entrada & { _nome: string }
 >
@@ -102,6 +112,32 @@ describe('motor de 2025 contra a planilha original (validacao/2025/esperado.json
     expect(esperado.cenarios.map((c) => c.entrada)).toEqual(cenariosFonte)
   })
 
+  it('o congelado é da planilha que está na árvore (senão: rode validacao/oraculo.py 2025)', () => {
+    // Planilha trocada sem rodar o oráculo deixaria este teste comparando o motor
+    // com a saída de OUTRA planilha.
+    const sha = createHash('sha256').update(readFileSync(RAIZ + 'validacao/2025/planilha.xlsx')).digest('hex')
+    expect(
+      esperado.planilhaSha256,
+      'validacao/2025/planilha.xlsx não é a planilha que gerou o esperado.json. Rode ' +
+        '`python validacao/oraculo.py 2025` e revise o diff do esperado.json antes de commitar.',
+    ).toBe(sha)
+  })
+
+  it('toda chave que o oráculo exporta é comparada por este teste', () => {
+    const chaves = new Set<string>(Object.keys(esperado.celulas))
+    for (const c of esperado.cenarios) for (const k of Object.keys(c.planilha)) chaves.add(k)
+    for (const chave of chaves) {
+      const ponto = chave.indexOf('.')
+      const sufixo = ponto > 0 ? chave.slice(ponto + 1) : '<sem sufixo>'
+      expect(
+        SUFIXOS_COMPARADOS.has(sufixo),
+        `a chave "${chave}" do esperado.json tem sufixo "${sufixo}", que motor-2025.spec.ts não compara — ` +
+          'ela seria ignorada em silêncio. Se o OUT_MAP do oraculo.py ganhou uma saída nova, ensine a ' +
+          'comparação a este teste e só então acrescente o sufixo a SUFIXOS_COMPARADOS.',
+      ).toBe(true)
+    }
+  })
+
   it('cobre todo dispositivo que o motor produz', () => {
     const ids = calcular2025(cenariosFonte[0]).incisos.map((i) => i.id)
     for (const id of ids) expect(esperado.celulas[`${id}.geral`], id).toBeDefined()
@@ -152,17 +188,23 @@ describe('motor de 2025 contra a planilha original (validacao/2025/esperado.json
             // requisito, sem comutação.
             if (f148 === PREENCHE && f149 === NAO_PREENCHE) {
               expect(durDias(txtQ), `${cQ}: esperava a planilha exibindo o valor indevido do G149`).not.toBeNull()
+              expect(durDias(txtA), `${cA}: esperava a planilha exibindo a pena após indevida do L149`).not.toBeNull()
               expect(inciso.quantum).toBeNull()
               expect(inciso.penaApos).toBeNull()
               return
             }
 
             // ⚠️ BUG G149, lado 2 — o espelho do anterior, que nenhum dos 15 cenários
-            // originais exercitava. Com o §4º preenchendo e o Art. 13 não (a fronteira
-            // exata: o Art. 13 usa `<`, o §4º usa `<=`), a planilha ESCONDE o quantum
-            // de quem tem direito e mostra "Sem Comutação". O motor mostra o valor; a
-            // conferência é contra a própria fórmula do G149 com F148→F149, aplicada
-            // às bases que a planilha avaliou.
+            // originais exercitava. É CONSEQUÊNCIA de outro ponto da planilha: o `<`
+            // estrito do Art. 13 (Cálculo!H138), contra o `<=` do §4º (H141). F148 e
+            // F149 só divergem neste sentido quando a pena cumprida é EXATAMENTE a
+            // fração — o Art. 13 nega, o §4º concede. Esse `<` é fiel à planilha e
+            // provável erro dela (o texto do Art. 13 fala em "tenham cumprido um quinto
+            // da pena"); o motor o preserva e o exibe ao advogado em "Pontos a validar
+            // juridicamente". Sobre esse resultado, o G149 ainda ESCONDE o quantum do
+            // §4º e mostra "Sem Comutação". O motor mostra o valor; a conferência é
+            // contra a própria fórmula do G149 com F148→F149, aplicada às bases que a
+            // planilha avaliou.
             if (f148 === NAO_PREENCHE && f149 === PREENCHE) {
               expect(txtQ, cQ).toBe(SEM_COMUTACAO)
               expect(txtA, cA).toBe(SEM_COMUTACAO)
@@ -205,15 +247,44 @@ describe('motor de 2025 contra a planilha original (validacao/2025/esperado.json
 // o que motivou o cenário. Se um deles reprovar depois de alguém mexer na entrada,
 // o cenário deixou de testar o que diz testar.
 describe('cenários posicionados: continuam na região que justificou cada um', () => {
-  const buscar = (prefixo: string) => {
+  // Com os dois-pontos: sem eles, "3" casaria também com "3b".
+  const buscar = (id: string) => {
+    const prefixo = `Posicionado contra a planilha ${id}:`
     const c = esperado.cenarios.find((x) => x._nome.startsWith(prefixo))
     if (!c) throw new Error(`cenário ausente: ${prefixo}`)
     return c
   }
 
+  /**
+   * Os tempos da COLUNA N, que é a que as fórmulas de requisito usam (I96, L135,
+   * H138…), reconstruídos da entrada pela fórmula de N (N6 = M6+(L6*30)+(K6*360);
+   * N9 = SUM(N6:N8); N13 = SUM(N10:N12); N16 = N9-N13).
+   *
+   * O esperado.json guarda a coluna P (é dela que G14x e L14x partem). Nesta
+   * planilha N e P têm fórmulas idênticas linha a linha — a remição (I25) não entra
+   * em nenhuma das duas; só no inciso IV —, mas nada garante que continue assim.
+   * Por isso a igualdade N = P é AFIRMADA aqui, contra os valores que a planilha
+   * avaliou, e não suposta.
+   */
+  const colunaN = (c: CenarioCongelado) => {
+    const e = c.entrada
+    const t = (k: string) => dias(e[k] as Tempo | undefined)
+    const N6 = t('penaImpeditiva')
+    const N9 = N6 + t('penaViolencia') + t('penaSemViolencia')
+    const N13 = t('penaCumpridaSEEU') + t('penaCumpridaNaoSEEU')
+    const N16 = N9 - N13
+    expect({ N6, N9, N13, N16 }, `${c._nome}: N ≠ P`).toEqual({
+      N6: c.apoio.P6,
+      N9: c.apoio.P9,
+      N13: c.apoio.P13,
+      N16: c.apoio.P16,
+    })
+    return { N6, N9, N13, N16 }
+  }
+
   it('1: justiça restaurativa (E51) é o único critério do §2º e muda o resultado', () => {
-    const sim = buscar('Posicionado contra a planilha 1a')
-    const nao = buscar('Posicionado contra a planilha 1b')
+    const sim = buscar('1a')
+    const nao = buscar('1b')
     const { justicaRestaurativa: _a, _nome: _b, ...restoSim } = sim.entrada
     const { justicaRestaurativa: _c, _nome: _d, ...restoNao } = nao.entrada
     expect(restoSim).toEqual(restoNao)
@@ -226,27 +297,46 @@ describe('cenários posicionados: continuam na região que justificou cada um', 
   })
 
   it('2: Inciso VIII §2º — remanescente de 8 anos, entre o teto geral (6) e o dobrado (12)', () => {
-    const c = buscar('Posicionado contra a planilha 2')
+    const c = buscar('2')
+    const { N16 } = colunaN(c)
     // Cálculo!I96: N16 <= 6*360 (geral); Cálculo!R96: N16 <= 6*360*2 (especial).
-    expect((c.apoio.P16 as number) > 6 * 360 && (c.apoio.P16 as number) <= 12 * 360).toBe(true)
+    expect(N16 > 6 * 360 && N16 <= 12 * 360).toBe(true)
     expect(c.planilha['art9_VIII.geral']).toBe(NAO_PREENCHE)
     // A planilha DOBRA o teto: o *2 do Rhalf vem dela, não do engine.js.
     expect(c.planilha['art9_VIII.especial']).toBe(PREENCHE)
   })
 
   it('3: Art. 11, III — cumprido entre 1/5 e 1/2 da pena não impeditiva', () => {
-    const c = buscar('Posicionado contra a planilha 3')
-    const cumprida = c.apoio.P13 as number
-    const naoImpeditiva = (c.apoio.P9 as number) - (c.apoio.P6 as number)
-    expect(cumprida > naoImpeditiva / 5 && cumprida < naoImpeditiva / 2).toBe(true)
+    const c = buscar('3')
+    const { N6, N9, N13 } = colunaN(c)
+    const naoImpeditiva = N9 - N6
+    expect(N13 > naoImpeditiva / 5 && N13 < naoImpeditiva / 2).toBe(true)
     // Cálculo!L135: (D6+G8+G7) <= N13 — a planilha exige 1/5, como o engine.js.
     expect(c.planilha['art11_III.geral']).toBe(PREENCHE)
   })
 
+  it('3b: Art. 11, III — cumprido entre 1/5 e 1/4, o que separa 1/5 de 1/4 e de 1/2', () => {
+    // O cenário 3 (600 dias de 2160) fica acima de 1/4 (540): uma regressão do
+    // Art. 11, III para 1/4 passaria nele. Este fica abaixo.
+    const c = buscar('3b')
+    const { N6, N9, N13 } = colunaN(c)
+    const naoImpeditiva = N9 - N6
+    expect(N13 > naoImpeditiva / 5 && N13 < naoImpeditiva / 4).toBe(true)
+    expect(c.entrada.reincidente).toBe('SIM')
+    expect(c.planilha['art11_III.geral']).toBe(PREENCHE)
+    // Controle na mesma planilha: o Art. 13 do reincidente exige 1/4 e não preenche.
+    expect(c.planilha['art13.geral']).toBe(NAO_PREENCHE)
+  })
+
   it('4: Art. 13 na fronteira exata D6+G7+G8 == N13', () => {
-    const c = buscar('Posicionado contra a planilha 4')
-    expect((c.apoio.P9 as number) / 5).toBe(c.apoio.P13)
+    const c = buscar('4')
+    const { N6, N9, N13 } = colunaN(c)
+    expect(N6).toBe(0)
+    expect(N9 / 5).toBe(N13)
     // Cálculo!H138 usa `<` (Art. 13 não preenche); Cálculo!H141 usa `<=` (§4º preenche).
+    // O `<` é fiel à planilha e PROVÁVEL ERRO dela — o texto do Art. 13 inclui quem
+    // cumpriu exatamente a fração. Preservado no motor e exibido ao advogado; este
+    // guarda só confirma que o cenário continua na fronteira, não que o `<` é certo.
     expect(c.planilha['art13.geral']).toBe(NAO_PREENCHE)
     expect(c.planilha['art13_4.geral']).toBe(PREENCHE)
   })

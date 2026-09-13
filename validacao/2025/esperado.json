@@ -1,6 +1,7 @@
 {
   "_leia": "GERADO por validacao/oraculo.py a partir de validacao/2025/planilha.xlsx. NÃO edite à mão: rode o oráculo de novo. Consertar este arquivo para um teste passar apaga a única evidência independente que o motor tem.",
   "planilha": "planilha.xlsx",
+  "planilhaSha256": "ecbc484e277a6d83e43f18029534e882fa2be385044e4dba0f12fbbefe5a99e8",
   "celulas": {
     "art9_I.geral": "RESULTADO!D9",
     "art9_I.especial": "RESULTADO!E9",
@@ -1591,6 +1592,84 @@
         "P17": 2880,
         "F148": "Não preenche os requisitos",
         "F149": "Preenche os requisitos"
+      }
+    },
+    {
+      "_nome": "Posicionado contra a planilha 3b: Art. 11, III mulher reincidente com filho, cumprido 1a3m entre 1/5 e 1/4 de 6a",
+      "entrada": {
+        "_nome": "Posicionado contra a planilha 3b: Art. 11, III mulher reincidente com filho, cumprido 1a3m entre 1/5 e 1/4 de 6a",
+        "sexo": "FEMININO",
+        "penaSemViolencia": {
+          "anos": 6,
+          "meses": 0,
+          "dias": 0
+        },
+        "penaCumpridaSEEU": {
+          "anos": 1,
+          "meses": 3,
+          "dias": 0
+        },
+        "filhoAte16": "SIM",
+        "dataNascimento": "1985-01-01",
+        "dataUltimaPrisao": "2024-09-25",
+        "reincidente": "SIM",
+        "regime": "FECHADO"
+      },
+      "planilha": {
+        "art9_I.geral": "Não preenche os requisitos",
+        "art9_I.especial": "Preenche os requisitos",
+        "art9_II.geral": "Não preenche os requisitos",
+        "art9_II.especial": "Não preenche os requisitos",
+        "art9_III.geral": "Não preenche os requisitos",
+        "art9_III.especial": "Não preenche os requisitos",
+        "art9_IV.geral": "Não preenche os requisitos",
+        "art9_IV.especial": "Não preenche os requisitos",
+        "art9_V.geral": "Não preenche os requisitos",
+        "art9_V.especial": "Não preenche os requisitos",
+        "art9_VI.geral": "Não preenche os requisitos",
+        "art9_VI.especial": "Não preenche os requisitos",
+        "art9_VII.geral": "Não preenche os requisitos",
+        "art9_VII.especial": "Não preenche os requisitos",
+        "art9_VIII.geral": "Não preenche os requisitos",
+        "art9_VIII.especial": "Não preenche os requisitos",
+        "art9_IX.geral": "Não preenche os requisitos",
+        "art9_IX.especial": "Não preenche os requisitos",
+        "art9_X.geral": "Não preenche os requisitos",
+        "art9_X.especial": "Não preenche os requisitos",
+        "art9_XI.geral": "Não preenche os requisitos",
+        "art9_XI.especial": "Não preenche os requisitos",
+        "art9_XII.geral": "Não preenche os requisitos",
+        "art9_XIII.geral": "Não preenche os requisitos",
+        "art9_XIV.geral": "Não preenche os requisitos",
+        "art9_XV.geral": "Não preenche os requisitos",
+        "art9_XVI.geral": "Não preenche os requisitos",
+        "art10.geral": "Preenche os requisitos",
+        "art12.geral": "A analisar",
+        "art11_I.geral": "Não preenche os requisitos",
+        "art11_I.comutacaoTxt": "Sem Comutação",
+        "art11_I.penaAposTxt": "Sem Comutação",
+        "art11_II.geral": "Não preenche os requisitos",
+        "art11_II.comutacaoTxt": "Sem Comutação",
+        "art11_II.penaAposTxt": "Sem Comutação",
+        "art11_III.geral": "Preenche os requisitos",
+        "art11_III.comutacaoTxt": "3 anos 0 meses 0 dias",
+        "art11_III.penaAposTxt": "3 anos 0 meses 0 dias",
+        "art13.geral": "Não preenche os requisitos",
+        "art13.comutacaoTxt": "Sem Comutação",
+        "art13.penaAposTxt": "Sem Comutação",
+        "art13_4.geral": "Não preenche os requisitos",
+        "art13_4.comutacaoTxt": "Sem Comutação",
+        "art13_4.penaAposTxt": "Sem Comutação"
+      },
+      "apoio": {
+        "P6": 0,
+        "P9": 2160,
+        "P13": 450,
+        "P14": 450,
+        "P16": 1710,
+        "P17": 1710,
+        "F148": "Não preenche os requisitos",
+        "F149": "Não preenche os requisitos"
       }
     }
   ]

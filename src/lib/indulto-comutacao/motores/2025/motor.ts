@@ -18,13 +18,16 @@
  *
  * Desvios em relação à planilha, todos marcados no corpo:
  *  - ⚠️ dois BUGS de fórmula, corrigidos (L145:L149 e G149);
- *  - ⚖️ três AMBIGUIDADES jurídicas, PRESERVADAS — nenhuma "consertada":
+ *  - ⚖️ quatro AMBIGUIDADES jurídicas, PRESERVADAS — nenhuma "consertada":
  *     1. Inciso VIII: o `Rhalf` do §2º DOBRA o teto da pena remanescente em vez
  *        de reduzi-lo à metade — único ponto do decreto em que "metade" se inverte;
- *     2. `baseComut` (Art. 13 e §4º): base é o max entre cumprida e remanescente;
- *     3. `montaComut`: a "pena após" desconta da pena TOTAL imposta (P9).
+ *     2. Art. 13 (`c13`): exige cumprimento MAIOR que a fração (`<` estrito,
+ *        Cálculo!H138), onde todo outro dispositivo aceita o exato (`<=`) —
+ *        provável erro da planilha;
+ *     3. `baseComut` (Art. 13 e §4º): base é o max entre cumprida e remanescente;
+ *     4. `montaComut`: a "pena após" desconta da pena TOTAL imposta (P9).
  *    As duas últimas saem também no `avisos` do resultado (literais do engine.js);
- *    as três estão em `AVISOS_2025.validarJuridicamente`, que é o que a tela mostra.
+ *    as quatro estão em `AVISOS_2025.validarJuridicamente`, que é o que a tela mostra.
  */
 
 import type { Entrada, Resultado, ResultadoInciso, Veredito } from '../../tipos'
@@ -482,6 +485,17 @@ export function calcular2025(entrada: Entrada): Resultado {
   // Art. 13 (138) — comutação geral 1/5(não reinc)/1/4(reinc) — gates4 (sem colaboração)
   const c13 = (function () {
     const F = i18ok, G = hediondo
+    // ⚖️ AMBIGUIDADE JURÍDICA PRESERVADA — não "conserte"
+    // `<` ESTRITO: exige pena cumprida MAIOR que 1/5 (1/4 se reincidente). É o que
+    // está em Cálculo!H138. Todo outro dispositivo compara com `<=` — inclusive o
+    // §4º deste mesmo artigo (H141) e os três incisos do Art. 11 (L129, L132, L135)
+    // —, e o texto do Art. 13 (Cálculo!C138) fala em "tenham cumprido […] um quinto
+    // da pena", o que inclui o cumprimento exato. Provável erro da planilha: quem
+    // cumpriu exatamente a fração tem a comutação do Art. 13 negada. É também o que
+    // produz o lado 2 do bug G149 (F148 ≠ F149 só na igualdade exata). Herdado da
+    // planilha de propósito e exibido ao advogado em "Pontos a validar
+    // juridicamente". Trocar por `<=` sem validação dos autores do método altera um
+    // resultado que vai para petição.
     const H = I20 === 2 ? D6 + G7 + G8 < N13 : D6 + E7 + E8 < N13
     const I = temPenaNaoImped
     return gates4 && F && G && H && I
