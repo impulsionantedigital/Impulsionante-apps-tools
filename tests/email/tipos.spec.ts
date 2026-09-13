@@ -36,6 +36,21 @@ describe('catálogo de tipos de modelo', () => {
     expect(comSenha).toEqual(['boas_vindas', 'recuperacao_senha'])
   })
 
+  it('fixa a lista COMPLETA de campos para cada tipo, na ordem exata', () => {
+    expect([...CAMPOS['boas_vindas']]).toEqual([
+      'MEMBER_NAME', 'MEMBER_EMAIL', 'TEMP_PASSWORD', 'LOGIN_URL',
+    ])
+    expect([...CAMPOS['recuperacao_senha']]).toEqual([
+      'MEMBER_NAME', 'TEMP_PASSWORD', 'LOGIN_URL',
+    ])
+    expect([...CAMPOS['entrega_produto']]).toEqual([
+      'MEMBER_NAME', 'PRODUCT_NAME', 'OFFER_NAME', 'EXPIRES_AT', 'TOOL_URL', 'LOGIN_URL',
+    ])
+    expect([...CAMPOS['pagamento_recebido']]).toEqual([
+      'MEMBER_NAME', 'OFFER_NAME', 'PRODUCT_NAME', 'EXPIRES_AT', 'VALUE', 'TRANSACTION', 'LOGIN_URL',
+    ])
+  })
+
   it('reconhece tipo conhecido e recusa desconhecido', () => {
     expect(ehTipoConhecido('boas_vindas')).toBe(true)
     expect(ehTipoConhecido('cobranca')).toBe(false)
