@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import CabecalhoPagina from '@/components/ui/CabecalhoPagina'
 import { tituloDaPagina } from '@/server/marca'
 import { motorPorId } from '@/lib/indulto-comutacao/registro'
+import { mesmoResultado } from '@/lib/indulto-comutacao/comparar'
 import Calculadora from '../Calculadora'
 import ExcluirCalculo from '../ExcluirCalculo'
 import { lerCalculo } from '../calculos'
@@ -27,10 +28,16 @@ export default async function CalculoPage({ params }: { params: Promise<{ id: st
   // já ter virado petição. O aviso só aparece quando a versão mudou E o
   // resultado refeito diverge do gravado: versão igual com resultado
   // diferente seria bug, e não é para esconder.
+  //
+  // 🔴 A comparação NÃO pode ser `JSON.stringify` bruto: `calculo.resultado`
+  // vem de uma coluna `jsonb`, e o Postgres não preserva a ordem das chaves —
+  // ele devolve as chaves na ordem dele, diferente da ordem em que o motor as
+  // escreve. Duas strings diferentes só pela ordem das chaves disparariam o
+  // aviso em falso na primeira vez que a versão subisse, mesmo sem nenhum
+  // número mudar. `mesmoResultado` compara por estrutura (ver
+  // `src/lib/indulto-comutacao/comparar.ts`).
   const agora = motor.calcular(calculo.entrada)
-  const mudou =
-    calculo.motor_versao !== motor.versao &&
-    JSON.stringify(agora) !== JSON.stringify(calculo.resultado)
+  const mudou = calculo.motor_versao !== motor.versao && !mesmoResultado(agora, calculo.resultado)
 
   return (
     <div className={estilos.pagina}>
