@@ -31,7 +31,16 @@ export function dias(t: Tempo | null | undefined): number {
  */
 export function fmtDias(nDias: number | null | undefined): string {
   // `null` é ausência de valor: a planilha devolvia #VALUE! (bug L145:L149).
-  if (nDias === null || nDias === undefined || Number.isNaN(nDias)) return '-'
+  //
+  // 🔴 `isNaN` SOLTO, não `Number.isNaN` — não é descuido, não "modernize".
+  // O tipo do parâmetro não vale em runtime: o resultado do cálculo é gravado em
+  // coluna `jsonb` e volta do banco sem garantia nenhuma. `Number.isNaN('abc')` é
+  // `false`, então um valor não-numérico atravessaria esta guarda e a função
+  // devolveria "NaN anos NaN meses NaN dias" — na tela do advogado, e daí na
+  // petição. O `isNaN` com coerção devolve '-', que é o que o engine.js original
+  // faz (linha 55).
+  // eslint-disable-next-line no-restricted-globals -- ver o parágrafo acima
+  if (nDias === null || nDias === undefined || isNaN(nDias)) return '-'
 
   const neg = nDias < 0
   const n = Math.abs(nDias)
@@ -51,8 +60,13 @@ export function fmtDias(nDias: number | null | undefined): string {
 /**
  * Sistema B — dias de calendário reais.
  *
- * Usado APENAS no inciso IV do Art. 9º (`F49`), que exige cumprimento
- * ininterrupto contado em tempo corrido. Em qualquer outro lugar, use dias().
+ * Existe para as regras que exigem cumprimento contado em TEMPO CORRIDO, e só
+ * para elas. Fração de pena nunca usa esta função: ali a convenção é a 30/360 de
+ * `dias()`, e trocar uma pela outra muda o resultado sem erro nenhum.
+ *
+ * Cada decreto diz quais das suas regras caem aqui. No Decreto 12.970/2025, é uma
+ * só — o inciso IV do Art. 9º (célula `F49` da planilha). Um decreto futuro pode
+ * numerar diferente, ter mais de uma ou não ter nenhuma.
  */
 export function diasCorridos(de: Date | null, ate: Date | null): number {
   if (!de || !ate) return 0

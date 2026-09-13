@@ -41,6 +41,18 @@ describe('fmtDias() — o formato da planilha', () => {
     expect(fmtDias(Number.NaN)).toBe('-')
   })
 
+  it('devolve travessão para valor não-numérico que escapou do tipo', () => {
+    // 🔴 ESTE TESTE EXISTE PARA IMPEDIR UMA "MODERNIZAÇÃO".
+    // O tipo do parâmetro não vale em runtime: o resultado do cálculo é gravado
+    // em jsonb e volta do banco sem garantia nenhuma. Trocar o `isNaN` solto de
+    // fmtDias por `Number.isNaN` faz estes casos devolverem
+    // "NaN anos NaN meses NaN dias" em vez de '-' — texto que iria para a tela
+    // do advogado e daí para uma petição.
+    expect(fmtDias('abc' as never)).toBe('-')
+    expect(fmtDias({} as never)).toBe('-')
+    expect(fmtDias('' as never)).not.toContain('NaN')
+  })
+
   it('prefixa o negativo', () => {
     expect(fmtDias(-30)).toBe('- 0 anos 1 meses 0 dias')
   })
