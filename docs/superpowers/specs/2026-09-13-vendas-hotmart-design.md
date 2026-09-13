@@ -729,3 +729,26 @@ passo que **tira** acesso de alguém.
 Segunda plataforma de vendas (a rota é parametrizada, mas só Hotmart é implementada);
 tela de vitrine ou de checkout dentro do CRM; renovação automática iniciada pelo CRM;
 relatórios de faturação; e-mail transacional fora dos quatro modelos.
+
+## 16. Correções feitas ao planear o Plano 2
+
+Encontradas ao ler o código antes de escrever o plano de vendas. Onde contradizem as secções
+acima, **valem estas**.
+
+1. **O produto é o id do motor.** O motor de 2025 já se chama `indulto-comutacao-2025`
+   (`src/lib/indulto-comutacao/motores/2025/index.ts`), que é exatamente o `ProdutoId` que a §5
+   previa. O catálogo deixa de ter `decretoId: '2025'`; cada produto aponta para o `id` de um motor
+   do `REGISTRO`, e o teste de contrato exige a correspondência nos dois sentidos.
+2. **Não há "gerar documento" para bloquear.** A calculadora não tem ação de servidor de
+   documento nem botão de imprimir. O ponto 3 da §9.4 reduz-se a `salvarCalculo` e
+   `atualizarCalculo`.
+3. **Não existe página de perfil do membro.** "O próprio membro vê o CPF no perfil" (§4.5) fica
+   fora do Plano 2. Owner vê e corrige na aba Pessoas.
+4. **Boas-vindas vão para quem nunca entrou, não só para quem acabou de ser criado.** Com a regra da
+   §7.5.2 ("membro acabou de ser criado"), um reenvio da Hotmart depois de uma falha a meio — membro
+   criado, venda não gravada — encontraria o membro já existente, e o comprador nunca receberia a
+   senha. A condição passa a ser `auth.users.last_sign_in_at` nulo: enquanto o comprador nunca
+   entrou, cada aprovação emite uma senha temporária nova e reenvia as boas-vindas.
+5. **`expira_em` é calculado em TypeScript, não pelo banco** (§6.3). Continua a haver uma única
+   regra, num único lugar — só que num lugar testável, já que não há Postgres sob teste. Meses de
+   calendário com fecho no último dia do mês: 31/01 + 1 mês = 28/02 (ou 29 em ano bissexto).
