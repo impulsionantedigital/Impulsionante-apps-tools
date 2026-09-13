@@ -1381,12 +1381,14 @@ Três coisas a corrigir ao adaptar:
 
 ```
 # validacao/requirements.txt
-formulas==1.3.4
+# O extra [excel] NÃO é opcional: sem ele a formulas instala e importa normalmente,
+# e só quebra na hora de abrir o .xlsx, com ModuleNotFoundError: openpyxl.
+formulas[excel]==1.3.4
 ```
 
-Verificado nesta máquina: a `formulas` 1.3.4 instala e importa em **Python 3.9.6**, que é o
-que está disponível aqui. Não use uma versão mais nova sem testar — a lib mexe com internals
-do openpyxl e quebra com frequência entre releases.
+Verificado nesta máquina: instala e importa em **Python 3.9.6**, que é o que está disponível
+aqui. Não suba de versão sem testar — a lib mexe com internals do openpyxl e quebra com
+frequência entre releases.
 
 - [ ] **Step 3: Escrever o oráculo**
 
