@@ -24,6 +24,11 @@ export default function NovoPage() {
             : motor.rotulo
         }
       />
+      <p className={estilos.notaPrivacidade}>
+        O cálculo fica guardado na sua conta e nenhum outro membro o vê. Você pode excluí-lo
+        quando quiser. Para não guardar o nome do sentenciado, use o nº de execução na
+        identificação.
+      </p>
       <Calculadora motor={motor} />
     </div>
   )

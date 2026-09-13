@@ -103,6 +103,19 @@
   }
 }
 
+/* ── Task 12: a nota de dado pessoal (spec §9) ───────────────────────────
+ * Logo abaixo do `CabecalhoPagina` de "Novo cálculo": lembra o membro que o cálculo é dele
+ * (nenhum outro membro o vê), que ele pode excluí-lo quando quiser, e que o nº de execução
+ * evita gravar o nome do sentenciado. Texto secundário — mesma receita de `.ajuda`/`.frase`
+ * do resto do produto: `--tinta-2`, nunca `opacity`. */
+.notaPrivacidade {
+  max-width: 68ch;
+  margin: 0;
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  color: var(--tinta-2);
+}
+
 /* ── Task 11: a barra de salvar e a exclusão ─────────────────────────────
  *
  * Mesma regra de token do resto do módulo: nada de hex solto nem de
