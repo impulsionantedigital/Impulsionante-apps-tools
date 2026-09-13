@@ -25,7 +25,21 @@ export function lerConfigSmtp(env: Record<string, string | undefined>): LeituraS
   }
 
   const dito = aparar(env, 'SMTP_SECURE').toLowerCase()
-  const seguro = dito === '' ? porta === 465 : dito === 'true'
+  const VERDADEIROS = ['true', '1', 'yes', 'on']
+  const FALSOS = ['false', '0', 'no', 'off']
+  let seguro: boolean
+  if (dito === '') {
+    seguro = porta === 465
+  } else if (VERDADEIROS.includes(dito)) {
+    seguro = true
+  } else if (FALSOS.includes(dito)) {
+    seguro = false
+  } else {
+    // Um valor não reconhecido não pode virar `false` em silêncio: com SMTP_SECURE=1 e
+    // SMTP_PORT=465 (porta de TLS implícito), assumir false ligaria em texto claro contra uma
+    // porta que espera TLS desde o handshake — o mesmo pendurar do timeout sem limite.
+    return { ok: false, faltando: ['SMTP_SECURE'] }
+  }
 
   return {
     ok: true,

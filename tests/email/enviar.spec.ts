@@ -42,7 +42,25 @@ describe('enviarEnvelope', () => {
       port: 587,
       secure: false,
       auth: { user: 'u', pass: 's' },
+      connectionTimeout: 8000,
+      greetingTimeout: 8000,
+      socketTimeout: 8000,
     })
+  })
+
+  // Os defaults do nodemailer (2 min / 30 s / 10 min) são todos maiores que o orçamento do
+  // braço (8 s), o limite do tick (45 s), o aborto do heartbeat (60 s) e a reserva da RPC
+  // (2 min). Um SMTP que emudece depois de saudar prenderia o envio por até 10 minutos, e a
+  // mesma mensagem sairia de novo quando a reserva expirasse. Os três timeouts precisam estar
+  // em 8000 ms ou menos.
+  it('passa os três timeouts do nodemailer, todos em 8000 ms ou menos', async () => {
+    sendMail.mockResolvedValue({ messageId: '1' })
+    await enviarEnvelope(ENVELOPE, CONFIG)
+    const args = createTransport.mock.calls[0] as unknown as [Record<string, unknown>]
+    const chamada = args[0]
+    expect(chamada.connectionTimeout).toBeLessThanOrEqual(8000)
+    expect(chamada.greetingTimeout).toBeLessThanOrEqual(8000)
+    expect(chamada.socketTimeout).toBeLessThanOrEqual(8000)
   })
 
   it('traduz o envelope para os campos do nodemailer', async () => {
@@ -83,6 +101,9 @@ describe('enviarEnvelope', () => {
       port: 465,
       secure: true,
       auth: { user: 'u', pass: 's' },
+      connectionTimeout: 8000,
+      greetingTimeout: 8000,
+      socketTimeout: 8000,
     })
   })
 

@@ -4,12 +4,13 @@ import { PADROES, type Modelo } from '@/lib/email/padroes'
 import type { TipoModelo } from '@/lib/email/tipos'
 
 export async function lerModelo(workspaceId: string, tipo: TipoModelo): Promise<Modelo> {
-  const { data } = await admin()
+  const { data, error } = await admin()
     .from('modelos_email')
     .select('assunto, html, ativo')
     .eq('workspace_id', workspaceId)
     .eq('tipo', tipo)
     .maybeSingle()
+  if (error) throw error
 
   const linha = data as { assunto: string; html: string; ativo: boolean } | null
   if (!linha || !linha.ativo) return PADROES[tipo]

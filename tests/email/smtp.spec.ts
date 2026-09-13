@@ -66,6 +66,29 @@ describe('lerConfigSmtp', () => {
     expect(b.config.seguro).toBe(true)
   })
 
+  it('aceita 1, yes e on como verdadeiro, sem distinção de maiúsculas', () => {
+    for (const valor of ['1', 'yes', 'on', 'TRUE', 'Yes', 'ON']) {
+      const r = lerConfigSmtp({ ...COMPLETO, SMTP_PORT: '587', SMTP_SECURE: valor })
+      if (!r.ok) throw new Error(`inesperado para "${valor}"`)
+      expect(r.config.seguro).toBe(true)
+    }
+  })
+
+  it('aceita 0, no e off como falso, sem distinção de maiúsculas', () => {
+    for (const valor of ['0', 'no', 'off', 'FALSE', 'No', 'OFF']) {
+      const r = lerConfigSmtp({ ...COMPLETO, SMTP_PORT: '465', SMTP_SECURE: valor })
+      if (!r.ok) throw new Error(`inesperado para "${valor}"`)
+      expect(r.config.seguro).toBe(false)
+    }
+  })
+
+  it('recusa um SMTP_SECURE não reconhecido em vez de assumir falso em silêncio', () => {
+    const r = lerConfigSmtp({ ...COMPLETO, SMTP_PORT: '465', SMTP_SECURE: 'talvez' })
+    expect(r.ok).toBe(false)
+    if (r.ok) throw new Error('inesperado')
+    expect(r.faltando).toEqual(['SMTP_SECURE'])
+  })
+
   it('apara espaços em volta dos valores', () => {
     const r = lerConfigSmtp({
       SMTP_HOST: '  smtp.exemplo.com  ',

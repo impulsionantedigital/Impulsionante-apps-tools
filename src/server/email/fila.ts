@@ -1,7 +1,7 @@
 import 'server-only'
 import { criarOrcamento, type Orcamento } from '@/lib/orcamento-tick'
 import { admin } from '@/server/supabase'
-import { backoff, deveDesistir } from '@/lib/retentativa'
+import { backoff, deveDesistir, IDADE_MAX_MS } from '@/lib/retentativa'
 import { htmlParaTexto } from '@/lib/email/envelope'
 import { renderizarHtml, renderizarTexto } from '@/lib/email/merge'
 import type { Modelo } from '@/lib/email/padroes'
@@ -53,13 +53,36 @@ export async function enfileirar(args: {
   return { ok: true }
 }
 
+// Quando falta configuração de SMTP, a fila não pode simplesmente parar de envelhecer: sem
+// isto, as linhas pendentes ficam à espera para sempre, e se o dono ligar o SMTP meses depois
+// a fila despeja de uma vez o acumulado — inclusive senhas temporárias havia muito expiradas.
+// Aqui não há reserva de RPC nem envio: só desistir do que já passou da idade máxima.
+async function desistirAntigosSemSmtp(): Promise<void> {
+  const limite = new Date(Date.now() - IDADE_MAX_MS).toISOString()
+  const { error } = await admin()
+    .from('emails_fila')
+    .update({
+      desistido_em: new Date().toISOString(),
+      ultimo_erro: 'smtp_nao_configurado',
+    })
+    .is('enviado_em', null)
+    .is('desistido_em', null)
+    .lt('criado_em', limite)
+  if (error) {
+    console.warn('[email/fila] falha ao desistir e-mails antigos sem SMTP configurado', error)
+  }
+}
+
 export async function drenarEmail(
   orcamento: Orcamento = criarOrcamento(Date.now()),
 ): Promise<{ enviados: number; falhas: number; pulados: number }> {
   if (!orcamento.cabe('email')) return { enviados: 0, falhas: 0, pulados: 0 }
 
   const leitura = configAtual()
-  if (!leitura.ok) return { enviados: 0, falhas: 0, pulados: 0 }
+  if (!leitura.ok) {
+    await desistirAntigosSemSmtp()
+    return { enviados: 0, falhas: 0, pulados: 0 }
+  }
 
   const cli = admin()
   const { data, error } = await cli.rpc('reservar_emails', { p_limite: LIMITE_POR_TICK })
@@ -89,17 +112,23 @@ export async function drenarEmail(
     )
 
     if ('ok' in resultado) {
-      await cli
+      // Limpa o html depois de enviado: o banco não guarda para sempre o corpo renderizado,
+      // que em dois dos quatro modelos embute [TEMP_PASSWORD] em texto claro. O assunto fica —
+      // é o que torna a linha legível na auditoria, e nenhum padrão vaza senha nele.
+      const { error: erroEnvio } = await cli
         .from('emails_fila')
-        .update({ enviado_em: new Date().toISOString(), ultimo_erro: null })
+        .update({ enviado_em: new Date().toISOString(), ultimo_erro: null, html: '' })
         .eq('id', linha.id)
+      if (erroEnvio) {
+        console.warn('[email/fila] falha ao marcar e-mail como enviado', erroEnvio)
+      }
       enviados++
       continue
     }
 
     const tentativas = linha.tentativas + 1
     const desiste = deveDesistir(tentativas, new Date(linha.criado_em).getTime(), Date.now())
-    await cli
+    const { error: erroFalha } = await cli
       .from('emails_fila')
       .update({
         tentativas,
@@ -108,6 +137,9 @@ export async function drenarEmail(
         desistido_em: desiste ? new Date().toISOString() : null,
       })
       .eq('id', linha.id)
+    if (erroFalha) {
+      console.warn('[email/fila] falha ao atualizar tentativa de envio', erroFalha)
+    }
     falhas++
   }
 

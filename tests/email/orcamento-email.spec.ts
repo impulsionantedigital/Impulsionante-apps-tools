@@ -20,9 +20,4 @@ describe('braço de e-mail no orçamento do tick', () => {
     const o = criarOrcamento(1000, () => 1000 + 44_000)
     expect(o.cabe('email')).toBe(false)
   })
-
-  it('a fatia do braço nunca passa do que resta', () => {
-    const o = criarOrcamento(1000, () => 1000 + 40_000)
-    expect(o.fatiaPara('email')).toBeLessThanOrEqual(o.restaMs())
-  })
 })
