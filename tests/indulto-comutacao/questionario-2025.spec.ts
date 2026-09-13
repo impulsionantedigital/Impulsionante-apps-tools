@@ -31,7 +31,7 @@ describe('QUESTIONARIO_2025', () => {
       'penaImpeditiva', 'penaViolencia', 'penaSemViolencia',
       'penaCumpridaSEEU', 'penaCumpridaNaoSEEU',
       'dataNascimento', 'dataUltimaPrisao', 'diasRemicao',
-      'faccao', 'estudo', 'monitoramentoSV56', 'programaEgressos',
+      'faccao', 'estudo', 'monitoramentoSV56', 'programaEgressos', 'justicaRestaurativa',
       'cumpriu23ImpeditivoDataFato', 'cumpriuFracaoViolenciaDataFato',
     ]) {
       expect(porChave.has(chave), `faltou a chave ${chave}`).toBe(true)
@@ -49,6 +49,22 @@ describe('QUESTIONARIO_2025', () => {
     // todo cálculo começaria zerado sem o advogado entender por quê.
     expect(padraoDoCampo(porChave.get('cumpriu23ImpeditivoDataFato')!)).toBe('SIM')
     expect(padraoDoCampo(porChave.get('cumpriuFracaoViolenciaDataFato')!)).toBe('SIM')
+  })
+
+  it('coleta justicaRestaurativa (E51) — campo que a POC web (ui.js) esqueceu de perguntar', () => {
+    // O engine.js lê input.justicaRestaurativa (E51) para compor `elegivelP`, o
+    // perfil de vulnerabilidade do §2º (Art. 9º, I-XI) e da comutação de 2/3
+    // (Art. 13, §4º). A planilha tem essa pergunta em B51; a tela da POC
+    // (validacao/2025/ui.js) nunca a coletou, então sn(undefined) virava 'NÃO'
+    // e essa via do perfil nunca ativava — falso negativo contra o sentenciado
+    // no dispositivo mais generoso do decreto. Este questionário diverge
+    // deliberadamente da POC e segue a planilha: não remova o campo para
+    // "alinhar" com o ui.js.
+    const campo = porChave.get('justicaRestaurativa')
+    expect(campo).toBeDefined()
+    expect(campo?.tipo).toBe('selecao')
+    if (campo?.tipo === 'selecao') expect(campo.opcoes).toEqual(['SIM', 'NÃO'])
+    expect(padraoDoCampo(campo!)).toBe('NÃO')
   })
 
   it('avisa na seção da data do fato', () => {

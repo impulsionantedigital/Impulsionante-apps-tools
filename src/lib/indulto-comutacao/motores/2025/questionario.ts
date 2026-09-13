@@ -86,6 +86,14 @@ export const QUESTIONARIO_2025: Secao[] = [
         rotulo: 'Inserido em programa de acompanhamento de egressos? Há quanto tempo?',
         opcoes: ['NÃO', 'HÁ MENOS DE 01 ANO', 'ENTRE 01 E 02 ANOS', 'HÁ MAIS DE 02 ANOS'],
       },
+      {
+        tipo: 'selecao',
+        chave: 'justicaRestaurativa',
+        rotulo:
+          'É pessoa que tenha se submetido, no curso da execução da pena, a programas de justiça restaurativa reconhecidos pelo Poder Judiciário ou por órgãos do Poder Executivo com atribuição em matéria penitenciária, mediante atestado de conclusão do procedimento e resolução satisfatória do conflito firmada por responsável pelo programa?',
+        ajuda: 'Em conformidade com o disposto na Resolução nº 225, de 31 de maio de 2016, do Conselho Nacional de Justiça.',
+        opcoes: SN,
+      },
     ],
   },
   {
