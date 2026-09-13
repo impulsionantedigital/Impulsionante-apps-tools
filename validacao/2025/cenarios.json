@@ -1,0 +1,115 @@
+[
+  {
+    "_nome": "baseline (exemplo original — tudo NÃO)",
+    "penaCumpridaSEEU": {"anos":5,"meses":6,"dias":0},
+    "dataNascimento":"1960-06-22",
+    "dataUltimaPrisao":"2010-12-25",
+    "reincidente":"NÃO","regime":"FECHADO"
+  },
+  {
+    "_nome": "Inciso I positivo (sem violência 6a, cumprido 2a, não reinc)",
+    "penaSemViolencia":{"anos":6,"meses":0,"dias":0},
+    "penaCumpridaSEEU":{"anos":2,"meses":0,"dias":0},
+    "dataNascimento":"1980-01-01","dataUltimaPrisao":"2023-01-01",
+    "reincidente":"NÃO","regime":"FECHADO"
+  },
+  {
+    "_nome": "Inciso II positivo (sem violência 10a, cumprido 4a, não reinc)",
+    "penaSemViolencia":{"anos":10,"meses":0,"dias":0},
+    "penaCumpridaSEEU":{"anos":4,"meses":0,"dias":0},
+    "dataNascimento":"1980-01-01","dataUltimaPrisao":"2021-01-01",
+    "reincidente":"NÃO","regime":"FECHADO"
+  },
+  {
+    "_nome": "Inciso III positivo (com violência 3a, cumprido 1a6m, não reinc)",
+    "penaViolencia":{"anos":3,"meses":0,"dias":0},
+    "penaCumpridaSEEU":{"anos":1,"meses":6,"dias":0},
+    "dataNascimento":"1980-01-01","dataUltimaPrisao":"2024-06-01",
+    "reincidente":"NÃO","regime":"FECHADO"
+  },
+  {
+    "_nome": "Inciso IV positivo (16a ininterruptos, cumprido 16a, não reinc)",
+    "penaSemViolencia":{"anos":22,"meses":0,"dias":0},
+    "penaCumpridaSEEU":{"anos":16,"meses":0,"dias":0},
+    "dataNascimento":"1975-01-01","dataUltimaPrisao":"2009-06-01",
+    "reincidente":"NÃO","regime":"FECHADO"
+  },
+  {
+    "_nome": "Inciso VII positivo (pena substituída, sem violência 6a, cumprido 1a6m 1/6)",
+    "penaSemViolencia":{"anos":6,"meses":0,"dias":0},
+    "penaCumpridaSEEU":{"anos":1,"meses":6,"dias":0},
+    "penasSubstituidas":"SIM",
+    "dataNascimento":"1980-01-01","dataUltimaPrisao":"2024-01-01",
+    "reincidente":"NÃO","regime":"ABERTO"
+  },
+  {
+    "_nome": "Inciso XI positivo (sem violência 9a, semiaberto, saídas, cumprido 3a6m)",
+    "penaSemViolencia":{"anos":9,"meses":0,"dias":0},
+    "penaCumpridaSEEU":{"anos":3,"meses":6,"dias":0},
+    "saidasOuTrabalhoExterno":"SIM",
+    "tempoSemiabertoAberto":{"anos":3,"meses":6,"dias":0},
+    "dataNascimento":"1980-01-01","dataUltimaPrisao":"2022-01-01",
+    "reincidente":"NÃO","regime":"SEMIABERTO"
+  },
+  {
+    "_nome": "Inciso XVI positivo (condição grave de saúde)",
+    "penaSemViolencia":{"anos":5,"meses":0,"dias":0},
+    "penaCumpridaSEEU":{"anos":1,"meses":0,"dias":0},
+    "condicoesGravesSaude":"SIM",
+    "dataNascimento":"1980-01-01","dataUltimaPrisao":"2024-01-01",
+    "reincidente":"NÃO","regime":"FECHADO"
+  },
+  {
+    "_nome": "Especial §2º (idoso >=60, Inciso I fração pela metade)",
+    "penaSemViolencia":{"anos":6,"meses":0,"dias":0},
+    "penaCumpridaSEEU":{"anos":1,"meses":0,"dias":0},
+    "dataNascimento":"1960-01-01","dataUltimaPrisao":"2024-06-01",
+    "reincidente":"NÃO","regime":"FECHADO"
+  },
+  {
+    "_nome": "Crime impeditivo presente, não cumpriu 2/3 (bloqueia)",
+    "penaImpeditiva":{"anos":12,"meses":0,"dias":0},
+    "penaSemViolencia":{"anos":4,"meses":0,"dias":0},
+    "penaCumpridaSEEU":{"anos":3,"meses":0,"dias":0},
+    "dataNascimento":"1980-01-01","dataUltimaPrisao":"2022-01-01",
+    "reincidente":"NÃO","regime":"FECHADO"
+  },
+  {
+    "_nome": "Art 12 multa=5000 com pena (Preenche)",
+    "penaSemViolencia":{"anos":3,"meses":0,"dias":0},
+    "penaCumpridaSEEU":{"anos":1,"meses":0,"dias":0},
+    "valorMulta":5000,
+    "dataNascimento":"1980-01-01","dataUltimaPrisao":"2024-01-01",
+    "reincidente":"NÃO","regime":"FECHADO"
+  },
+  {
+    "_nome": "Comutação Art 13 (não reinc, sem violência 10a, cumprido 2a6m)",
+    "penaSemViolencia":{"anos":10,"meses":0,"dias":0},
+    "penaCumpridaSEEU":{"anos":2,"meses":6,"dias":0},
+    "dataNascimento":"1980-01-01","dataUltimaPrisao":"2023-06-01",
+    "reincidente":"NÃO","regime":"FECHADO"
+  },
+  {
+    "_nome": "Comutação Art 11 mulher (não reinc, filho<16, sem violência 6a, cumprido 2a)",
+    "sexo":"FEMININO",
+    "penaSemViolencia":{"anos":6,"meses":0,"dias":0},
+    "penaCumpridaSEEU":{"anos":2,"meses":0,"dias":0},
+    "filhoAte16":"SIM",
+    "dataNascimento":"1985-01-01","dataUltimaPrisao":"2023-06-01",
+    "reincidente":"NÃO","regime":"FECHADO"
+  },
+  {
+    "_nome": "§4º qualifica (idoso >=60, sem violência 10a, cumprido 2a6m 1/5)",
+    "penaSemViolencia":{"anos":10,"meses":0,"dias":0},
+    "penaCumpridaSEEU":{"anos":2,"meses":6,"dias":0},
+    "dataNascimento":"1958-01-01","dataUltimaPrisao":"2023-06-01",
+    "reincidente":"NÃO","regime":"FECHADO"
+  },
+  {
+    "_nome": "Reincidente Inciso I (sem violência 6a, cumprido 2a6m 1/3)",
+    "penaSemViolencia":{"anos":6,"meses":0,"dias":0},
+    "penaCumpridaSEEU":{"anos":2,"meses":6,"dias":0},
+    "dataNascimento":"1980-01-01","dataUltimaPrisao":"2022-06-01",
+    "reincidente":"SIM","regime":"FECHADO"
+  }
+]

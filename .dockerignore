@@ -14,3 +14,8 @@ docs
 # .env* NUNCA entra na imagem: o `next build` os carrega e as NEXT_PUBLIC_* viram
 # literais no bundle — as credenciais da maquina de quem buildou iriam pro comprador.
 .env*
+# A validacao do motor da calculadora: planilha original, harness Python, cenarios e o
+# codigo da POC que serviu de referencia de porte. Versionada no repositorio por
+# proveniencia — saber qual planilha validou qual versao de qual motor —, mas sem papel
+# em runtime: o motor ja e codigo. Fora daqui, a planilha de 739 KB viajaria pra imagem.
+validacao
