@@ -67,8 +67,29 @@ describe('lerConfigSmtp', () => {
   })
 
   it('apara espaços em volta dos valores', () => {
-    const r = lerConfigSmtp({ ...COMPLETO, SMTP_HOST: '  smtp.exemplo.com  ' })
+    const r = lerConfigSmtp({
+      SMTP_HOST: '  smtp.exemplo.com  ',
+      SMTP_PORT: '  587  ',
+      SMTP_USER: '  apikey  ',
+      SMTP_PASS: '  segredo  ',
+      SMTP_FROM: '  GPS da Pena <nao-responda@exemplo.com>  ',
+    })
     if (!r.ok) throw new Error('inesperado')
-    expect(r.config.host).toBe('smtp.exemplo.com')
+    expect(r.config).toEqual({
+      host: 'smtp.exemplo.com',
+      porta: 587,
+      seguro: false,
+      usuario: 'apikey',
+      senha: 'segredo',
+      remetente: 'GPS da Pena <nao-responda@exemplo.com>',
+    })
+  })
+
+  it('aceita as fronteiras válidas da porta (1 e 65535)', () => {
+    const r1 = lerConfigSmtp({ ...COMPLETO, SMTP_PORT: '1' })
+    const r65535 = lerConfigSmtp({ ...COMPLETO, SMTP_PORT: '65535' })
+    if (!r1.ok || !r65535.ok) throw new Error('inesperado')
+    expect(r1.config.porta).toBe(1)
+    expect(r65535.config.porta).toBe(65535)
   })
 })
