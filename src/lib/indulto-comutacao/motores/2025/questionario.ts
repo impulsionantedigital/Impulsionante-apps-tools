@@ -10,7 +10,7 @@
 //
 // Toda pergunta é apurada "em 25/12/2025", a data-base do decreto.
 
-import type { Campo, Secao } from '../../tipos'
+import type { Secao } from '../../tipos'
 
 const SN = ['SIM', 'NÃO'] as const
 const SNA = ['SIM', 'NÃO', 'NÃO SE APLICA'] as const
@@ -254,17 +254,6 @@ export const QUESTIONARIO_2025: Secao[] = [
   },
 ]
 
-/**
- * O valor com que um campo nasce, pela mesma regra do ui.js (defaultFor):
- * o `padrao` declarado, senão 'NÃO' quando estiver entre as opções, senão a
- * primeira opção. Campo que não é seleção nasce vazio.
- *
- * 🔴 A regra importa além dos dois vetos: com ela, todo SIM/NÃO nasce em 'NÃO',
- * que é o estado neutro que a POC calculava.
- */
-export function padraoDoCampo(campo: Campo): string {
-  if (campo.tipo !== 'selecao') return ''
-  if (campo.padrao) return campo.padrao
-  if (campo.opcoes.includes('NÃO')) return 'NÃO'
-  return campo.opcoes[0] ?? ''
-}
+// Movida para `../../padrao` — serve a todo motor, não só ao de 2025. O
+// reexport fica porque o teste desta task importa dali.
+export { padraoDoCampo } from '../../padrao'
