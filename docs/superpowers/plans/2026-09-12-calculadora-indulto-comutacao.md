@@ -1747,8 +1747,8 @@ O componente de cliente que mantém o estado da entrada, renderiza as seções e
 **Interfaces:**
 - Consumes: `Secao`, `Campo`, `Entrada`, `MotorDecreto`; o componente `Resultado` da Task 8.
 - Produces: `entradaInicial(motor: MotorDecreto): Entrada`; `Calculadora({ motor, inicial })`
-  — a Task 11 acrescenta a este componente as props opcionais `acao`, `id`, `tituloInicial` e
-  `rotuloAcao`, que ligam o formulário de salvar.
+  — a Task 11 acrescenta a este componente as props opcionais `calculoId` e `tituloInicial`, e
+  a barra de salvar que chama as server actions direto.
 
 - [ ] **Step 0: Mover `padraoDoCampo` para um módulo compartilhado**
 
@@ -2012,8 +2012,12 @@ da data do fato começam em SIM."
 - Create: `src/app/(app)/ferramentas/indulto-comutacao/calculos.ts`
 
 **Interfaces:**
-- Consumes: `exigirSessao()` de `@/server/auth/sessao`; `resolverWorkspaceAtivo()` de `@/server/auth/workspace-ativo`; `admin()` de `@/server/supabase`; `criarClienteServidor()` de `@/server/supabase-session`.
-- Produces: `salvar(fd)`, `atualizar(fd)`, `excluir(fd)`; `listarCalculos()`, `lerCalculo(id)`, `type CalculoSalvo`.
+- Consumes: `exigirEngineLiberado()` de `@/server/license/exigir`; `exigirSessao()` de `@/server/auth/sessao`; `resolverWorkspaceAtivo()` de `@/server/auth/workspace-ativo`; `admin()` de `@/server/supabase`; `criarClienteServidor()` de `@/server/supabase-session`; `fraseDeBanco()` de `@/lib/erro-de-banco`; `detalheSeguro()` de `@/lib/sanitizar-erro`; `motorPorId()` de `@/lib/indulto-comutacao/registro`.
+- Produces:
+  - `salvarCalculo(input: { titulo: string; decretoId: string; entrada: Entrada }): Promise<{ ok: true; id: string } | { erro: string }>`
+  - `atualizarCalculo(input: { id: string; titulo: string; decretoId: string; entrada: Entrada }): Promise<{ ok: true } | { erro: string }>`
+  - `excluirCalculo(id: string): Promise<{ ok: true } | { erro: string }>`
+  - `listarCalculos()`, `lerCalculo(id)`, `type CalculoSalvo`
 
 - [ ] **Step 1: Escrever a migration**
 
@@ -2130,128 +2134,187 @@ export async function lerCalculo(id: string): Promise<CalculoSalvo | null> {
 
 - [ ] **Step 3: Escrever as server actions**
 
+**Siga o padrão das actions que o produto já tem** — leia `src/app/(app)/negocios/actions.ts` e
+`src/app/(app)/config/acoes-equipe.ts` antes de escrever. Cinco regras dele, todas obrigatórias:
+
+1. **`await exigirEngineLiberado()` na primeira linha.** É a trava de licença: com a licença
+   bloqueada, manda para `/licenca`. Toda action de escrita do produto começa assim.
+2. **Entrada em objeto tipado, chamado direto do cliente.** Nada de `FormData` nem `<form action>`.
+3. **`return { erro }`, nunca `throw`.** Erro lançado numa action vira tela genérica: um título em
+   branco derrubaria a página em vez de dizer "dê um título". Valide com `safeParse`, não `parse`.
+4. **No `catch`, registre e traduza:** `console.error('[indulto-comutacao] <acao>', detalheSeguro(err))`
+   e `return { erro: fraseDeBanco(err) }`. O registro não é opcional — a frase genérica do
+   `fraseDeBanco` promete ao usuário que "o motivo fica registrado no servidor".
+5. **`exigirEngineLiberado()` e `exigirSessao()` ficam FORA do `try`.** Os dois redirecionam lançando
+   uma exceção especial do Next; dentro do `try`, o `catch` a engoliria e o redirecionamento sumiria.
+
+🔴 Um arquivo `'use server'` só pode exportar **funções assíncronas** (tipos são apagados e podem).
+Constantes e funções auxiliares ficam sem `export`.
+
 ```ts
 // src/app/(app)/ferramentas/indulto-comutacao/acoes.ts
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { redirect } from 'next/navigation'
 import { z } from 'zod'
+import { exigirEngineLiberado } from '@/server/license/exigir'
 import { exigirSessao } from '@/server/auth/sessao'
 import { resolverWorkspaceAtivo } from '@/server/auth/workspace-ativo'
 import { admin } from '@/server/supabase'
+import { fraseDeBanco } from '@/lib/erro-de-banco'
+import { detalheSeguro } from '@/lib/sanitizar-erro'
 import { motorPorId } from '@/lib/indulto-comutacao/registro'
+import type { Entrada } from '@/lib/indulto-comutacao/tipos'
 
 const BASE = '/ferramentas/indulto-comutacao'
+const TABELA = 'indulto_comutacao_calculos'
 
-const Payload = z.object({
-  titulo: z.string().trim().min(1, 'Dê um título ao cálculo').max(200),
-  decretoId: z.string().trim().min(1),
-  entrada: z.string(), // JSON serializado pelo cliente
+const Dados = z.object({
+  titulo: z
+    .string()
+    .trim()
+    .min(1, 'Dê um título ao cálculo — o nº de execução serve.')
+    .max(200, 'Use no máximo 200 caracteres no título.'),
+  decretoId: z.string().trim().min(1, 'Escolha o decreto.'),
+  entrada: z.record(z.string(), z.unknown()),
 })
 
-/**
- * Recalcula no servidor a partir da entrada.
- *
- * O cliente manda a entrada, nunca o resultado: assim o que fica gravado é
- * sempre produto do motor desta versão, e um cliente adulterado não consegue
- * escrever um resultado inventado.
- */
-function calcular(decretoId: string, entradaBruta: string) {
-  const motor = motorPorId(decretoId)
-  if (!motor) throw new Error('Decreto desconhecido')
+const Id = z.string().uuid()
 
-  const entrada = JSON.parse(entradaBruta)
-  return { motor, entrada, resultado: motor.calcular(entrada) }
-}
+const NAO_ACHOU =
+  'Este cálculo não existe mais, ou não está na sua conta. Recarregue a lista e tente de novo.'
 
-async function contexto() {
+/** Quem está salvando. Chamada FORA do `try`: `exigirSessao` redireciona lançando. */
+async function contexto(): Promise<{ userId: string; ws: string } | { erro: string }> {
   const user = await exigirSessao()
   const ws = await resolverWorkspaceAtivo()
-  if (!ws) redirect('/sem-workspace')
+  if (!ws) return { erro: 'Escolha um espaço de trabalho antes de salvar.' }
   return { userId: user.id, ws }
 }
 
-export async function salvar(fd: FormData) {
-  const { userId, ws } = await contexto()
-  const dados = Payload.parse({
-    titulo: fd.get('titulo'),
-    decretoId: fd.get('decretoId'),
-    entrada: fd.get('entrada'),
-  })
-
-  const { motor, entrada, resultado } = calcular(dados.decretoId, dados.entrada)
-
-  // 🔴 workspace_id e user_id vêm da SESSÃO, nunca do payload: `admin()` é
-  // service-role e não passa por RLS, então é aqui que o isolamento acontece.
-  const { data, error } = await admin()
-    .from('indulto_comutacao_calculos')
-    .insert({
-      workspace_id: ws,
-      user_id: userId,
-      decreto_id: motor.id,
-      motor_versao: motor.versao,
-      titulo: dados.titulo,
-      entrada,
-      resultado,
-    })
-    .select('id')
-    .single()
-
-  if (error) throw new Error(error.message)
-
-  revalidatePath(BASE)
-  redirect(`${BASE}/${data.id}`)
+/**
+ * Valida e RECALCULA no servidor.
+ *
+ * O cliente manda a entrada, nunca o resultado: o que fica gravado é sempre
+ * produto do motor desta versão, e um cliente adulterado não consegue escrever
+ * um resultado inventado com aparência de auditoria.
+ */
+function preparar(bruto: unknown) {
+  const r = Dados.safeParse(bruto)
+  if (!r.success) {
+    return { erro: r.error.issues[0]?.message ?? 'Confira os dados do cálculo.' }
+  }
+  const motor = motorPorId(r.data.decretoId)
+  if (!motor) return { erro: 'Este decreto não está disponível na calculadora.' }
+  const entrada = r.data.entrada as Entrada
+  return { motor, titulo: r.data.titulo, entrada, resultado: motor.calcular(entrada) }
 }
 
-export async function atualizar(fd: FormData) {
-  const { userId, ws } = await contexto()
-  const id = z.string().uuid().parse(fd.get('id'))
-  const dados = Payload.parse({
-    titulo: fd.get('titulo'),
-    decretoId: fd.get('decretoId'),
-    entrada: fd.get('entrada'),
-  })
+export async function salvarCalculo(input: {
+  titulo: string
+  decretoId: string
+  entrada: Entrada
+}): Promise<{ ok: true; id: string } | { erro: string }> {
+  await exigirEngineLiberado()
+  const ctx = await contexto()
+  if ('erro' in ctx) return ctx
+  const p = preparar(input)
+  if ('erro' in p) return { erro: p.erro }
 
-  const { motor, entrada, resultado } = calcular(dados.decretoId, dados.entrada)
+  try {
+    // 🔴 workspace_id e user_id vêm da SESSÃO, nunca do input: admin() é
+    // service-role e não passa por RLS, então o isolamento acontece aqui.
+    const { data, error } = await admin()
+      .from(TABELA)
+      .insert({
+        workspace_id: ctx.ws,
+        user_id: ctx.userId,
+        decreto_id: p.motor.id,
+        motor_versao: p.motor.versao,
+        titulo: p.titulo,
+        entrada: p.entrada,
+        resultado: p.resultado,
+      })
+      .select('id')
+      .single()
+    if (error) throw error
 
-  // 🔴 O `.eq('user_id')` NÃO é redundante: service-role não passa por RLS.
-  // Sem ele, um id de outro membro seria sobrescrito sem erro.
-  const { error } = await admin()
-    .from('indulto_comutacao_calculos')
-    .update({
-      decreto_id: motor.id,
-      motor_versao: motor.versao,
-      titulo: dados.titulo,
-      entrada,
-      resultado,
-      atualizado_em: new Date().toISOString(),
-    })
-    .eq('id', id)
-    .eq('workspace_id', ws)
-    .eq('user_id', userId)
-
-  if (error) throw new Error(error.message)
-
-  revalidatePath(BASE)
-  revalidatePath(`${BASE}/${id}`)
+    revalidatePath(BASE)
+    return { ok: true, id: (data as { id: string }).id }
+  } catch (err) {
+    console.error('[indulto-comutacao] salvarCalculo', detalheSeguro(err))
+    return { erro: fraseDeBanco(err) }
+  }
 }
 
-export async function excluir(fd: FormData) {
-  const { userId, ws } = await contexto()
-  const id = z.string().uuid().parse(fd.get('id'))
+export async function atualizarCalculo(input: {
+  id: string
+  titulo: string
+  decretoId: string
+  entrada: Entrada
+}): Promise<{ ok: true } | { erro: string }> {
+  await exigirEngineLiberado()
+  const ctx = await contexto()
+  if ('erro' in ctx) return ctx
+  const id = Id.safeParse(input.id)
+  if (!id.success) return { erro: NAO_ACHOU }
+  const p = preparar(input)
+  if ('erro' in p) return { erro: p.erro }
 
-  const { error } = await admin()
-    .from('indulto_comutacao_calculos')
-    .delete()
-    .eq('id', id)
-    .eq('workspace_id', ws)
-    .eq('user_id', userId)
+  try {
+    // 🔴 O filtro por user_id NÃO é redundante: service-role não passa por RLS.
+    // E o `.select('id')` também não: sem ele, atualizar o id de OUTRO membro
+    // não afeta linha nenhuma, não dá erro, e a action devolveria ok.
+    const { data, error } = await admin()
+      .from(TABELA)
+      .update({
+        decreto_id: p.motor.id,
+        motor_versao: p.motor.versao,
+        titulo: p.titulo,
+        entrada: p.entrada,
+        resultado: p.resultado,
+        atualizado_em: new Date().toISOString(),
+      })
+      .eq('id', id.data)
+      .eq('workspace_id', ctx.ws)
+      .eq('user_id', ctx.userId)
+      .select('id')
+    if (error) throw error
+    if (!data?.length) return { erro: NAO_ACHOU }
 
-  if (error) throw new Error(error.message)
+    revalidatePath(BASE)
+    revalidatePath(`${BASE}/${id.data}`)
+    return { ok: true }
+  } catch (err) {
+    console.error('[indulto-comutacao] atualizarCalculo', detalheSeguro(err))
+    return { erro: fraseDeBanco(err) }
+  }
+}
 
-  revalidatePath(BASE)
-  redirect(BASE)
+export async function excluirCalculo(idBruto: string): Promise<{ ok: true } | { erro: string }> {
+  await exigirEngineLiberado()
+  const ctx = await contexto()
+  if ('erro' in ctx) return ctx
+  const id = Id.safeParse(idBruto)
+  if (!id.success) return { erro: NAO_ACHOU }
+
+  try {
+    const { data, error } = await admin()
+      .from(TABELA)
+      .delete()
+      .eq('id', id.data)
+      .eq('workspace_id', ctx.ws)
+      .eq('user_id', ctx.userId)
+      .select('id')
+    if (error) throw error
+    if (!data?.length) return { erro: NAO_ACHOU }
+
+    revalidatePath(BASE)
+    return { ok: true }
+  } catch (err) {
+    console.error('[indulto-comutacao] excluirCalculo', detalheSeguro(err))
+    return { erro: fraseDeBanco(err) }
+  }
 }
 ```
 
@@ -2283,14 +2346,30 @@ cliente, e filtram por user_id porque service-role não passa por RLS."
 ### Task 11: As telas
 
 **Files:**
+- Create: `src/app/(app)/ferramentas/indulto-comutacao/BarraSalvar.tsx`
+- Create: `src/app/(app)/ferramentas/indulto-comutacao/BotaoExcluir.tsx`
+- Modify: `src/app/(app)/ferramentas/indulto-comutacao/Calculadora.tsx`
+- Modify: `src/app/(app)/ferramentas/indulto-comutacao/calculadora.module.css`
 - Create: `src/app/(app)/ferramentas/indulto-comutacao/page.tsx`
 - Create: `src/app/(app)/ferramentas/indulto-comutacao/novo/page.tsx`
 - Create: `src/app/(app)/ferramentas/indulto-comutacao/[id]/page.tsx`
-- Create: `src/app/(app)/ferramentas/indulto-comutacao/BarraSalvar.tsx`
 
 **Interfaces:**
-- Consumes: tudo das Tasks 8–10.
-- Produces: as quatro rotas da ferramenta.
+- Consumes: `Resultado` (Task 8); `Calculadora` e `entradaInicial` (Task 9); `salvarCalculo`,
+  `atualizarCalculo`, `excluirCalculo`, `listarCalculos`, `lerCalculo` (Task 10); `motorPadrao`,
+  `motorPorId`, `REGISTRO` (Task 3); `CabecalhoPagina`, `EstadoVazio` e `Botao` de `src/components/ui/`.
+- Produces: as rotas `/ferramentas/indulto-comutacao`, `/novo` e `/[id]`.
+
+**O padrão de tela que o produto já usa, e que esta tarefa segue** (veja `src/app/(app)/negocios/Board.tsx`):
+o componente de cliente chama a server action direto, `const r = await acao({...})`; se `'erro' in r`,
+mostra um aviso local por 6 segundos (`Board.tsx:44`). Não existe componente de aviso compartilhado.
+Server actions podem ser importadas por um componente `'use client'`.
+
+Props conferidas nos componentes do produto — use exatamente estas:
+- `CabecalhoPagina`: `titulo`, `subtitulo?`, `acoes?`, `acima?`.
+- `EstadoVazio`: **`icone` obrigatório**, `titulo`, `texto?`, `acao?`. (Não existe `descricao`.)
+- `Botao`: `variante?` (`'primario' | 'secundario' | 'fantasma'`), `tom?` (`'ok' | 'erro'`),
+  `carregando?`, `desabilitado?`, `href?` (vira link), e os atributos normais de `<button>`.
 
 - [ ] **Step 1: A barra de salvar**
 
@@ -2298,85 +2377,153 @@ cliente, e filtram por user_id porque service-role não passa por RLS."
 // src/app/(app)/ferramentas/indulto-comutacao/BarraSalvar.tsx
 'use client'
 
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
+import Botao from '@/components/ui/Botao'
 import type { Entrada, MotorDecreto } from '@/lib/indulto-comutacao/tipos'
+import { atualizarCalculo, salvarCalculo } from './acoes'
+import estilos from './calculadora.module.css'
+
+type Aviso = { tom: 'ok' | 'erro'; texto: string }
 
 /**
- * O formulário que leva a entrada ao servidor.
+ * Salva o cálculo em andamento: sem `calculoId` cria, com ele atualiza.
  *
- * A entrada viaja serializada num campo oculto e o servidor RECALCULA a partir
- * dela — o resultado nunca é enviado pelo cliente.
+ * Manda a ENTRADA, nunca o resultado — o servidor recalcula com o motor.
  */
 export default function BarraSalvar({
   motor,
   entrada,
-  acao,
-  id,
+  calculoId,
   tituloInicial = '',
-  rotulo = 'Salvar cálculo',
 }: {
   motor: MotorDecreto
   entrada: Entrada
-  acao: (fd: FormData) => Promise<void>
-  id?: string
+  calculoId?: string
   tituloInicial?: string
-  rotulo?: string
 }) {
+  const router = useRouter()
   const [titulo, setTitulo] = useState(tituloInicial)
+  const [aviso, setAviso] = useState<Aviso | null>(null)
+  const [pendente, iniciar] = useTransition()
+
+  // Mesmo padrão do Board.tsx: aviso local que some sozinho.
+  function avisar(tom: Aviso['tom'], texto: string) {
+    setAviso({ tom, texto })
+    setTimeout(() => setAviso(null), 6000)
+  }
+
+  function salvar() {
+    iniciar(async () => {
+      if (calculoId) {
+        const r = await atualizarCalculo({ id: calculoId, titulo, decretoId: motor.id, entrada })
+        if ('erro' in r) return avisar('erro', r.erro)
+        avisar('ok', 'Alterações salvas.')
+        router.refresh()
+        return
+      }
+      const r = await salvarCalculo({ titulo, decretoId: motor.id, entrada })
+      if ('erro' in r) return avisar('erro', r.erro)
+      router.push(`/ferramentas/indulto-comutacao/${r.id}`)
+    })
+  }
 
   return (
-    <form action={acao} style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-      {id && <input type="hidden" name="id" value={id} />}
-      <input type="hidden" name="decretoId" value={motor.id} />
-      <input type="hidden" name="entrada" value={JSON.stringify(entrada)} />
+    <div className={estilos.barra}>
       <input
-        name="titulo"
+        aria-label="Título do cálculo"
         value={titulo}
         onChange={(e) => setTitulo(e.target.value)}
         placeholder="Nº de execução ou identificação do caso"
-        required
         maxLength={200}
-        style={{ flex: 1, minWidth: 240, padding: 8 }}
       />
-      <button type="submit">{rotulo}</button>
-    </form>
+      <Botao variante="primario" onClick={salvar} carregando={pendente} desabilitado={pendente}>
+        {calculoId ? 'Salvar alterações' : 'Salvar cálculo'}
+      </Botao>
+      {aviso && (
+        <p role={aviso.tom === 'erro' ? 'alert' : 'status'} className={estilos.aviso} data-tom={aviso.tom}>
+          {aviso.texto}
+        </p>
+      )}
+    </div>
   )
 }
 ```
 
-- [ ] **Step 2: Ligar a barra à calculadora**
-
-Em `Calculadora.tsx`, acrescente as props opcionais e renderize a barra acima do resultado:
+- [ ] **Step 2: O botão de excluir**
 
 ```tsx
-import BarraSalvar from './BarraSalvar'
+// src/app/(app)/ferramentas/indulto-comutacao/BotaoExcluir.tsx
+'use client'
+
+import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
+import Botao from '@/components/ui/Botao'
+import { excluirCalculo } from './acoes'
+import estilos from './calculadora.module.css'
+
+export default function BotaoExcluir({ id }: { id: string }) {
+  const router = useRouter()
+  const [erro, setErro] = useState<string | null>(null)
+  const [pendente, iniciar] = useTransition()
+
+  function excluir() {
+    // A exclusão é o direito do membro sobre dado pessoal de terceiro (spec §9):
+    // tem de funcionar, e tem de pedir confirmação, porque não se desfaz.
+    if (!window.confirm('Excluir este cálculo? Não dá para desfazer.')) return
+    iniciar(async () => {
+      const r = await excluirCalculo(id)
+      if ('erro' in r) {
+        setErro(r.erro)
+        setTimeout(() => setErro(null), 6000)
+        return
+      }
+      router.push('/ferramentas/indulto-comutacao')
+      router.refresh()
+    })
+  }
+
+  return (
+    <div className={estilos.barra}>
+      <Botao variante="fantasma" tom="erro" onClick={excluir} carregando={pendente} desabilitado={pendente}>
+        Excluir este cálculo
+      </Botao>
+      {erro && (
+        <p role="alert" className={estilos.aviso} data-tom="erro">
+          {erro}
+        </p>
+      )}
+    </div>
+  )
+}
 ```
 
-Acrescente ao tipo das props:
+- [ ] **Step 3: Ligar a barra à calculadora**
+
+Em `Calculadora.tsx`:
+
+1. Importe `BarraSalvar from './BarraSalvar'`.
+2. Acrescente ao tipo das props `calculoId?: string` e `tituloInicial?: string`, e desestruture-as.
+3. Dentro da segunda `<div className={estilos.coluna}>`, antes do `<Resultado …/>`:
 
 ```tsx
-  acao?: (fd: FormData) => Promise<void>
-  id?: string
-  tituloInicial?: string
-  rotuloAcao?: string
+        <BarraSalvar motor={motor} entrada={entrada} calculoId={calculoId} tituloInicial={tituloInicial} />
 ```
 
-E dentro da segunda `<div className={estilos.coluna}>`, antes do `<Resultado …/>`:
+Acrescente ao fim de `calculadora.module.css`:
 
-```tsx
-        {acao && (
-          <BarraSalvar
-            motor={motor}
-            entrada={entrada}
-            acao={acao}
-            id={id}
-            tituloInicial={tituloInicial}
-            rotulo={rotuloAcao}
-          />
-        )}
+```css
+.barra { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 16px; }
+.barra input { flex: 1; min-width: 240px; padding: 8px; border: 1px solid var(--borda, #d1d5db); border-radius: 6px; font: inherit; }
+.aviso { flex-basis: 100%; margin: 0; font-size: 13px; }
+.aviso[data-tom='erro'] { color: #b91c1c; }
+.aviso[data-tom='ok'] { color: #15803d; }
+
+/* A barra é da tela, não do anexo: some na impressão. */
+@media print { .barra { display: none; } }
 ```
 
-- [ ] **Step 3: A lista**
+- [ ] **Step 4: A lista**
 
 ```tsx
 // src/app/(app)/ferramentas/indulto-comutacao/page.tsx
@@ -2384,6 +2531,7 @@ import Link from 'next/link'
 import { Scale } from 'lucide-react'
 import CabecalhoPagina from '@/components/ui/CabecalhoPagina'
 import EstadoVazio from '@/components/ui/EstadoVazio'
+import Botao from '@/components/ui/Botao'
 import { tituloDaPagina } from '@/server/marca'
 import { listarCalculos } from './calculos'
 
@@ -2393,29 +2541,36 @@ export async function generateMetadata() {
 
 export default async function ListaPage() {
   const calculos = await listarCalculos()
+  const novo = (
+    <Botao href="/ferramentas/indulto-comutacao/novo" variante="primario">
+      Novo cálculo
+    </Botao>
+  )
 
   return (
     <div style={{ display: 'grid', gap: 24 }}>
       <CabecalhoPagina
         titulo="Indulto e comutação"
         subtitulo="Os seus cálculos. Nenhum outro membro os vê."
-        acoes={<Link href="/ferramentas/indulto-comutacao/novo">Novo cálculo</Link>}
+        acoes={novo}
       />
 
       {calculos.length === 0 ? (
         <EstadoVazio
+          icone={<Scale size={20} strokeWidth={2} />}
           titulo="Nenhum cálculo salvo"
-          descricao="Crie o primeiro e ele fica guardado na sua conta."
+          texto="Crie o primeiro e ele fica guardado na sua conta."
+          acao={novo}
         />
       ) : (
         <ul style={{ display: 'grid', gap: 8, listStyle: 'none', padding: 0, margin: 0 }}>
           {calculos.map((c) => (
-            <li key={c.id} style={{ border: '1px solid #e5e7eb', borderRadius: 8, padding: 12 }}>
+            <li key={c.id} style={{ border: '1px solid var(--borda, #e5e7eb)', borderRadius: 8, padding: 12 }}>
               <Link href={`/ferramentas/indulto-comutacao/${c.id}`}>
                 <b>{c.titulo}</b>
               </Link>
               <div style={{ fontSize: 12, opacity: 0.7 }}>
-                <Scale size={12} /> {c.decreto_id} · motor {c.motor_versao} ·{' '}
+                {c.decreto_id} · motor {c.motor_versao} ·{' '}
                 {new Date(c.atualizado_em).toLocaleDateString('pt-BR')}
               </div>
             </li>
@@ -2427,9 +2582,7 @@ export default async function ListaPage() {
 }
 ```
 
-Se `CabecalhoPagina` não aceitar a prop `acoes`, leia `src/components/ui/CabecalhoPagina.tsx` e use a prop que ele expõe — não invente.
-
-- [ ] **Step 4: O novo cálculo**
+- [ ] **Step 5: O novo cálculo**
 
 ```tsx
 // src/app/(app)/ferramentas/indulto-comutacao/novo/page.tsx
@@ -2437,7 +2590,6 @@ import CabecalhoPagina from '@/components/ui/CabecalhoPagina'
 import { tituloDaPagina } from '@/server/marca'
 import { motorPadrao, REGISTRO } from '@/lib/indulto-comutacao/registro'
 import Calculadora from '../Calculadora'
-import { salvar } from '../acoes'
 
 export async function generateMetadata() {
   return { title: await tituloDaPagina('Novo cálculo') }
@@ -2458,13 +2610,13 @@ export default function NovoPage() {
             : motor.rotulo
         }
       />
-      <Calculadora motor={motor} acao={salvar} />
+      <Calculadora motor={motor} />
     </div>
   )
 }
 ```
 
-- [ ] **Step 5: O cálculo salvo, com o aviso de versão**
+- [ ] **Step 6: O cálculo salvo, com o aviso de versão**
 
 ```tsx
 // src/app/(app)/ferramentas/indulto-comutacao/[id]/page.tsx
@@ -2473,7 +2625,7 @@ import CabecalhoPagina from '@/components/ui/CabecalhoPagina'
 import { tituloDaPagina } from '@/server/marca'
 import { motorPorId } from '@/lib/indulto-comutacao/registro'
 import Calculadora from '../Calculadora'
-import { atualizar, excluir } from '../acoes'
+import BotaoExcluir from '../BotaoExcluir'
 import { lerCalculo } from '../calculos'
 
 export async function generateMetadata() {
@@ -2482,6 +2634,8 @@ export async function generateMetadata() {
 
 export default async function CalculoPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
+  // `lerCalculo` usa o cliente de sessão: a RLS devolve null para id inexistente,
+  // malformado ou de outro membro — os três viram 404, sem vazar qual foi.
   const calculo = await lerCalculo(id)
   if (!calculo) notFound()
 
@@ -2502,49 +2656,47 @@ export default async function CalculoPage({ params }: { params: Promise<{ id: st
 
       {mudou && (
         <div role="alert" style={{ border: '1px solid #a16207', borderRadius: 8, padding: 12 }}>
-          <b>Este cálculo mudou.</b> Ele foi salvo com o motor versão{' '}
-          {calculo.motor_versao}; a versão atual é a {motor.versao} e produz um resultado
-          diferente. O que aparece abaixo é o cálculo <b>refeito agora</b>. Salve de novo
-          para gravar o resultado atualizado.
+          <b>Este cálculo mudou.</b> Ele foi salvo com o motor versão {calculo.motor_versao}; a
+          versão atual é a {motor.versao} e produz um resultado diferente. O que aparece abaixo é o
+          cálculo <b>refeito agora</b>. Salve de novo para gravar o resultado atualizado.
         </div>
       )}
 
       <Calculadora
         motor={motor}
         inicial={calculo.entrada}
-        acao={atualizar}
-        id={calculo.id}
+        calculoId={calculo.id}
         tituloInicial={calculo.titulo}
-        rotuloAcao="Salvar alterações"
       />
 
-      <form action={excluir}>
-        <input type="hidden" name="id" value={calculo.id} />
-        <button type="submit">Excluir este cálculo</button>
-      </form>
+      <BotaoExcluir id={calculo.id} />
     </div>
   )
 }
 ```
 
-- [ ] **Step 6: Conferir tipos e build**
+- [ ] **Step 7: Conferir tipos e build**
 
 ```bash
 pnpm exec tsc --noEmit && pnpm build
 ```
 
-Esperado: ambos sem erro.
+Esperado: ambos sem erro. Se o `pnpm build` falhar por falta de variável de ambiente do Supabase, e
+não por erro do seu código, registre isso no relatório e siga com o `tsc` verde — não invente valores
+de ambiente.
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 8: Commit**
 
 ```bash
 git add "src/app/(app)/ferramentas/indulto-comutacao"
 git commit -m "Adiciona as telas da calculadora
 
-Lista, novo cálculo e cálculo salvo. O salvo é refeito a partir da entrada
-com o motor atual: quando a fórmula mudou desde que foi gravado, a tela
-avisa em vez de trocar o número em silêncio — o antigo pode já ter virado
-petição."
+Lista, novo cálculo e cálculo salvo, no padrão de tela do produto: o cliente
+chama a server action direto e mostra o erro num aviso local.
+
+O salvo é refeito a partir da entrada com o motor atual: quando a fórmula
+mudou desde que foi gravado, a tela avisa em vez de trocar o número em
+silêncio — o antigo pode já ter virado petição."
 ```
 
 ---
