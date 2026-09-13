@@ -160,6 +160,14 @@ describe('fmtDias() — o formato da planilha', () => {
     expect(fmtDias(Number.NaN)).toBe('-')
   })
 
+  it('devolve travessão para valor não-numérico vindo do banco', () => {
+    // O resultado é gravado em jsonb e volta sem garantia de tipo. Com
+    // `Number.isNaN` no lugar de `isNaN`, isto devolveria "NaN anos NaN meses
+    // NaN dias" — este teste é o que impede a "modernização".
+    expect(fmtDias('abc' as never)).toBe('-')
+    expect(fmtDias({} as never)).toBe('-')
+  })
+
   it('prefixa o negativo', () => {
     expect(fmtDias(-30)).toBe('- 0 anos 1 meses 0 dias')
   })
@@ -235,7 +243,12 @@ export function dias(t: Tempo | null | undefined): number {
  */
 export function fmtDias(nDias: number | null | undefined): string {
   // `null` é ausência de valor: a planilha devolvia #VALUE! (bug L145:L149).
-  if (nDias === null || nDias === undefined || Number.isNaN(nDias)) return '-'
+  //
+  // 🔴 `isNaN`, não `Number.isNaN`. Parece modernização inofensiva e não é: este
+  // valor volta do banco em coluna jsonb, sem garantia de tipo em runtime. O
+  // `Number.isNaN` deixaria um não-número atravessar a guarda e a função
+  // devolveria "NaN anos NaN meses NaN dias" — numa tela que vira petição.
+  if (nDias === null || nDias === undefined || isNaN(nDias)) return '-'
 
   const neg = nDias < 0
   const n = Math.abs(nDias)
@@ -255,8 +268,12 @@ export function fmtDias(nDias: number | null | undefined): string {
 /**
  * Sistema B — dias de calendário reais.
  *
- * Usado APENAS no inciso IV do Art. 9º (`F49`), que exige cumprimento
- * ininterrupto contado em tempo corrido. Em qualquer outro lugar, use dias().
+ * Existe para as regras que exigem cumprimento ininterrupto contado em tempo
+ * corrido, e só para elas: em qualquer cálculo de FRAÇÃO DE PENA a convenção
+ * correta é a 30/360 de `dias()`.
+ *
+ * Qual regra a usa é decisão de cada decreto — no Decreto 12.970/2025 é o
+ * inciso IV do Art. 9º, e só ele.
  */
 export function diasCorridos(de: Date | null, ate: Date | null): number {
   if (!de || !ate) return 0
