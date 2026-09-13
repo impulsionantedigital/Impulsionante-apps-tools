@@ -270,7 +270,8 @@ export function diasCorridos(de: Date | null, ate: Date | null): number {
 pnpm test
 ```
 
-Esperado: PASS, 12 testes.
+Esperado: PASS — todos os testes do arquivo acima, verdes. (Não confira por número: conte
+os `it()` do Step 5, não uma contagem escrita aqui.)
 
 - [ ] **Step 9: Commit**
 
@@ -470,7 +471,7 @@ export type MotorDecreto = {
 pnpm test
 ```
 
-Esperado: PASS, 14 testes.
+Esperado: PASS — a suíte inteira verde, incluindo o que a Task 1 já deixou passando.
 
 - [ ] **Step 5: Commit**
 
