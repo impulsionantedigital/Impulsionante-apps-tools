@@ -1,0 +1,144 @@
+/* resultado.module.css — a tela de resultado, sob a regra de contenção do produto
+ * (ver a nota no topo de globals.css): todo bloco de conteúdo é um PAINEL —
+ * `--superficie` + `--linha` + `--r-painel` + `--elev-1` juntos, sempre.
+ *
+ * 🔴 Cores vêm SÓ de token: `--borda`/`#e5e7eb`/`#15803d`... não existem neste kit
+ * (ele é escuro por padrão — ver globals.css). Hex solto aqui pintaria a tela como
+ * um relatório claro genérico dentro de um produto escuro.
+ *
+ * O destino do resultado é anexo de petição, impresso ou em PDF: sem `@media
+ * print`, o membro leva o menu lateral do CRM (e um fundo escuro) junto no papel.
+ */
+
+.resultado {
+  display: grid;
+  gap: var(--s-6);
+}
+
+.resumo {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--s-3);
+}
+.resumo > div {
+  display: grid;
+  gap: var(--s-1);
+  padding: var(--s-4);
+  background: var(--superficie);
+  border: 1px solid var(--linha);
+  border-radius: var(--r-painel);
+  box-shadow: var(--elev-1);
+}
+.resumo span { font-size: var(--fs-micro); color: var(--tinta-3); }
+.resumo b {
+  font-size: var(--fs-title);
+  font-weight: 600;
+  color: var(--tinta);
+  font-variant-numeric: tabular-nums;
+}
+
+.titulo {
+  font-size: var(--fs-title);
+  font-weight: 600;
+  color: var(--tinta);
+  margin: 0;
+}
+
+.cartoes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--s-3);
+}
+.cartao {
+  display: grid;
+  gap: var(--s-3);
+  align-content: start;
+  padding: var(--s-5);
+  background: var(--superficie);
+  border: 1px solid var(--linha);
+  border-radius: var(--r-painel);
+  box-shadow: var(--elev-1);
+}
+.cartao h3 { margin: 0; font-size: var(--fs-body); font-weight: 600; color: var(--tinta); }
+.cartao p { margin: 0; font-size: var(--fs-body); color: var(--tinta-3); }
+
+.selo {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-1) var(--s-3);
+  border-radius: var(--r-pill);
+  font-size: var(--fs-micro);
+  border: 1px solid currentColor;
+  width: fit-content;
+}
+.selo b { font-weight: 600; }
+
+/* Os quatro vereditos — a mesma distinção que `tipos.ts` (VEREDITOS) carrega.
+ * "Sem previsão no Decreto" fica no tom NEUTRO de `--tinta-3`, nunca no vermelho
+ * de `--erro`: são informações jurídicas diferentes, e é o motor quem decide
+ * qual das duas se aplica a cada dispositivo — aqui só se traduz em cor. */
+.preenche    { color: var(--ok); }
+.naoPreenche { color: var(--erro); }
+.aAnalisar   { color: var(--aviso); }
+.semPrevisao { color: var(--tinta-3); }
+
+.quantum {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--s-1) var(--s-4);
+  margin: 0;
+  font-size: var(--fs-body);
+}
+.quantum dt { color: var(--tinta-3); }
+.quantum dd { margin: 0; font-weight: 600; color: var(--tinta); font-variant-numeric: tabular-nums; }
+
+.validar, .notas {
+  padding: var(--s-5);
+  background: var(--superficie);
+  border: 1px solid var(--linha);
+  border-radius: var(--r-painel);
+  box-shadow: var(--elev-1);
+  font-size: var(--fs-body);
+  color: var(--tinta-2);
+}
+.validar h2 {
+  margin: 0 0 var(--s-3);
+  font-size: var(--fs-title);
+  font-weight: 600;
+  color: var(--tinta);
+}
+.validar ul, .notas ul {
+  margin: 0;
+  padding-left: var(--s-5);
+  display: grid;
+  gap: var(--s-2);
+}
+
+.proveniencia { font-size: var(--fs-micro); color: var(--tinta-3); margin: 0; }
+
+/* O resultado vira anexo de petição: imprime só ele, sem o shell do CRM — e em
+ * preto sobre branco, porque papel não tem tema escuro. Redefinir os TOKENS
+ * (não as propriedades) é o que propaga o preto/branco pra toda a árvore sem
+ * precisar repetir `.resultado *`: cada classe acima já lê `var(--tinta)` etc.,
+ * então sobrescrever o valor da variável no escopo de `.resultado` basta. */
+@media print {
+  .resultado {
+    --superficie: #fff;
+    --linha: #999;
+    --tinta: #000;
+    --tinta-2: #222;
+    --tinta-3: #444;
+    --ok: #000;
+    --erro: #000;
+    --aviso: #000;
+    --elev-1: none;
+    gap: var(--s-5);
+  }
+  .cartoes { grid-template-columns: repeat(2, 1fr); }
+  .cartao, .resumo > div, .validar, .notas {
+    break-inside: avoid;
+  }
+  .selo { border-color: #666; }
+  .proveniencia { opacity: 1; }
+}
