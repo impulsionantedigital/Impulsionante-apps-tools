@@ -1573,7 +1573,7 @@ export default function Resultado({
               <h3>{meta.rotulo}</h3>
               <p>{meta.descricao}</p>
               <Selo rotulo="Regra geral" veredito={r.geral} />
-              <Selo rotulo="Regra especial §2º" veredito={r.especial} />
+              <Selo rotulo="Regra especial" veredito={r.especial} />
             </article>
           )
         })}
@@ -1617,12 +1617,19 @@ export default function Resultado({
       </section>
 
       <p className={estilos.proveniencia}>
-        Calculado com {motor.rotulo} — motor versão {motor.versao}. Data-base: 25/12/2025.
+        Calculado com {motor.rotulo} — motor versão {motor.versao}. Data-base:{' '}
+        {motor.dataBase.split('-').reverse().join('/')}.
       </p>
     </div>
   )
 }
 ```
+
+🔴 **Este componente serve a TODOS os decretos.** Nada do decreto de 2025 pode estar escrito nele:
+a data-base vem de `motor.dataBase` (formatada para `DD/MM/AAAA`), e o selo diz "Regra especial",
+sem citar parágrafo — em que parágrafo a regra especial vive é decisão de cada decreto, e a
+descrição do inciso e os avisos já carregam esse contexto. Com o motor de 2026 no registro, uma
+data fixa aqui faria a tela afirmar a data-base errada.
 
 - [ ] **Step 2: Escrever o CSS, com folha de impressão**
 
@@ -1730,15 +1737,51 @@ versão do motor que gerou os números."
 O componente de cliente que mantém o estado da entrada, renderiza as seções e recalcula a cada tecla. O cálculo é função pura: roda no navegador, sem rede.
 
 **Files:**
+- Create: `src/lib/indulto-comutacao/padrao.ts`
+- Modify: `src/lib/indulto-comutacao/motores/2025/questionario.ts` (move `padraoDoCampo`, deixa reexport)
 - Create: `src/app/(app)/ferramentas/indulto-comutacao/Questionario.tsx`
 - Create: `src/app/(app)/ferramentas/indulto-comutacao/Calculadora.tsx`
 - Create: `src/app/(app)/ferramentas/indulto-comutacao/calculadora.module.css`
+- Test: `tests/indulto-comutacao/padrao.spec.ts`
 
 **Interfaces:**
 - Consumes: `Secao`, `Campo`, `Entrada`, `MotorDecreto`; o componente `Resultado` da Task 8.
 - Produces: `entradaInicial(motor: MotorDecreto): Entrada`; `Calculadora({ motor, inicial })`
   — a Task 11 acrescenta a este componente as props opcionais `acao`, `id`, `tituloInicial` e
   `rotuloAcao`, que ligam o formulário de salvar.
+
+- [ ] **Step 0: Mover `padraoDoCampo` para um módulo compartilhado**
+
+A `Calculadora` serve a todos os decretos e precisa da regra de valor inicial. Hoje ela mora em
+`motores/2025/questionario.ts` — importar de lá amarraria a tela ao decreto de 2025.
+
+A regra é **mecanismo, não dado de decreto**: o `padrao` explícito de um campo sempre vence, e só na
+ausência dele valem `'NÃO'` (quando está nas opções) e depois a primeira opção. Um decreto que queira
+outro comportamento declara `padrao` no campo.
+
+1. Crie `src/lib/indulto-comutacao/padrao.ts` com a função, movida **sem alteração de lógica**, e com
+   este comentário acima dela:
+
+```ts
+/**
+ * O valor com que um campo nasce no questionário.
+ *
+ * O `padrao` declarado pelo decreto vence sempre. Na ausência dele, 'NÃO'
+ * quando estiver entre as opções, senão a primeira opção. Campo que não é
+ * seleção nasce vazio.
+ *
+ * 🔴 Existe para a tela nunca mostrar um select em branco: o motor lê resposta
+ * vazia como 'NÃO' em silêncio, e o advogado veria um traço onde o cálculo
+ * considerou uma resposta.
+ */
+```
+
+2. Em `motores/2025/questionario.ts`, apague a função e deixe `export { padraoDoCampo } from '../../padrao'`
+   — o teste da Task 4 importa dali e precisa continuar verde sem edição.
+3. Crie `tests/indulto-comutacao/padrao.spec.ts` cobrindo as três ramificações com campos montados à
+   mão (não com o questionário de 2025): `padrao` declarado vence; sem `padrao`, `'NÃO'` quando está nas
+   opções; sem `'NÃO'`, a primeira opção; e campo que não é seleção devolve `''`.
+4. `pnpm test` — tudo verde, inclusive `questionario-2025.spec.ts`, intocado.
 
 - [ ] **Step 1: Escrever o renderizador de seções**
 
@@ -1821,7 +1864,6 @@ function CampoUnico({
           value={typeof valor === 'string' ? valor : ''}
           onChange={(e) => aoMudar(campo.chave, e.target.value)}
         >
-          <option value="">—</option>
           {campo.opcoes.map((o) => <option key={o} value={o}>{o}</option>)}
         </select>
       </div>
@@ -1854,6 +1896,7 @@ function CampoUnico({
 
 import { useMemo, useState } from 'react'
 import type { Entrada, MotorDecreto } from '@/lib/indulto-comutacao/tipos'
+import { padraoDoCampo } from '@/lib/indulto-comutacao/padrao'
 import Questionario from './Questionario'
 import Resultado from './Resultado'
 import estilos from './calculadora.module.css'
@@ -1869,7 +1912,7 @@ export function entradaInicial(motor: MotorDecreto): Entrada {
   const entrada: Entrada = {}
   for (const secao of motor.questionario) {
     for (const campo of secao.campos) {
-      if (campo.tipo === 'selecao' && campo.padrao) entrada[campo.chave] = campo.padrao
+      if (campo.tipo === 'selecao') entrada[campo.chave] = padraoDoCampo(campo)
       else if (campo.tipo === 'tempo') entrada[campo.chave] = { anos: 0, meses: 0, dias: 0 }
     }
   }
