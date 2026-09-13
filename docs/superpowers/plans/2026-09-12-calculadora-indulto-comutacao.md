@@ -1345,8 +1345,20 @@ independente, que é o que pega erro herdado do próprio engine.
 cat validacao/2025/validate-original.py
 ```
 
-Ele já resolve o problema: monta o modelo da planilha, injeta entradas e lê as saídas. Reaproveite
-o mapeamento de células dele — é a correspondência que os autores da POC já validaram.
+Ele já resolve o problema: monta o modelo da planilha, injeta entradas e lê as saídas.
+Reaproveite o mapeamento de células dele (`build_inputs`, e as funções `q()`/`r()` que endereçam
+as abas QUESTIONARIO e RESULTADO) — é a correspondência que os autores da POC já validaram, e
+refazê-la do zero é retrabalho com risco.
+
+Três coisas a corrigir ao adaptar:
+
+1. **`SRC` está hardcoded** para `/Users/sigapavon/Downloads/…`. Aponte para
+   `validacao/2025/planilha.xlsx`, resolvido relativo ao arquivo do script — o harness precisa
+   rodar em qualquer máquina.
+2. **`PFX` embute o nome do arquivo** da planilha, que mudou ao entrar no repositório. O prefixo
+   tem que casar com o nome real do arquivo, senão `formulas` não acha a célula.
+3. **Python 3.9 é o que está instalado nesta máquina** (`python3 --version`). Se a `formulas`
+   exigir mais novo, diga isso no README em vez de contornar.
 
 - [ ] **Step 2: Declarar a dependência**
 
