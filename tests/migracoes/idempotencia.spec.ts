@@ -45,21 +45,49 @@ describe('migrations novas aguentam rodar duas vezes', () => {
       expect(cruas.map((m) => m[0])).toEqual([])
     })
 
+    // Intervalos de cada bloco `do $$ ... end $$`, reaproveitados pelas três verificações de
+    // posição abaixo (`create policy`, `create trigger`, `add constraint`) — nenhuma delas tem
+    // uma forma `if not exists`, então só sobrevivem à segunda passada dentro de um bloco `do $$`
+    // que testa `pg_policies`/`pg_trigger`/`pg_constraint` antes de criar.
+    function blocosDo(sql: string): Array<[number, number]> {
+      const blocos: Array<[number, number]> = []
+      const abre = /do\s+\$\$/gi
+      let aberto: RegExpExecArray | null
+      while ((aberto = abre.exec(sql))) {
+        const fecha = /end\s+\$\$\s*;/gi
+        fecha.lastIndex = aberto.index
+        const fechado = fecha.exec(sql)
+        if (fechado) blocos.push([aberto.index, fechado.index + fechado[0].length])
+      }
+      return blocos
+    }
+
     it('toda `create policy` cai dentro de um bloco `do $$ ... end $$`', () => {
       // Verificação de posição, não heurística de contagem ou de indentação: calcula os
       // intervalos de cada bloco `do $$ ... end $$` e exige que toda ocorrência de
       // `create policy` caia dentro de algum deles — só assim ela sobrevive à segunda passada.
-      const blocos: Array<[number, number]> = []
-      const abre = /do\s+\$\$/gi
-      let aberto: RegExpExecArray | null
-      while ((aberto = abre.exec(semComentario))) {
-        const fecha = /end\s+\$\$\s*;/gi
-        fecha.lastIndex = aberto.index
-        const fechado = fecha.exec(semComentario)
-        if (fechado) blocos.push([aberto.index, fechado.index + fechado[0].length])
-      }
-
+      const blocos = blocosDo(semComentario)
       const foraDoBloco = [...semComentario.matchAll(/create\s+policy/gi)].filter(
+        (m) => !blocos.some(([inicio, fim]) => m.index >= inicio && m.index < fim),
+      )
+      expect(foraDoBloco.map((m) => m[0])).toEqual([])
+    })
+
+    it('toda `create trigger` cai dentro de um bloco `do $$ ... end $$`', () => {
+      // `create trigger` solto falha na segunda passada com "já existe" — é a mesma verificação
+      // de posição de `create policy`, acima.
+      const blocos = blocosDo(semComentario)
+      const foraDoBloco = [...semComentario.matchAll(/create\s+trigger/gi)].filter(
+        (m) => !blocos.some(([inicio, fim]) => m.index >= inicio && m.index < fim),
+      )
+      expect(foraDoBloco.map((m) => m[0])).toEqual([])
+    })
+
+    it('todo `add constraint` cai dentro de um bloco `do $$ ... end $$`', () => {
+      // `alter table ... add constraint` solto falha na segunda passada com "já existe" — mesma
+      // verificação de posição de `create policy`, acima.
+      const blocos = blocosDo(semComentario)
+      const foraDoBloco = [...semComentario.matchAll(/add\s+constraint/gi)].filter(
         (m) => !blocos.some(([inicio, fim]) => m.index >= inicio && m.index < fim),
       )
       expect(foraDoBloco.map((m) => m[0])).toEqual([])

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import { salvarModeloEmail, enviarTeste, type VistaModelos, type ItemModelo } from './acoes-email'
 import Botao from '@/components/ui/Botao'
 import { Entrada, AreaTexto } from '@/components/ui/Campo'
@@ -85,11 +86,23 @@ function Editor({
   podeTestar: boolean
   rotulo: string
 }) {
+  const router = useRouter()
   const [assunto, setAssunto] = useState(item.assunto)
   const [html, setHtml] = useState(item.html)
   const [erro, setErro] = useState<string | null>(null)
   const [ok, setOk] = useState<string | null>(null)
   const [pendente, comecar] = useTransition()
+
+  // `key={itemAberto.tipo}` no chamador só remonta o editor quando troca QUAL modelo está
+  // aberto — reabrir o mesmo modelo depois de um router.refresh() não remonta, e sem isto o
+  // texto salvo por outra aba (ou pelo router.refresh() abaixo) nunca chegaria aqui. Mesmo
+  // padrão de MarcaCard: ressincroniza quando a prop muda por referência.
+  const [ultimoItem, setUltimoItem] = useState(item)
+  if (item !== ultimoItem) {
+    setUltimoItem(item)
+    setAssunto(item.assunto)
+    setHtml(item.html)
+  }
 
   function mensagemDeErro(codigo: string): string {
     return codigo === 'nao_autorizado' ? 'Só o dono deste servidor pode mudar os modelos.'
@@ -106,6 +119,9 @@ function Editor({
       if ('erro' in r) { setOk(null); setErro(mensagemDeErro(r.erro)); return }
       setErro(null)
       setOk('Salvo.')
+      // Sem isto, `vista` (vinda do server component) nunca é relida: fechar e reabrir mostra
+      // o texto de antes, e salvar de novo grava por cima do que acabou de ser salvo.
+      router.refresh()
     })
   }
 
