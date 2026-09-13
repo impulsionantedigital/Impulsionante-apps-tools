@@ -321,6 +321,17 @@ export function calcular2025(entrada: Entrada): Resultado {
   ;(function () {
     const F = I63 === 3 || I64 === 1
     const I = I20 === 2 ? N16 <= 6 * 360 : N16 <= 4 * 360
+    // ⚖️ AMBIGUIDADE JURÍDICA PRESERVADA — não "conserte"
+    // Único `Rhalf` do decreto que MULTIPLICA por 2 em vez de dividir. Em todos os
+    // outros incisos o §2º corta pela metade uma fração EXIGIDA de cumprimento; aqui
+    // o que a regra fixa é um TETO de pena remanescente (≤6a/≤4a), e aplicar
+    // "metade" ao literal daria ≤3a/≤2a — ou seja, o §2º ficaria MAIS restritivo
+    // justamente para o perfil vulnerável, leitura absurda numa norma de favor.
+    // Dobrar o teto é o que alinha o VIII aos demais, onde o §2º sempre afrouxa.
+    // Herdado da planilha (engine.js:259) e exibido ao advogado em "Pontos a validar
+    // juridicamente". É INTERPRETAÇÃO, não transcrição — a única do decreto em que o
+    // sentido de "metade" se inverte — e merece conferência contra o texto do
+    // Decreto antes de assinar.
     const Rhalf = I20 === 2 ? N16 <= 6 * 360 * 2 : N16 <= 4 * 360 * 2
     const geral = gates5 && F && i18ok && hediondo && I && temPenaNaoImped
     const esp = gates5 && F && i18ok && hediondo && temPenaNaoImped && elegivelP && qOk && Rhalf

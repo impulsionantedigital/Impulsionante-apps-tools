@@ -160,9 +160,14 @@ export const AVISOS_2025 = {
     'Indulto do Art. 9º (I, II, XIV, XV) e do Art. 10 não alcança crimes cometidos com violência ou grave ameaça.',
     'A comutação do Art. 11 é calculada somente para crimes sem violência ou grave ameaça.',
   ],
-  // `avisos` do engine.js — as ambiguidades herdadas da planilha
+  // As ambiguidades herdadas da planilha. As duas primeiras são o `avisos` do
+  // engine.js, literais; as duas últimas saíram da auditoria do porte (Task 6) e
+  // não têm contraparte no engine — são pontos que o motor sempre teve e que
+  // ninguém nunca mostrou ao advogado.
   validarJuridicamente: [
     'A "pena após a comutação" usa a pena total imposta como base (fórmula original), sem descontar o tempo já cumprido — revisar interpretação jurídica.',
     'A base da comutação do Art. 13 e §4º usa o maior valor entre pena cumprida e pena remanescente — a comutação legalmente incide sobre a remanescente.',
+    'No Art. 9º, VIII, a regra especial do §2º DOBRA o teto da pena remanescente (de 6 anos para 12, ou de 4 para 8) em vez de reduzi-lo à metade, ao contrário de todos os outros incisos. A planilha faz assim porque ali o §2º incide sobre um teto, e não sobre uma fração exigida de cumprimento — reduzir pela metade tornaria o §2º mais restritivo para o perfil vulnerável. É interpretação, não transcrição: conferir contra o texto do Decreto.',
+    'Nos incisos do Art. 11, responder "NÃO SE APLICA" à reincidência satisfaz TANTO o requisito de "reincidente obrigatório" (I e III) quanto o de "não reincidente obrigatório" (II), porque a fórmula original testa a diferença e não a igualdade. Se a reincidência for controvertida nos autos, responder "SIM" ou "NÃO" em vez de "NÃO SE APLICA".',
   ],
 }
