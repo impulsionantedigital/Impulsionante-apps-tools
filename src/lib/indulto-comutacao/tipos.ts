@@ -36,9 +36,11 @@ export function ehVeredito(v: unknown): v is Veredito {
 /**
  * O resultado de um dispositivo.
  *
- * `geral` e `especial` são vereditos INDEPENDENTES: a regra especial do §2º
- * concede fração menor a quem se enquadra no perfil de vulnerabilidade. Onde o
- * decreto não prevê regra especial, `especial` é 'sem_previsao'.
+ * `geral` e `especial` são vereditos INDEPENDENTES: além da regra cheia, um
+ * decreto pode prever uma regra especial, de fração menor, para quem se enquadra
+ * num perfil de vulnerabilidade. Em que parágrafo ela vive, e a quais
+ * dispositivos se aplica, é decisão de cada decreto — onde não houver previsão,
+ * `especial` é 'sem_previsao', que é diferente de 'nao_preenche'.
  *
  * `quantum` e `penaApos` só aparecem nos dispositivos de comutação. `null`
  * significa ausência de valor — a planilha devolvia #VALUE! (bug L145:L149).
