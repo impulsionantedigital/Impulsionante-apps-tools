@@ -24,6 +24,16 @@ describe('backoff', () => {
   })
 })
 
+describe('constantes', () => {
+  it('fixa IDADE_MAX_MS em 7 dias', () => {
+    expect(IDADE_MAX_MS).toBe(7 * 24 * 60 * 60 * 1000)
+  })
+
+  it('fixa MAX_TENTATIVAS em 8', () => {
+    expect(MAX_TENTATIVAS).toBe(8)
+  })
+})
+
 describe('deveDesistir', () => {
   const agora = 1_800_000_000_000
 
