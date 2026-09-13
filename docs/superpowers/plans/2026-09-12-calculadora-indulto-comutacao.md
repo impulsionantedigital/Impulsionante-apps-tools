@@ -1440,8 +1440,37 @@ o porte pode estar errado.
 - [ ] **Step 5: Escrever a regressão**
 
 `tests/indulto-comutacao/motor-2025.spec.ts` lê `validacao/2025/esperado.json` e compara com
-`calcular2025`, cenário a cenário, traduzindo o código do veredito para a string da planilha
-pelo mesmo mapa `ROTULO` da Task 6.
+`calcular2025`, cenário a cenário. Três detalhes que não são óbvios:
+
+- **O mapa código → texto é o `VEREDITOS` de `src/lib/indulto-comutacao/tipos.ts`.** Não existe
+  `ROTULO` exportado em lugar nenhum; não crie outro.
+- **O motor devolve números; a planilha devolve texto formatado** (`"X anos Y meses Z dias"`) nas
+  células de quantum e pena após. Formate o número com `fmtDias` e compare **em dias com tolerância
+  de 1 dia**, como o `equivalentes()` do `validate-original.py` já faz — a tolerância existe por
+  arredondamento da planilha. Deixe-a explícita e comentada, não escondida.
+- Para as células de comutação quando o dispositivo **não** preenche, a planilha escreve texto
+  (`"Sem Comutação"` ou erro) e o motor devolve `null`. Trate como equivalentes, citando o bug
+  `L145:L149`; e mantenha o desvio documentado do `G149` que o harness original já tratava.
+
+- [ ] **Step 5b: Acrescentar cenários que só a planilha pode julgar**
+
+A paridade da Task 6 prova que o motor ≡ `engine.js`. **Ela não pega erro do próprio `engine.js`**
+— só a planilha pega. Acrescente ao `validacao/2025/cenarios.json` cenários posicionados (não fuzz:
+cada cálculo na planilha é caro):
+
+1. **`justicaRestaurativa: 'SIM'` como único critério do perfil do §2º**, num caso em que a regra
+   especial de algum inciso só preenche por causa dele. O harness original já injeta E51, mas
+   nenhum cenário o usava. Isto confirma, contra a fonte de verdade, que o campo acrescentado na
+   Task 4 muda o resultado.
+2. **Inciso VIII com perfil do §2º e remanescente entre o teto geral e o teto dobrado** (ex.: não
+   reincidente, remanescente de 8 anos: acima de 6, abaixo de 12). Decide se o `*2` do `Rhalf` é da
+   planilha ou do `engine.js`.
+3. **Art. 11, III** — mulher, reincidente, filho até 16 anos, pena cumprida **entre 1/5 e 1/2** do
+   não impeditivo. Decide se a planilha exige mesmo 1/5 como o `engine.js`.
+4. **Art. 13 na fronteira exata** (`D6 + G7 + G8 == N13`, onde o Art. 13 usa `<` e o §4º usa `<=`).
+
+🔴 **Se a planilha divergir do `engine.js` no cenário 2 ou 3, PARE e relate.** Não ajuste o motor,
+não ajuste o cenário: é questão jurídica, e decide quem é dono do produto.
 
 - [ ] **Step 6: Reconciliar até zerar**
 
