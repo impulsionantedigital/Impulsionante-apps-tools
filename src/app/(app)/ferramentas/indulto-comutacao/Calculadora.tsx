@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react'
 import type { Entrada, MotorDecreto } from '@/lib/indulto-comutacao/tipos'
 import { padraoDoCampo } from '@/lib/indulto-comutacao/padrao'
+import { motorPorId } from '@/lib/indulto-comutacao/registro'
 import Questionario from './Questionario'
 import Resultado from './Resultado'
 import BarraSalvar from './BarraSalvar'
@@ -28,29 +29,58 @@ export function entradaInicial(motor: MotorDecreto): Entrada {
 
 // 🔴 Serve a TODOS os decretos, como o Resultado que compõe: nada de
 // `motores/2025/` importado aqui. Quem decide o questionário é o `motor`.
+//
+// 🔴 RECEBE O `decretoId`, NUNCA O MOTOR. Parece um rodeio — a página do
+// servidor já tem o motor na mão — mas não é: `MotorDecreto` carrega o método
+// `calcular`, e função não atravessa a fronteira servidor→cliente. O React
+// recusa a prop inteira ao serializar e a página devolve 500:
+//
+//     Functions cannot be passed directly to Client Components
+//     {id: ..., questionario: ..., calcular: function calcular}
+//
+// Foi exatamente esse o defeito que derrubou `/novo` e `/[id]` em produção
+// (ver `docs/calculadora-indulto-comutacao/fronteira-rsc.md`). Resolvendo o id aqui, o motor é
+// importado pelo BUNDLE DO CLIENTE, que é o que o cálculo ao vivo exige de
+// qualquer forma.
 export default function Calculadora({
-  motor,
+  decretoId,
   inicial,
   calculoId,
   tituloInicial,
   somenteLeitura = false,
 }: {
-  motor: MotorDecreto
+  /** Id do decreto no registro (`motor.id`), não o motor. Ver o comentário acima. */
+  decretoId: string
   inicial?: Entrada
   calculoId?: string
   tituloInicial?: string
   /** Acesso encerrado: vê o cálculo, não salva. A ação no servidor recusa de qualquer forma. */
   somenteLeitura?: boolean
 }) {
-  const [entrada, setEntrada] = useState<Entrada>(() => inicial ?? entradaInicial(motor))
+  // O registro é o mesmo dos dois lados; quem chega aqui já teve o id validado
+  // pela página do servidor, que devolve 404 para decreto desconhecido.
+  const motor: MotorDecreto | null = useMemo(() => motorPorId(decretoId), [decretoId])
+
+  const [entrada, setEntrada] = useState<Entrada>(() =>
+    inicial ?? (motor ? entradaInicial(motor) : {}),
+  )
 
   // `calcular` é função pura e barata: roda no navegador a cada tecla, sem rede.
   // Nada sai daqui até o membro salvar.
-  const resultado = useMemo(() => motor.calcular(entrada), [motor, entrada])
+  const resultado = useMemo(() => (motor ? motor.calcular(entrada) : null), [motor, entrada])
 
   const aoMudar = (chave: string, valor: Entrada[string]) => {
     if (somenteLeitura) return
     setEntrada((atual) => ({ ...atual, [chave]: valor }))
+  }
+
+  // Depois dos hooks, sempre — a ordem deles não pode depender do motor.
+  if (!motor || !resultado) {
+    return (
+      <div className={estilos.avisoVersao} role="alert">
+        <b>Decreto indisponível.</b> Esta calculadora não conhece o decreto <code>{decretoId}</code>.
+      </div>
+    )
   }
 
   return (

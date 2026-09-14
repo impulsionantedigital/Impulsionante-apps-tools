@@ -34,7 +34,7 @@ from emails_fila order by criado_em desc limit 5;
 ```
 
 
-## ▶ RETOMAR AQUI — Plano 2: bloco A publicado; bloco B revisto e pronto, aguarda ok para publicar
+## ▶ RETOMAR AQUI — Plano 2 concluído: blocos A e B publicados e verificados em produção
 
 Aprovado pelo usuário em 2026-09-13: manter o spec e o plano do Claude, aproveitar só o que faz
 sentido do trabalho do Codex (arquivado fora do repositório, em `scratchpad/codex-arquivo`).
@@ -109,9 +109,38 @@ iam no bundle do layout e chegavam ao comprador por chamada direta; corrigido em
    nenhum workspace perdem o CRM; e as tabelas de CRM seguem legíveis pelo console a qualquer
    membro (sem dado de CRM, não expõe nada).
 
-**Falta, nesta ordem:**
-1. **Ok do usuário para publicar** (merge no `main` → produção; abre o webhook e aplica a `0065`).
-2. Roteiro de verificação do bloco B no servidor (abaixo).
+**🔴 DEFEITO CRÍTICO ACHADO E CORRIGIDO EM 14/09/2026 — FALTA PUBLICAR.**
+
+A calculadora devolvia **500** em `/ferramentas/indulto-comutacao/novo` e `/[id]`: a página do
+servidor passava o objeto `motor` (que tem o método `calcular`) como prop para a `Calculadora`,
+que é `'use client'`, e o React recusa função ao serializar. Quer dizer: o comprador pagava,
+entrava, e a ferramenta não abria. Nem o TypeScript nem o `pnpm build` nem os 1529 testes pegavam,
+porque as páginas são dinâmicas e o erro nascia a cada requisição.
+
+Corrigido: a `Calculadora` recebe `decretoId` e resolve o motor pelo registro, do lado do cliente.
+Verificado com navegador real contra o banco de produção — login, troca de senha, cálculo ao vivo,
+gravação e a página `[id]`. Guarda de regressão em `tests/fronteira-rsc.spec.ts` (três verificações,
+todas provadas por inversão). **História completa, causa, regra e varredura do resto do código:
+`docs/calculadora-indulto-comutacao/fronteira-rsc.md`.**
+
+⚠️ **Em produção as duas rotas seguem quebradas até o merge no `main`.**
+
+**Verificado em produção em 2026-09-14 — o circuito inteiro, ponta a ponta:**
+
+Três compras `PURCHASE_APPROVED` entraram pelo webhook real (`HP0000000003/4/5`, oferta `3kavznaa`).
+Cada uma: conta criada no Auth, membro com nome e CPF, venda `ativa`, período 13/09→13/10 do produto
+`indulto-comutacao-2025`, e os dois e-mails (acesso + entrega) enviados sem erro. O comprador
+`+3` entrou com a senha temporária do e-mail, trocou-a, e o `senha_temporaria_hash` foi apagado —
+a troca obrigatória funciona de verdade. Os outros dois seguem com a temporária pendente e válida
+por sete dias, como esperado de quem ainda não entrou.
+
+**Armadilha que apareceu no teste, e não é defeito:** reenviar o payload trocando só a transação e o
+CPF **não cria nada** e devolve 200. Quem identifica a entrega é o campo `id` do topo do envelope
+(`lerEventoHotmart` → `envelope.id`), com chave única em `webhook_compras_recebidas`. Repetido, o
+código encontra o evento anterior já processado e devolve `ok` sem reprocessar
+(`src/server/vendas/processar.ts`, ramo do erro `23505`). É essa regra que impede venda duplicada
+quando a Hotmart reentrega. **Para testar à mão, troque também o `id`** — a Hotmart gera um novo a
+cada evento, por isso em produção isto nunca prende.
 
 **Riscos residuais anotados:**
 - Tabelas de CRM continuam legíveis pelo console a qualquer membro (RLS `e_membro`). Aceitável só
@@ -120,8 +149,9 @@ iam no bundle do layout e chegavam ao comprador por chamada direta; corrigido em
   as de outras telas de CRM só são carregadas por rotas que o proxy já recusa.
 - `/sem-workspace` ainda deixa criar workspace a quem tem **zero** vínculos (por exemplo, um cadastro
   por convite cujo aceite falhou). Exige convite emitido por um owner, logo gente de confiança.
-- O motor da calculadora corre no navegador: com acesso encerrado, quem insistir calcula pelo
-  console. Só a gravação é barrada de verdade.
+- O motor da calculadora corre no navegador (é o desenho, e desde 14/09/2026 é de fato o que
+  acontece — ver `docs/calculadora-indulto-comutacao/fronteira-rsc.md`): com acesso encerrado, quem
+  insistir calcula pelo console. Só a gravação é barrada de verdade, pela server action.
 - Membros não-owner que já tinham cálculos antes de haver vendas ficam sem acesso a eles.
 - Duas compras do mesmo produto e membro no mesmo instante podem sobrepor dias; cancelar a venda
   atual com uma renovação empilhada deixa um intervalo sem acesso.
@@ -206,6 +236,31 @@ fazia sentido, e o resto está arquivado fora do repositório.
 - **Dois commits têm o trailer colado na linha de assunto** (`951bade`, `7dc7a51`). Não corrigido:
   reescrever a história invalidaria o registo de que cada commit foi revisto.
 
+## Subir o produto localmente contra o banco de produção (para testar de ponta a ponta)
+
+Foi assim que o defeito da calculadora (§ acima) foi confirmado e a correção verificada.
+
+```bash
+export SUPABASE_DB_URL=…          # a do EasyPanel
+export SUPABASE_ANON_KEY=…        # ⚠️ ver a armadilha abaixo
+export SUPABASE_SERVICE_ROLE_KEY=…
+PORT=3311 pnpm build && PORT=3311 pnpm start
+```
+
+- **🔴 A `SUPABASE_ANON_KEY` não pode ser adivinhada nem colhida do site.** Todo o `auth` desta
+  instalação passa por server action, então a chave **nunca chega ao navegador** — não adianta
+  procurá-la no HTML nem nos chunks de produção. Com uma chave errada o login até funciona
+  (`verifyOtp` usa outro caminho), mas o `getUser()` do proxy falha em silêncio e **toda** rota
+  protegida devolve redirecionamento para `/entrar`, o que parece sessão inválida e não é. O
+  sintoma que denuncia: `curl -H "apikey: <chave>" $SUPABASE_URL/auth/v1/settings` devolve 401.
+  Pegue a chave real no EasyPanel. (Em último caso, para um teste local, a service role key serve
+  de `apikey`: o PostgREST continua honrando a RLS pelo JWT do usuário no `Authorization`.)
+- Para entrar sem esperar e-mail, grave uma senha temporária direto no membro com o
+  `criarCredencial()` do próprio repositório (`src/lib/auth/credenciais.ts`) — é o mesmo código que
+  o sistema usa, então o `scrypt` bate.
+- **Conta de teste em 14/09/2026:** `alexandre.pavon+4@gmail.com` ficou com a senha
+  `TesteLocal2026!`, definida durante essa verificação.
+
 ## Armadilhas deste repositório
 
 - **`pnpm build` regenera `next-env.d.ts`**, que é versionado e está no `awave-manifest.json`.
@@ -217,6 +272,26 @@ fazia sentido, e o resto está arquivado fora do repositório.
   porque outro agente commitou enquanto ela estava ativa. Confira a branch antes de commitar.
 - **Nunca restaure um arquivo copiando-o para o lado e de volta** — deixou um duplicado perdido
   em `src/` que passou por uma revisão.
+- **🔴 Esta máquina recria arquivos apagados como duplicados `nome 2.ext`.** Em 14/09/2026 apaguei
+  `src/app/teste-rsc/` (rota descartável de diagnóstico) e minutos depois a pasta reapareceu com
+  `page 2.tsx` dentro — arquivo com permissão `-rw-------`, recriado pela sincronização do sistema,
+  não por nenhum comando meu. O mesmo padrão do `src/lib/retentativa 2.ts` de antes, e há
+  `… 3.ts` iguais dentro do `.next`. **Perigo real:** um desses entra no commit sem ninguém ver, e
+  como não é `page.tsx` o Next nem o trata como rota — ele só quebra o `tsc` (importa um vizinho que
+  já não existe) ou, pior, fica ali como código morto. **Antes de todo commit, rode:**
+
+  ```bash
+  find . -path ./node_modules -prune -o -path ./.next -prune -o -path ./.git -prune \
+       -o -name "* [0-9].*" -print
+  ```
+
+  Se listar qualquer coisa em `src/` ou `tests/`, apague antes de commitar.
+
+  Os duplicados **dentro do `.next`** não vão para o commit (a pasta é ignorada), mas envenenam o
+  `pnpm exec tsc --noEmit`: o `tsconfig` inclui `.next/types`, e um `routes.d 2.ts` ao lado do
+  `routes.d.ts` vira "Duplicate identifier" e "Cannot find module" de rotas que já não existem —
+  erros fantasma, que não vêm do código. Limpe com
+  `find .next -name "* [0-9].*" -delete` e rode o `tsc` de novo antes de acreditar no relatório.
 - **`git clean -fdx` destrói o ledger** em `.superpowers/sdd/`, que é git-ignored.
 - **Não há banco nem SMTP sob teste.** A lógica testável vive em `src/lib/`; `src/server/` é fino.
 - **Migration que falha impede o contentor de subir** em toda instalação. A guarda em
