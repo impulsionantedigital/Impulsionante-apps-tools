@@ -101,6 +101,11 @@ describe('POST /api/webhook/[plataforma]', () => {
     expect(mocks.getSecret).toHaveBeenCalledTimes(1)
   })
 
+  it('confere o token ANTES de ler o corpo: sem token, corpo gigante é 401 e não 413', async () => {
+    const r = await chamar({ token: 'errado', corpo: 'x'.repeat(1_000_001) })
+    expect(r.status).toBe(401)
+  })
+
   // Por último: gasta o balde do limitador, que é do módulo.
   it('chamadas sem token não gastam o limitador das legítimas', async () => {
     for (let i = 0; i < 130; i++) expect((await chamar({ token: 'errado' })).status).toBe(401)

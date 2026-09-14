@@ -34,7 +34,7 @@ from emails_fila order by criado_em desc limit 5;
 ```
 
 
-## ▶ RETOMAR AQUI — Plano 2: bloco A publicado; bloco B corrigido, aguarda re-revisão e ok
+## ▶ RETOMAR AQUI — Plano 2: bloco A publicado; bloco B revisto e pronto, aguarda ok para publicar
 
 Aprovado pelo usuário em 2026-09-13: manter o spec e o plano do Claude, aproveitar só o que faz
 sentido do trabalho do Codex (arquivado fora do repositório, em `scratchpad/codex-arquivo`).
@@ -95,16 +95,31 @@ publicar** (detalhe na §16.2 do spec):
 
 Verificado: 1528 testes, tipos e `pnpm build` verdes.
 
+**Re-revisão concluída em 2026-09-13:** todos os achados endereçados, sem quebra nova crítica — sem
+loop de redirecionamento, nenhum dono preso em `/ferramentas`, a `0065` não quebra leitura legítima,
+e revogar `criar_workspace` não afeta o cadastro. Ela apontou que as ações de CRM do painel lateral
+iam no bundle do layout e chegavam ao comprador por chamada direta; corrigido em `sessaoEws()`.
+1529 testes, tipos e build verdes.
+
+**Condições para publicar** (da re-revisão):
+1. Endereço público e SMTP configurados **antes** de ativar a oferta na Hotmart — sem o endereço, a
+   compra fica paga e gravada, mas o comprador não recebe a senha e não entra.
+2. `signup_aberto` continua `false` (é o padrão; nenhuma tela o muda).
+3. Aceitas pelo usuário, pela decisão "só ferramentas": convidados `membro` que não são donos de
+   nenhum workspace perdem o CRM; e as tabelas de CRM seguem legíveis pelo console a qualquer
+   membro (sem dado de CRM, não expõe nada).
+
 **Falta, nesta ordem:**
-1. Re-revisão escopada das correções.
-2. **Ok do usuário para publicar** (merge no `main` → produção; abre o webhook e aplica a `0065`).
-3. Roteiro de verificação do bloco B no servidor (abaixo).
+1. **Ok do usuário para publicar** (merge no `main` → produção; abre o webhook e aplica a `0065`).
+2. Roteiro de verificação do bloco B no servidor (abaixo).
 
 **Riscos residuais anotados:**
 - Tabelas de CRM continuam legíveis pelo console a qualquer membro (RLS `e_membro`). Aceitável só
   porque a instalação não tem dado de CRM — **se um dia tiver, isto tem de ser revisto.**
-- Uma server action de CRM chamada diretamente pelo id, a partir de uma rota de ferramentas, não
-  passa pelo bloqueio de rotas do proxy.
+- As ações de CRM do painel lateral recusam comprador (`sessaoEws()` em `src/server/crm/acoes.ts`);
+  as de outras telas de CRM só são carregadas por rotas que o proxy já recusa.
+- `/sem-workspace` ainda deixa criar workspace a quem tem **zero** vínculos (por exemplo, um cadastro
+  por convite cujo aceite falhou). Exige convite emitido por um owner, logo gente de confiança.
 - O motor da calculadora corre no navegador: com acesso encerrado, quem insistir calcula pelo
   console. Só a gravação é barrada de verdade.
 - Membros não-owner que já tinham cálculos antes de haver vendas ficam sem acesso a eles.
