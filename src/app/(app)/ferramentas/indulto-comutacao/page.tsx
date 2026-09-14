@@ -1,7 +1,5 @@
-import Link from 'next/link'
 import { Scale } from 'lucide-react'
 import CabecalhoPagina from '@/components/ui/CabecalhoPagina'
-import { formatarDataHora } from '@/lib/data-hora'
 import EstadoVazio from '@/components/ui/EstadoVazio'
 import Botao from '@/components/ui/Botao'
 import { tituloDaPagina } from '@/server/marca'
@@ -9,6 +7,7 @@ import { redirect } from 'next/navigation'
 import { listarCalculos } from './calculos'
 import { estadoDoProduto } from '@/server/vendas/acesso'
 import { PRODUTOS } from '@/lib/produtos/catalogo'
+import ListaCalculos from './ListaCalculos'
 import estilos from './calculadora.module.css'
 
 export async function generateMetadata() {
@@ -54,20 +53,7 @@ export default async function ListaPage() {
           acao={novo}
         />
       ) : (
-        <ul className={estilos.lista}>
-          {calculos.map((c) => (
-            <li key={c.id} className={estilos.item}>
-              <Link href={`/ferramentas/indulto-comutacao/${c.id}`} className={estilos.itemLink}>
-                <b className={estilos.itemTitulo}>{c.titulo}</b>
-              </Link>
-              <div className={estilos.itemMeta}>
-                {c.decreto_id} · motor {c.motor_versao} ·{' '}
-                {/* Fuso explícito: esta lista é renderizada no servidor, que roda em UTC. */}
-                {formatarDataHora(c.atualizado_em)}
-              </div>
-            </li>
-          ))}
-        </ul>
+        <ListaCalculos calculos={calculos} />
       )}
     </div>
   )

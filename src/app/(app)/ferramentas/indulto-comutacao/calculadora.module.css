@@ -234,23 +234,24 @@
   padding: 0;
 }
 
+/* O card inteiro é o link (ver ListaCalculos.tsx) — antes .item vivia no <li> e só o título,
+   dentro dele, era um <a>; a diferença entre "parece clicável" e "é clicável" era exatamente
+   essa borda entre os dois elementos. */
 .item {
+  display: block;
   padding: var(--s-4) var(--s-5);
   background: var(--superficie);
   border: 1px solid var(--linha);
   border-radius: var(--r-painel);
   box-shadow: var(--elev-1);
+  color: inherit;
+  text-decoration: none;
   transition: border-color var(--t-rapido) var(--suave);
 }
 .item:hover {
   border-color: var(--linha-forte);
 }
-
-.itemLink {
-  color: inherit;
-  text-decoration: none;
-}
-.itemLink:focus-visible {
+.item:focus-visible {
   outline: 2px solid var(--acento);
   outline-offset: 2px;
   border-radius: var(--r-pequeno);
@@ -266,6 +267,22 @@
 .itemMeta {
   font-size: var(--fs-micro);
   color: var(--tinta-3);
+}
+
+.listaWrap {
+  display: grid;
+  gap: var(--s-4);
+}
+
+.busca {
+  max-width: 480px;
+}
+
+.buscaVazia {
+  margin: 0;
+  padding: var(--s-4) var(--s-5);
+  color: var(--tinta-3);
+  font-size: var(--fs-body);
 }
 
 /* O aviso "Este cálculo mudou" — mesmo tom de atenção de `.aviso` acima,
