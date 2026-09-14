@@ -6,6 +6,17 @@ import { formatarDataHora } from '@/lib/data-hora'
 import type { Entrada, MotorDecreto } from '@/lib/indulto-comutacao/tipos'
 import estilos from './resultado.module.css'
 
+/**
+ * O que só existe no PAPEL: identifica o caso e mostra as premissas do cálculo.
+ *
+ * 🔴 Não aparece na tela (`display: none` fora de `@media print`). Na tela o advogado tem o
+ * questionário ao lado, preenchido por ele; repetir tudo ali seria ruído. No papel o
+ * questionário não vai — e sem isto o anexo chegava ao juiz sem número de execução, sem data e
+ * sem dizer de onde saíram os números.
+ *
+ * 🔴 A data é fixada num efeito, não no corpo do componente. `new Date()` durante a renderização
+ * daria um valor no servidor e outro no navegador, e o React acusaria divergência de hidratação.
+ */
 export default function CabecalhoAnexo({
   motor,
   entrada,
