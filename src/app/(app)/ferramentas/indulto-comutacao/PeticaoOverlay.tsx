@@ -28,7 +28,7 @@ export default function PeticaoOverlay({
   // Só uma opção aplicável: pula a tela de escolha e vai direto para o texto.
   const soUmaOpcao = temIndulto !== temComutacao
   const tipoEfetivo = tipo ?? (soUmaOpcao ? (temIndulto ? 'indulto' : 'comutacao') : null)
-  const textoGerado = tipoEfetivo ? gerarTexto(tipoEfetivo) : ''
+  const textoGerado = aberto && tipoEfetivo ? gerarTexto(tipoEfetivo) : ''
 
   function fechar() {
     setTipo(null)
