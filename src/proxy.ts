@@ -29,7 +29,7 @@ export function deveDiagnosticar(pathname: string, emDiagnostico: boolean): bool
 
 
 export function ehIngressPublico(pathname: string): boolean {
-  return /^\/api\/canais\/[^/]+\/webhook(\/|$)/.test(pathname)
+  return /^\/api\/canais\/[^/]+\/webhook(\/|$)/.test(pathname) || /^\/api\/webhook\/[^/]+\/?$/.test(pathname)
 }
 
 export async function proxy(request: NextRequest): Promise<NextResponse> {

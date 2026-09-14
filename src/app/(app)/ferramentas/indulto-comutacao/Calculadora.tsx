@@ -33,11 +33,14 @@ export default function Calculadora({
   inicial,
   calculoId,
   tituloInicial,
+  somenteLeitura = false,
 }: {
   motor: MotorDecreto
   inicial?: Entrada
   calculoId?: string
   tituloInicial?: string
+  /** Acesso encerrado: vê o cálculo, não salva. A ação no servidor recusa de qualquer forma. */
+  somenteLeitura?: boolean
 }) {
   const [entrada, setEntrada] = useState<Entrada>(() => inicial ?? entradaInicial(motor))
 
@@ -54,12 +57,19 @@ export default function Calculadora({
         <Questionario secoes={motor.questionario} entrada={entrada} aoMudar={aoMudar} />
       </div>
       <div className={estilos.coluna}>
-        <BarraSalvar
-          motor={motor}
-          entrada={entrada}
-          calculoId={calculoId}
-          tituloInicial={tituloInicial}
-        />
+        {somenteLeitura ? (
+          <div className={estilos.avisoVersao} role="status">
+            <b>Acesso encerrado.</b> Você pode consultar e excluir os seus cálculos, mas criar e
+            editar exige renovar o acesso.
+          </div>
+        ) : (
+          <BarraSalvar
+            motor={motor}
+            entrada={entrada}
+            calculoId={calculoId}
+            tituloInicial={tituloInicial}
+          />
+        )}
         <Resultado motor={motor} resultado={resultado} />
       </div>
     </div>

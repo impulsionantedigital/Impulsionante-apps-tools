@@ -1081,3 +1081,48 @@ suporte deles pedindo a atualização da lista de extensões.
 
 > 💡 Como no §8.2, o deploy **falha sem te derrubar**: se o seu CRM já estava no ar, o EasyPanel
 > mantém a versão anterior servindo enquanto você conserta.
+
+## 6.7 Vendas pela Hotmart (opcional)
+
+O CRM pode liberar o acesso às ferramentas a partir de compras feitas na Hotmart: a compra
+aprovada cria a conta do comprador (ou encontra a que já existe, pelo CPF/CNPJ ou pelo e-mail),
+registra a venda e libera os produtos pelo tempo que a oferta define. Cancelamento, reembolso e
+chargeback encerram o acesso daquela venda.
+
+**Quem não configurar nada disto não muda nada:** as ferramentas continuam como estão.
+
+### Antes de começar
+
+1. **E-mail configurado** (as variáveis `SMTP_*` do `.env.example`). É por e-mail que o
+   comprador recebe a senha temporária e o aviso de produto liberado.
+   Na porta **587**, use `SMTP_SECURE=false` ou deixe em branco; `true` é só para a porta 465.
+2. **Endereço público deste CRM**, em **Configurações → Comercial** (é o mesmo campo da tela de
+   Canais). Sem ele não há endereço de webhook nem links nos e-mails.
+
+### O passo a passo
+
+1. Em **Configurações → Comercial**, copie o **endereço do webhook** —
+   `https://SEU-CRM/api/webhook/hotmart`.
+2. Na Hotmart, em **Ferramentas → Webhook**, crie uma configuração com esse endereço, versão
+   **2.0.0**, e marque os eventos:
+   - Compra aprovada (`PURCHASE_APPROVED`)
+   - Compra cancelada (`PURCHASE_CANCELED`)
+   - Compra reembolsada (`PURCHASE_REFUNDED`)
+   - Pedido de reembolso / disputa (`PURCHASE_PROTEST`)
+   - Chargeback (`PURCHASE_CHARGEBACK`)
+3. Copie o **hottok** que a Hotmart mostra e cole em **Configurações → Comercial → Token de
+   verificação**. Sem ele o webhook recusa tudo.
+4. Cadastre as **ofertas**: o **código da oferta** da Hotmart, os produtos que ela libera e a
+   duração (semanal a vitalício).
+
+### O que vale saber
+
+- **Compras de ofertas que não estão cadastradas passam sem efeito.** A mesma conta da Hotmart
+  pode vender coisas que não são deste sistema — elas aparecem em **Eventos recebidos** como
+  `oferta_desconhecida`, e isso é o esperado.
+- **Renovação empilha:** quem paga antes de vencer não perde os dias que ainda tinha.
+- **Acesso encerrado não apaga nada:** o comprador continua a ver os cálculos que já fez; só não
+  cria nem edita.
+- **Todo aviso da Hotmart fica guardado** antes de ser processado. Em **Eventos recebidos** dá
+  para ver o payload original e reprocessar um evento que tenha falhado.
+- O token da Hotmart é o único guarda do endereço do webhook: trate-o como senha.

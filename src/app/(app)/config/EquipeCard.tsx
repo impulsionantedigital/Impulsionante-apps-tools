@@ -2,7 +2,8 @@
 
 import { useState, useTransition } from 'react'
 import { Copy, Check } from 'lucide-react'
-import { gerarConvite, cancelarConvite, type VistaEquipe } from './acoes-equipe'
+import { gerarConvite, cancelarConvite, corrigirDocumento, type VistaEquipe } from './acoes-equipe'
+import { formatar } from '@/lib/documento'
 import Botao from '@/components/ui/Botao'
 import { Entrada, Selecao } from '@/components/ui/Campo'
 import estilos from './config.module.css'
@@ -15,6 +16,8 @@ export default function EquipeCard({ inicial }: { inicial: VistaEquipe }) {
   const [erro, setErro] = useState<string | null>(null)
   const [copiado, setCopiado] = useState<string | null>(null)
   const [pendente, iniciar] = useTransition()
+  const [docMembro, setDocMembro] = useState('')
+  const [docValor, setDocValor] = useState('')
 
   function aplicar(r: { ok: true; vista: VistaEquipe } | { erro: string }) {
     if ('erro' in r) {
@@ -22,6 +25,9 @@ export default function EquipeCard({ inicial }: { inicial: VistaEquipe }) {
         r.erro === 'nao_autorizado' ? 'Só quem é dono deste espaço de trabalho pode convidar.'
         : r.erro === 'sem_workspace' ? 'Escolha um espaço de trabalho primeiro.'
         : r.erro === 'papel_invalido' ? 'Escolha um tipo de acesso válido.'
+        : r.erro === 'documento_invalido' ? 'Informe um CPF ou CNPJ válido.'
+        : r.erro === 'documento_em_uso' ? 'Este documento já pertence a outro membro.'
+        : r.erro === 'falha_documento' ? 'Não foi possível salvar o documento.'
         : 'Não consegui. Tente de novo.',
       )
       return
@@ -58,9 +64,13 @@ export default function EquipeCard({ inicial }: { inicial: VistaEquipe }) {
       </div>
 
       <ul className={estilos.lista}>
-        {vista.membros.map((m, i) => (
-          <li key={i} className={estilos.item}>
-            <span>{m.email ?? 'conta sem e-mail'}</span>
+        {vista.membros.map((m) => (
+          <li key={m.id} className={estilos.item}>
+            <span className={estilos.itemInfo}>
+              <span className={estilos.itemRotulo}>{m.nome ?? m.email ?? 'conta sem e-mail'}</span>
+              {m.nome && m.email ? <span className={estilos.ajuda}>{m.email}</span> : null}
+              <span className={estilos.ajuda}>{m.cpfCnpj ? formatar(m.cpfCnpj) : 'sem CPF/CNPJ'}</span>
+            </span>
             {}
             <span className={`${estilos.selo} ${estilos.selo_neutro}`}>
               {m.papel === 'owner' ? 'dono' : 'membro'}
@@ -68,6 +78,52 @@ export default function EquipeCard({ inicial }: { inicial: VistaEquipe }) {
           </li>
         ))}
       </ul>
+
+      {vista.souOwner && vista.membros.length > 0 ? (
+        <div className={estilos.campo}>
+          <label className={estilos.rotulo} htmlFor="doc-membro">CPF ou CNPJ de um membro</label>
+          <div className={estilos.linhaForm}>
+            <Selecao
+              id="doc-membro"
+              value={docMembro}
+              onChange={(e) => setDocMembro(e.target.value)}
+              disabled={pendente}
+              aria-label="Membro"
+            >
+              <option value="">Escolha o membro</option>
+              {vista.membros.map((m) => (
+                <option key={m.id} value={m.id}>{m.nome ?? m.email ?? 'conta sem e-mail'}</option>
+              ))}
+            </Selecao>
+            <Entrada
+              id="doc-valor"
+              value={docValor}
+              onChange={(e) => setDocValor(e.target.value)}
+              placeholder="000.000.000-00"
+              autoComplete="off"
+              disabled={pendente}
+            />
+            <Botao
+              variante="primario"
+              carregando={pendente}
+              onClick={() => {
+                if (!docMembro) return
+                iniciar(async () => {
+                  const r = await corrigirDocumento(docMembro, docValor)
+                  aplicar(r)
+                  if ('ok' in r) setDocValor('')
+                })
+              }}
+            >
+              Salvar documento
+            </Botao>
+          </div>
+          <p className={estilos.ajuda}>
+            É por este documento que as compras da Hotmart encontram a pessoa. Deixe em branco para
+            apagar. Só o dono do espaço de trabalho corrige.
+          </p>
+        </div>
+      ) : null}
 
       {vista.souOwner ? (
         <>

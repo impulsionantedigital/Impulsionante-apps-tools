@@ -4,7 +4,10 @@ import CabecalhoPagina from '@/components/ui/CabecalhoPagina'
 import EstadoVazio from '@/components/ui/EstadoVazio'
 import Botao from '@/components/ui/Botao'
 import { tituloDaPagina } from '@/server/marca'
+import { redirect } from 'next/navigation'
 import { listarCalculos } from './calculos'
+import { estadoDoProduto } from '@/server/vendas/acesso'
+import { PRODUTOS } from '@/lib/produtos/catalogo'
 import estilos from './calculadora.module.css'
 
 export async function generateMetadata() {
@@ -16,12 +19,16 @@ export async function generateMetadata() {
 // falha de banco faria o advogado achar que perdeu os cálculos — o erro deve
 // cair no limite de erro do Next, não virar `[]` aqui.
 export default async function ListaPage() {
+  const estados = await Promise.all(PRODUTOS.map((p) => estadoDoProduto(p.id)))
+  if (estados.every((e) => e === 'nunca')) redirect('/ferramentas')
+  const algumAtivo = estados.some((e) => e === 'ativo')
+
   const calculos = await listarCalculos()
-  const novo = (
+  const novo = algumAtivo ? (
     <Botao href="/ferramentas/indulto-comutacao/novo" variante="primario">
       Novo cálculo
     </Botao>
-  )
+  ) : null
 
   return (
     <div className={estilos.pagina}>
@@ -30,6 +37,13 @@ export default async function ListaPage() {
         subtitulo="Os seus cálculos. Nenhum outro membro os vê."
         acoes={novo}
       />
+
+      {!algumAtivo && (
+        <div className={estilos.avisoVersao} role="status">
+          <b>Acesso encerrado.</b> Os seus cálculos continuam aqui para consulta. Para criar ou
+          editar, renove o acesso.
+        </div>
+      )}
 
       {calculos.length === 0 ? (
         <EstadoVazio

@@ -9,6 +9,8 @@ import { lerAtualizacao } from './acoes-atualizacao'
 import AtualizacoesCard from './AtualizacoesCard'
 import { lerEquipe } from './acoes-equipe'
 import EquipeCard from './EquipeCard'
+import ComercialCard from './ComercialCard'
+import { lerComercial } from './acoes-comercial'
 import { lerMarcaConfig } from './acoes-marca'
 import MarcaCard from './MarcaCard'
 import { lerModelosEmail } from './acoes-email'
@@ -59,8 +61,11 @@ export default async function ConfigPage({
   
   const souDonoDoDeploy = await ehDonoDoDeploy()
 
-  const abas = abasDisponiveis({ pessoas: equipe != null, servidor: souDonoDoDeploy })
+  const abas = abasDisponiveis({ pessoas: equipe != null, servidor: souDonoDoDeploy, comercial: equipe?.souOwner === true })
   const aba = resolverAba((await searchParams).aba, abas)
+
+  const rComercial = aba === 'comercial' ? await lerComercial() : null
+  const comercial = rComercial && !('erro' in rComercial) ? rComercial : null
 
   
   
@@ -136,6 +141,8 @@ export default async function ConfigPage({
 
       {}
       {aba === 'pessoas' && equipe ? <EquipeCard inicial={equipe} /> : null}
+
+      {aba === 'comercial' && comercial ? <ComercialCard inicial={comercial} /> : null}
 
       {aba === 'servidor' && (
         <>

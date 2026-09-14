@@ -4,6 +4,8 @@ import { tituloDaPagina } from '@/server/marca'
 import { motorPorId } from '@/lib/indulto-comutacao/registro'
 import { mesmoResultado } from '@/lib/indulto-comutacao/comparar'
 import Calculadora from '../Calculadora'
+import { estadoDoProduto } from '@/server/vendas/acesso'
+import { produtoDoMotor } from '@/lib/produtos/catalogo'
 import ExcluirCalculo from '../ExcluirCalculo'
 import { lerCalculo } from '../calculos'
 import estilos from '../calculadora.module.css'
@@ -22,6 +24,10 @@ export default async function CalculoPage({ params }: { params: Promise<{ id: st
 
   const motor = motorPorId(calculo.decreto_id)
   if (!motor) notFound()
+
+  const produto = produtoDoMotor(motor.id)
+  const estado = produto ? await estadoDoProduto(produto) : 'nunca'
+  if (estado === 'nunca') notFound()
 
   // O cálculo é refeito a partir da entrada com o motor ATUAL. Se a fórmula
   // mudou desde que foi salvo, o membro precisa saber — o número antigo pode
@@ -56,6 +62,7 @@ export default async function CalculoPage({ params }: { params: Promise<{ id: st
         inicial={calculo.entrada}
         calculoId={calculo.id}
         tituloInicial={calculo.titulo}
+        somenteLeitura={estado !== 'ativo'}
       />
 
       <ExcluirCalculo id={calculo.id} />

@@ -1,5 +1,11 @@
 import { normalizar } from '@/lib/documento'
 
+/**
+ * Nome, no cofre, do token que a Hotmart manda em X-HOTMART-HOTTOK. É o único guarda do endereço
+ * do webhook (§12.3): a Hotmart não assina o corpo.
+ */
+export const CHAVE_HOTTOK_HOTMART = 'webhook_hottok:hotmart'
+
 export type StatusEncerramento = 'cancelada' | 'reembolsada' | 'chargeback'
 
 const ENCERRAMENTOS: Readonly<Record<string, StatusEncerramento>> = {
