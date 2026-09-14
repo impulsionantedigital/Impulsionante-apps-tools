@@ -17,7 +17,7 @@
  * Exceção: inciso IV usa dias-calendário reais (Sistema B) — ver campo F49.
  *
  * Desvios em relação à planilha, todos marcados no corpo:
- *  - ⚠️ dois BUGS de fórmula, corrigidos (L145:L149 e G149);
+ *  - ⚠️ três BUGS de fórmula, corrigidos (L145:L149, G149 e inciso XI/I28);
  *  - ⚖️ quatro AMBIGUIDADES jurídicas, PRESERVADAS — nenhuma "consertada":
  *     1. Inciso VIII: o `Rhalf` do §2º DOBRA o teto da pena remanescente em vez
  *        de reduzi-lo à metade — único ponto do decreto em que "metade" se inverte;
@@ -374,9 +374,15 @@ export function calcular2025(entrada: Entrada): Resultado {
     const J = I20 === 2 ? D6 + F8 + F7 <= N13 : D6 + H8 + H7 <= N13
     const K = temPenaNaoImped
     const L = I63 !== 1
-    const M = I20 === 2 ? I30 >= F7 + F8 : H7 + H8 <= I30
+    // ⚠️ BUG DA PLANILHA, CORRIGIDO AQUI — M/Shalf do Inciso XI
+    // A fórmula original só testava I30 (tempo semiaberto+aberto somados),
+    // ignorando I28 (tempo só no semiaberto) — quem cumpriu o requisito
+    // integralmente em regime semiaberto nunca preenche I30 e era sempre
+    // reprovado. Aqui as duas perguntas valem como alternativas (OR). O
+    // engine.js foi corrigido do mesmo jeito, então o oráculo já reflete isto.
+    const M = I20 === 2 ? I28 >= F7 + F8 || I30 >= F7 + F8 : H7 + H8 <= I28 || H7 + H8 <= I30
     const Rhalf = I20 === 2 ? D6 + F8 / 2 + F7 / 2 <= N13 : D6 + H8 / 2 + H7 / 2 <= N13
-    const Shalf = I20 === 2 ? I30 >= (F7 + F8) / 2 : (H7 + H8) / 2 <= I30
+    const Shalf = I20 === 2 ? I28 >= (F7 + F8) / 2 || I30 >= (F7 + F8) / 2 : (H7 + H8) / 2 <= I28 || (H7 + H8) / 2 <= I30
     const geral = gates5 && F && G && i18ok && hediondo && J && K && L && M
     const esp = gates5 && F && G && i18ok && hediondo && K && L && elegivelP && qOk && Rhalf && Shalf
     incisos.push({ id: 'art9_XI', geral: texto(geral), especial: texto(esp) })

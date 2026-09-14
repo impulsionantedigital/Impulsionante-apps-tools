@@ -5,7 +5,7 @@
 // engine.js estiver na árvore, qualquer mexida no motor que mude um veredito, um
 // quantum de comutação ou um tempo do resumo reprova aqui.
 //
-// Os dois desvios DELIBERADOS do porte (os bugs de planilha corrigidos) não
+// Os três desvios DELIBERADOS do porte (os bugs de planilha corrigidos) não
 // aparecem como divergência porque o próprio engine.js já os corrige — é o
 // comportamento dele, não o da planilha, que é o oráculo.
 

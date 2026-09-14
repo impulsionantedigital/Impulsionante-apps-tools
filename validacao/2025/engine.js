@@ -9,6 +9,10 @@
  * Correções aplicadas em relação à planilha original (bugs claros de fórmula):
  *  - L145:L149 (#VALUE!): quando não há comutação, "pena após" retorna null em vez de erro.
  *  - G149 referenciava F148 (linha errada) — corrigido para F149.
+ *  - Inciso XI (M/Shalf): só testava I30 (tempo semiaberto+aberto somados),
+ *    ignorando I28 (tempo só no semiaberto) — quem cumpriu o requisito
+ *    inteiramente em regime semiaberto nunca preenche I30 e era sempre
+ *    reprovado. Corrigido para aceitar I28 OU I30.
  * Ambiguidades jurídicas NÃO alteradas (apenas sinalizadas em `avisos`):
  *  - base da "pena após comutação" usa a pena total imposta (P9), não a remanescente.
  *  - base da comutação Art.13/§4º usa max(pena cumprida, remanescente).
@@ -289,9 +293,9 @@
       var J = (I20 === 2) ? (D6 + F8 + F7 <= N13) : (D6 + H8 + H7 <= N13);
       var K = temPenaNaoImped;
       var L = (I63 !== 1);
-      var M = (I20 === 2) ? (I30 >= (F7 + F8)) : ((H7 + H8) <= I30);
+      var M = (I20 === 2) ? (I28 >= (F7 + F8) || I30 >= (F7 + F8)) : ((H7 + H8) <= I28 || (H7 + H8) <= I30);
       var Rhalf = (I20 === 2) ? (D6 + F8 / 2 + F7 / 2 <= N13) : (D6 + H8 / 2 + H7 / 2 <= N13);
-      var Shalf = (I20 === 2) ? (I30 >= (F7 + F8) / 2) : ((H7 + H8) / 2 <= I30);
+      var Shalf = (I20 === 2) ? (I28 >= (F7 + F8) / 2 || I30 >= (F7 + F8) / 2) : ((H7 + H8) / 2 <= I28 || (H7 + H8) / 2 <= I30);
       var geral = gates5 && F && G && i18ok && hediondo && J && K && L && M;
       var esp = gates5 && F && G && i18ok && hediondo && K && L && elegivelP && qOk && Rhalf && Shalf;
       incisos.art9_XI = { geral: texto(geral), especial: texto(esp) };

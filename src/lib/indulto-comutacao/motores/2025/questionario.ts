@@ -28,7 +28,7 @@ export const QUESTIONARIO_2025: Secao[] = [
   {
     id: 'penas-impostas',
     titulo: 'Penas impostas (em 25/12/2025)',
-    aviso: 'Some as penas por categoria de crime. Impeditivo = hediondo/equiparado.',
+    aviso: 'Some as penas por categoria de crime. Impeditivo = hediondo/equiparado + crimes previstos no Art. 1º.',
     campos: [
       { tipo: 'tempo', chave: 'penaImpeditiva', rotulo: 'Total de penas de crimes IMPEDITIVOS' },
       { tipo: 'tempo', chave: 'penaViolencia', rotulo: 'Total de penas de crimes COM VIOLÊNCIA ou grave ameaça' },
@@ -55,14 +55,15 @@ export const QUESTIONARIO_2025: Secao[] = [
       { tipo: 'data', chave: 'dataNascimento', rotulo: 'Data de nascimento' },
       { tipo: 'selecao', chave: 'reincidente', rotulo: 'Reincidente em 25/12/2025?', opcoes: SN },
       { tipo: 'selecao', chave: 'regime', rotulo: 'Regime prisional em 25/12/2025', opcoes: ['FECHADO', 'SEMIABERTO', 'ABERTO'] },
+      { tipo: 'selecao', chave: 'livramentoCondicional', rotulo: 'Em livramento condicional em 25/12/2025?', opcoes: SN },
       { tipo: 'data', chave: 'dataUltimaPrisao', rotulo: 'Data da última prisão' },
-      { tipo: 'numero', chave: 'diasRemicao', rotulo: 'Total de dias de remição após a última prisão' },
     ],
   },
   {
     id: 'regime-situacao',
     titulo: 'Regime, tempo e situação prisional',
     campos: [
+      { tipo: 'numero', chave: 'diasRemicao', rotulo: 'Total de dias de remição após a última prisão' },
       {
         tipo: 'tempo',
         chave: 'tempoSemiaberto',
@@ -73,7 +74,6 @@ export const QUESTIONARIO_2025: Secao[] = [
         chave: 'tempoSemiabertoAberto',
         rotulo: 'Se em regime aberto: tempo cumprido no semiaberto + aberto somados (somar remição)',
       },
-      { tipo: 'selecao', chave: 'livramentoCondicional', rotulo: 'Em livramento condicional em 25/12/2025?', opcoes: SN },
       {
         tipo: 'selecao',
         chave: 'monitoramentoSV56',
@@ -199,7 +199,7 @@ export const QUESTIONARIO_2025: Secao[] = [
       {
         tipo: 'selecao',
         chave: 'penasSubstituidas',
-        rotulo: 'Alguma pena substituída por restritiva de direito ou com sursis?',
+        rotulo: 'Todas as penas foram substituídas por restritiva de direito ou com sursis?',
         opcoes: SN,
       },
       { tipo: 'selecao', chave: 'condenacaoAberto', rotulo: 'Tem condenação em regime aberto?', opcoes: SN },
@@ -212,7 +212,7 @@ export const QUESTIONARIO_2025: Secao[] = [
       {
         tipo: 'selecao',
         chave: 'crimePatrimonio',
-        rotulo: 'Tem crime contra o patrimônio sem violência ou grave ameaça?',
+        rotulo: 'Todos os crimes são contra o patrimônio sem violência ou grave ameaça?',
         opcoes: SN,
       },
       { tipo: 'selecao', chave: 'reparouDano', rotulo: 'Reparou o dano até 25/12/2025 (ou não há necessidade)?', opcoes: SNA },
