@@ -62,16 +62,21 @@ export default function BarraSalvar({
         ajuda="Use o nº de execução para não guardar o nome do sentenciado."
         className={estilos.campoTitulo}
       >
-        <EntradaControle
-          value={titulo}
-          onChange={(e) => setTitulo(e.target.value)}
-          placeholder="Nº de execução ou identificação do caso"
-          maxLength={200}
-        />
+        {/* 🔴 O botão fica DENTRO do campo, na mesma linha do input, e não ao lado do campo
+            inteiro. Fora, ele se alinhava pelo fim do bloco — que inclui o texto de ajuda
+            abaixo do input — e descia um degrau. Aqui a ajuda passa a correr sob os dois. */}
+        <div className={estilos.linhaTitulo}>
+          <EntradaControle
+            value={titulo}
+            onChange={(e) => setTitulo(e.target.value)}
+            placeholder="Nº de execução ou identificação do caso"
+            maxLength={200}
+          />
+          <Botao variante="primario" onClick={salvar} carregando={pendente} desabilitado={pendente}>
+            {calculoId ? 'Salvar alterações' : 'Salvar cálculo'}
+          </Botao>
+        </div>
       </CampoUI>
-      <Botao variante="primario" onClick={salvar} carregando={pendente} desabilitado={pendente}>
-        {calculoId ? 'Salvar alterações' : 'Salvar cálculo'}
-      </Botao>
       {aviso && (
         <p
           role={aviso.tom === 'erro' ? 'alert' : 'status'}

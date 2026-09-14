@@ -7,6 +7,7 @@ import { motorPorId } from '@/lib/indulto-comutacao/registro'
 import Questionario from './Questionario'
 import Resultado from './Resultado'
 import BarraSalvar from './BarraSalvar'
+import BotaoImprimir from './BotaoImprimir'
 import estilos from './calculadora.module.css'
 
 /**
@@ -102,6 +103,9 @@ export default function Calculadora({
             tituloInicial={tituloInicial}
           />
         )}
+        {/* Depois da barra e antes do resultado: é o resultado que vai para o papel. Vale
+            também com o acesso encerrado — por isso não depende de `somenteLeitura`. */}
+        <BotaoImprimir />
         <Resultado motor={motor} resultado={resultado} />
       </div>
     </div>

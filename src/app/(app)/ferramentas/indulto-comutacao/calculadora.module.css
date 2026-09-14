@@ -135,6 +135,20 @@
   min-width: 240px;
 }
 
+/* Input e botão lado a lado, na mesma altura. `align-items: stretch` (o padrão) faz o botão
+ * acompanhar a altura do input sem ninguém precisar saber qual é. No telefone a linha quebra e
+ * o botão vai para baixo, ocupando a largura toda. */
+.linhaTitulo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-3);
+}
+
+.linhaTitulo > :first-child {
+  flex: 1;
+  min-width: 200px;
+}
+
 /* Aviso local que some sozinho (padrão de `Board.tsx`) e erro da exclusão —
  * mesmo vocabulário de wash + tom que `_crm/crm.module.css` já usa. */
 .mensagem {
@@ -188,8 +202,15 @@
 
 /* A barra e a exclusão são da tela, não do anexo: somem na impressão — o
  * anexo é só o `Resultado` (ver a regra de `.layout`/`.coluna` acima). */
+.barraImprimir {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* A barra, a exclusão e o próprio botão de imprimir são da tela, não do anexo. */
 @media print {
   .barra,
+  .barraImprimir,
   .excluirWrap {
     display: none;
   }
