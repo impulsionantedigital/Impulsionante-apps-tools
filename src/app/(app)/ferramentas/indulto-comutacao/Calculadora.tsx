@@ -8,6 +8,7 @@ import Questionario from './Questionario'
 import Resultado from './Resultado'
 import BarraSalvar from './BarraSalvar'
 import BotaoImprimir from './BotaoImprimir'
+import CabecalhoAnexo from './CabecalhoAnexo'
 import estilos from './calculadora.module.css'
 
 /**
@@ -65,6 +66,8 @@ export default function Calculadora({
   const [entrada, setEntrada] = useState<Entrada>(() =>
     inicial ?? (motor ? entradaInicial(motor) : {}),
   )
+  // Vive aqui porque o cabeçalho do anexo impresso precisa dele, e a barra some na impressão.
+  const [titulo, setTitulo] = useState(tituloInicial ?? '')
 
   // `calcular` é função pura e barata: roda no navegador a cada tecla, sem rede.
   // Nada sai daqui até o membro salvar.
@@ -100,12 +103,15 @@ export default function Calculadora({
             motor={motor}
             entrada={entrada}
             calculoId={calculoId}
-            tituloInicial={tituloInicial}
+            titulo={titulo}
+            aoMudarTitulo={setTitulo}
           />
         )}
         {/* Depois da barra e antes do resultado: é o resultado que vai para o papel. Vale
             também com o acesso encerrado — por isso não depende de `somenteLeitura`. */}
         <BotaoImprimir />
+        {/* Só no papel: identifica o caso e lista as premissas. Ver CabecalhoAnexo.tsx. */}
+        <CabecalhoAnexo motor={motor} entrada={entrada} titulo={titulo} />
         <Resultado motor={motor} resultado={resultado} />
       </div>
     </div>

@@ -96,3 +96,44 @@ diga: **corrigir antes do merge** ou **pode ficar**, com uma frase de motivo.
   exige mexer fora da pasta dele.
 - A triagem dos deferidos (item 7).
 - Uma lista do que **não foi possível verificar** sem banco, para virar roteiro de teste do usuário.
+
+---
+
+## A folha de impressão — o que o anexo leva, e por quê (14/09/2026)
+
+> Leia antes de mexer em `@media print`, na `Calculadora`, na `BarraSalvar` ou no `CabecalhoAnexo`.
+> **O plano original dizia o contrário do que está no código hoje**, e a mudança foi pedida pelo
+> usuário: quem revisar sem saber disto vai "corrigir" de volta.
+
+O destino do resultado é anexo de petição. Quem manda no que sai é o CSS, não o React.
+
+**O que o plano de 12/09 decidiu:** *"Ao imprimir, o questionário não vai junto: o anexo é o
+resultado"* (`calculadora.module.css`). Só tempos e incisos iam ao papel.
+
+**O que o usuário pediu em 14/09, depois de ver o anexo pronto:** que as respostas fossem junto —
+*"hoje vai só as penas e os artigos"* — e, entre imprimir o questionário inteiro ou só o que saiu
+do padrão, **escolheu só as preenchidas**.
+
+**Como ficou:**
+
+| Elemento | Na tela | No papel |
+|---|---|---|
+| Questionário (coluna esquerda) | visível | oculto |
+| Barra de salvar, botão imprimir, excluir | visível | oculto |
+| `CabecalhoAnexo` — identificação, data e respostas | **oculto** | **visível** |
+| Resumo de tempos, incisos, avisos, proveniência | visível | visível |
+
+Três decisões que não são óbvias e que um revisor tende a desfazer:
+
+1. **`respostasPreenchidas` compara com `padraoDoCampo`, nunca com `'NÃO'`.** Os dois requisitos da
+   data do fato nascem em `'SIM'`: neles é o `'NÃO'` que muda o cálculo. Comparar com `'NÃO'`
+   esconderia do juiz justamente a premissa decisiva.
+2. **A data do anexo é fixada num `useEffect`.** `new Date()` no corpo do componente daria um valor
+   no servidor e outro no navegador, e o React acusaria divergência de hidratação.
+3. **O título vive na `Calculadora`, não na `BarraSalvar`.** O cabeçalho do anexo precisa dele, e a
+   barra some na impressão — duas cópias do mesmo texto divergiriam ao primeiro rascunho.
+
+**Como verificar sem imprimir:** emule a mídia no navegador
+(`page.emulateMedia({ media: 'print' })` no Playwright) e meça `getBoundingClientRect().height`.
+Não use `getComputedStyle(filho).display`: num filho de um elemento `display: none` ele devolve o
+display do próprio filho, e faz tudo parecer visível.

@@ -23,15 +23,18 @@ export default function BarraSalvar({
   motor,
   entrada,
   calculoId,
-  tituloInicial = '',
+  titulo,
+  aoMudarTitulo,
 }: {
   motor: MotorDecreto
   entrada: Entrada
   calculoId?: string
-  tituloInicial?: string
+  /** 🔴 O título vive na `Calculadora`, não aqui: o cabeçalho do anexo impresso precisa dele, e
+   *  a barra some na impressão. Duas cópias do mesmo texto divergiriam ao primeiro rascunho. */
+  titulo: string
+  aoMudarTitulo: (valor: string) => void
 }) {
   const router = useRouter()
-  const [titulo, setTitulo] = useState(tituloInicial)
   const [aviso, setAviso] = useState<Aviso | null>(null)
   const [pendente, iniciar] = useTransition()
 
@@ -68,7 +71,7 @@ export default function BarraSalvar({
         <div className={estilos.linhaTitulo}>
           <EntradaControle
             value={titulo}
-            onChange={(e) => setTitulo(e.target.value)}
+            onChange={(e) => aoMudarTitulo(e.target.value)}
             placeholder="Nº de execução ou identificação do caso"
             maxLength={200}
           />

@@ -142,3 +142,75 @@
   .selo { border-color: #666; }
   .proveniencia { opacity: 1; }
 }
+
+/* ── O anexo de petição (só no papel) ─────────────────────────────────────
+ *
+ * 🔴 `display: none` fora da impressão. Na tela o advogado tem o questionário ao lado, cheio;
+ * repetir as respostas ali seria ruído. No papel o questionário não vai, e sem este bloco o
+ * anexo chegava ao juiz sem identificação, sem data e sem as premissas. */
+.anexo {
+  display: none;
+}
+
+@media print {
+  .anexo {
+    display: block;
+    color: #000;
+    margin-bottom: var(--s-5);
+    break-after: avoid;
+  }
+
+  .anexoTitulo {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 700;
+  }
+
+  .anexoMeta {
+    margin: var(--s-1) 0 var(--s-4);
+    font-size: 0.85rem;
+    color: #222;
+  }
+
+  .anexoSecao {
+    margin: 0 0 var(--s-2);
+    font-size: 0.95rem;
+    font-weight: 700;
+    border-bottom: 1px solid #999;
+    padding-bottom: var(--s-1);
+  }
+
+  .anexoVazio {
+    margin: 0;
+    font-size: 0.85rem;
+  }
+
+  /* Rótulo à esquerda, resposta à direita, cada par numa linha — e nenhum par partido entre
+   * duas páginas, que num anexo jurídico faz o juiz procurar o resto noutra folha. */
+  .anexoLista {
+    margin: 0;
+    display: grid;
+    gap: var(--s-1);
+    font-size: 0.85rem;
+  }
+
+  .anexoLinha {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--s-4);
+    break-inside: avoid;
+    border-bottom: 1px dotted #bbb;
+    padding-bottom: 2px;
+  }
+
+  .anexoRotulo {
+    margin: 0;
+  }
+
+  .anexoValor {
+    margin: 0;
+    font-weight: 700;
+    text-align: right;
+    white-space: nowrap;
+  }
+}

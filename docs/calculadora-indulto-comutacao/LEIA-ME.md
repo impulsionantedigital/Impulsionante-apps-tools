@@ -10,7 +10,7 @@ que conferir antes de plugar um decreto novo.
 |---|---|
 | [`pendencias-e-roteiro-de-teste.md`](pendencias-e-roteiro-de-teste.md) | **Comece por aqui.** As decisões jurídicas e de LGPD que são do dono do produto, o roteiro de 10 testes para rodar com o CRM no ar, e os pontos menores que ficaram para depois |
 | [`fronteira-rsc.md`](fronteira-rsc.md) | **Leia antes de mexer nos componentes.** O defeito de 14/09/2026 que derrubou `/novo` e `/[id]` com 500, a regra de serialização servidor→cliente que o causou, e a guarda que impede a volta |
-| [`verificacoes-de-conjunto.md`](verificacoes-de-conjunto.md) | O que conferir quando alguém mexer na calculadora — em especial ao acrescentar o decreto de 2024 ou de 2026 |
+| [`verificacoes-de-conjunto.md`](verificacoes-de-conjunto.md) | O que conferir quando alguém mexer na calculadora — inclui **o que a folha de impressão leva ao anexo de petição e por quê**, que mudou em 14/09/2026 — em especial ao acrescentar o decreto de 2024 ou de 2026 |
 
 Documentos de origem, versionados junto:
 
