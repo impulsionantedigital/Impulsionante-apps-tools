@@ -1,4 +1,6 @@
 import { notFound } from 'next/navigation'
+import Link from 'next/link'
+import { ArrowLeft } from 'lucide-react'
 import CabecalhoPagina from '@/components/ui/CabecalhoPagina'
 import { tituloDaPagina } from '@/server/marca'
 import { motorPorId } from '@/lib/indulto-comutacao/registro'
@@ -47,7 +49,16 @@ export default async function CalculoPage({ params }: { params: Promise<{ id: st
 
   return (
     <div className={estilos.pagina}>
-      <CabecalhoPagina titulo={calculo.titulo} subtitulo={motor.rotulo} />
+      <CabecalhoPagina
+        acima={
+          <Link href="/ferramentas/cic-2025" className={estilos.voltar}>
+            <ArrowLeft size={14} aria-hidden />
+            GPS CIC - Calculadora 2025
+          </Link>
+        }
+        titulo={calculo.titulo}
+        subtitulo={motor.rotulo}
+      />
 
       {mudou && (
         <div className={estilos.avisoVersao} role="alert">

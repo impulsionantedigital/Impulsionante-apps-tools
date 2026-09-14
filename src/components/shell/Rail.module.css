@@ -354,6 +354,68 @@
   pointer-events: none;
 }
 
+/* ── Grupo estático de ferramenta ──────────────────────────────────────────────
+ *
+ * "Indulto e Comutação" (Rail.tsx) não é mais um link — é o RÓTULO da família de
+ * calculadoras, com as versões por decreto listadas embaixo dela como itens de verdade. Antes
+ * a família inteira vivia atrás de um único clique em "Ferramentas"; agora o próprio menu
+ * mostra a árvore, e a versão certa é um clique só.
+ *
+ * Reaproveita geometria de `.nav` (mesma altura, mesmo respiro, mesma régua transparente de
+ * `border-left` pra não deslizar texto) mas sem NENHUM sinal interativo — nem cor de hover, nem
+ * anel de foco, nem cursor de link — porque não é um: é `<div>`, não `<Link>`. */
+.navGrupo {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  min-height: var(--h-nav);
+  padding: 0 var(--s-3);
+  border-left: 2.5px solid transparent;
+  color: var(--tinta-2);
+  font-size: var(--fs-body);
+  font-weight: 500;
+}
+
+.navGrupo svg {
+  color: var(--tinta-3);
+  flex-shrink: 0;
+}
+
+/* O item recuado (a versão de um decreto) não tem ícone — quem marca que ele pertence ao grupo
+ * de cima é só o recuo. `--s-7` (32px) porque é exatamente onde o TEXTO dos itens com ícone
+ * começa: padding `--s-3` (8px) + ícone 16px + gap `--s-3` (8px). Alinhar por baixo do rótulo
+ * do grupo, não da borda do rail. */
+.nav.navIndentado {
+  padding-left: var(--s-7);
+}
+
+/* Título + descrição empilhados no lugar do rótulo único. `min-width: 0` deixa o texto truncar
+ * dentro do flex em vez de forçar o rail a alargar. */
+.navTextos {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.navTextos > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Sempre `--tinta-3`, MESMO no item ativo: a descrição é metadado, não o sinal de seleção — quem
+ * carrega os quatro sinais de "ativo" (ver a nota grande de `.ativo` acima) é só o título. */
+.navDescricao {
+  font-size: var(--fs-micro);
+  line-height: var(--lh-micro);
+  color: var(--tinta-3);
+  font-weight: 400;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* ── Pé: sistema e conta ────────────────────────────────────────────────────── */
 
 /* `margin-inline` e não `padding-inline`: o divisor tem que ficar recuado como o resto do

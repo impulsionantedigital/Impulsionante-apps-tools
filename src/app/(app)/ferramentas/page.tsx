@@ -31,7 +31,7 @@ export default async function FerramentasPage() {
         />
       ) : (
         <div className={estilos.destinos}>
-          <Link href="/ferramentas/indulto-comutacao" className={estilos.destino}>
+          <Link href="/ferramentas/cic-2025" className={estilos.destino}>
             <span className={estilos.destinoIcone}>
               <Scale size={16} strokeWidth={1.75} />
             </span>

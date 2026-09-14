@@ -11,7 +11,7 @@ import ListaCalculos from './ListaCalculos'
 import estilos from './calculadora.module.css'
 
 export async function generateMetadata() {
-  return { title: await tituloDaPagina('Indulto e comutação') }
+  return { title: await tituloDaPagina('GPS CIC - Calculadora 2025') }
 }
 
 // 🔴 `listarCalculos` LANÇA em erro de banco, de propósito (ver `calculos.ts`):
@@ -25,7 +25,7 @@ export default async function ListaPage() {
 
   const calculos = await listarCalculos()
   const novo = algumAtivo ? (
-    <Botao href="/ferramentas/indulto-comutacao/novo" variante="primario">
+    <Botao href="/ferramentas/cic-2025/novo" variante="primario">
       Novo cálculo
     </Botao>
   ) : null
@@ -33,8 +33,8 @@ export default async function ListaPage() {
   return (
     <div className={estilos.pagina}>
       <CabecalhoPagina
-        titulo="Indulto e comutação"
-        subtitulo="Os seus cálculos. Nenhum outro membro os vê."
+        titulo="GPS CIC - Calculadora 2025"
+        subtitulo="Gerencie seus cálculos para o Decreto 12.970/2025"
         acoes={novo}
       />
 

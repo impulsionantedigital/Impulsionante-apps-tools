@@ -37,7 +37,7 @@ export default function ExcluirCalculo({ id }: { id: string }) {
         setErro(r.erro)
         return
       }
-      router.push('/ferramentas/indulto-comutacao')
+      router.push('/ferramentas/cic-2025')
       router.refresh()
     })
   }

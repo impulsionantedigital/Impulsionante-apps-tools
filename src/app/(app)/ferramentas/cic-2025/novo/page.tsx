@@ -1,4 +1,6 @@
 import { redirect } from 'next/navigation'
+import Link from 'next/link'
+import { ArrowLeft } from 'lucide-react'
 import CabecalhoPagina from '@/components/ui/CabecalhoPagina'
 import { estadoDoProduto } from '@/server/vendas/acesso'
 import { produtoDoMotor } from '@/lib/produtos/catalogo'
@@ -17,11 +19,17 @@ export default async function NovoPage() {
   // mudar o fluxo — ninguém aqui importa de `motores/2025/` diretamente.
   const motor = motorPadrao()
   const produto = produtoDoMotor(motor.id)
-  if (!produto || (await estadoDoProduto(produto)) !== 'ativo') redirect('/ferramentas/indulto-comutacao')
+  if (!produto || (await estadoDoProduto(produto)) !== 'ativo') redirect('/ferramentas/cic-2025')
 
   return (
     <div className={estilos.pagina}>
       <CabecalhoPagina
+        acima={
+          <Link href="/ferramentas/cic-2025" className={estilos.voltar}>
+            <ArrowLeft size={14} aria-hidden />
+            GPS CIC - Calculadora 2025
+          </Link>
+        }
         titulo="Novo cálculo"
         subtitulo={
           REGISTRO.length > 1

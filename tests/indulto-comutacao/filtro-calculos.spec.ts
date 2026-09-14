@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { filtrarCalculos } from '../../src/app/(app)/ferramentas/indulto-comutacao/filtro-calculos'
-import type { CalculoResumo } from '../../src/app/(app)/ferramentas/indulto-comutacao/calculos'
+import { filtrarCalculos } from '../../src/app/(app)/ferramentas/cic-2025/filtro-calculos'
+import type { CalculoResumo } from '../../src/app/(app)/ferramentas/cic-2025/calculos'
 
 function calculo(parcial: Partial<CalculoResumo>): CalculoResumo {
   return {

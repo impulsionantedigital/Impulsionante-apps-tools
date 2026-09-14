@@ -130,14 +130,14 @@ describe('fronteira servidor→cliente', () => {
   })
 
   it('a Calculadora resolve o motor pelo registro, e as páginas passam só o id', () => {
-    const calc = readFileSync(resolve(RAIZ, 'app/(app)/ferramentas/indulto-comutacao/Calculadora.tsx'), 'utf8')
+    const calc = readFileSync(resolve(RAIZ, 'app/(app)/ferramentas/cic-2025/Calculadora.tsx'), 'utf8')
     expect(calc).toMatch(/^\s*['"]use client['"]/m)
     expect(calc).toContain("from '@/lib/indulto-comutacao/registro'")
     expect(calc).toMatch(/decretoId: string/)
     expect(calc).not.toMatch(/^\s*motor: MotorDecreto/m)
 
     for (const pagina of ['novo/page.tsx', '[id]/page.tsx']) {
-      const txt = readFileSync(resolve(RAIZ, 'app/(app)/ferramentas/indulto-comutacao', pagina), 'utf8')
+      const txt = readFileSync(resolve(RAIZ, 'app/(app)/ferramentas/cic-2025', pagina), 'utf8')
       expect(txt, pagina).toMatch(/<Calculadora[\s\S]{0,120}decretoId=\{motor\.id\}/)
       expect(txt, pagina).not.toMatch(/<Calculadora[\s\S]{0,120}motor=\{motor\}/)
     }

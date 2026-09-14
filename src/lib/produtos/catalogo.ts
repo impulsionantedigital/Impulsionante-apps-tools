@@ -9,7 +9,12 @@ export const PRODUTOS = [
   {
     id: 'indulto-comutacao-2025',
     rotulo: 'Calculadora de Indulto e Comutação — Decreto 12.970/2025',
-    href: '/ferramentas/indulto-comutacao',
+    // Título/descrição do item no menu lateral (Rail.tsx) — mais curtos que `rotulo`, que é o
+    // nome cheio usado na vitrine de `/ferramentas`. Quando entrar 2024, uma entrada nova aqui,
+    // logo abaixo desta, já aparece encaixada sob "Indulto e Comutação" no menu.
+    menuTitulo: 'GPS CIC - Calculadora 2025',
+    menuDescricao: 'Decreto 12.970/2025',
+    href: '/ferramentas/cic-2025',
   },
 ] as const
 

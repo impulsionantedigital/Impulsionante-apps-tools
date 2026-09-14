@@ -135,6 +135,24 @@
   min-width: 240px;
 }
 
+/* O link "Voltar" acima do título — mesma receita de `_crm/crm.module.css` (`.voltar`). */
+.voltar {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  color: var(--tinta-3);
+  text-decoration: none;
+  transition: color var(--t-rapido) var(--suave);
+}
+.voltar:hover { color: var(--tinta); }
+.voltar:focus-visible {
+  outline: 2px solid var(--acento);
+  outline-offset: 2px;
+  border-radius: var(--r-pequeno);
+}
+
 /* Input e botão lado a lado, na mesma altura. `align-items: stretch` (o padrão) faz o botão
  * acompanhar a altura do input sem ninguém precisar saber qual é. No telefone a linha quebra e
  * o botão vai para baixo, ocupando a largura toda. */
@@ -213,7 +231,8 @@
 @media print {
   .barra,
   .barraImprimir,
-  .excluirWrap {
+  .excluirWrap,
+  .voltar {
     display: none;
   }
 }
@@ -264,6 +283,14 @@
   font-size: var(--fs-body);
   font-weight: 600;
   color: var(--tinta);
+}
+
+/* Sentenciado + execução — entre o título (dado que o membro escolheu) e a meta (decreto/motor/
+ * data). Um degrau abaixo do título, um acima da meta: por isso `--tinta-2`, não `--tinta-3`. */
+.itemSub {
+  margin: 0 0 var(--s-1);
+  font-size: var(--fs-body);
+  color: var(--tinta-2);
 }
 
 .itemMeta {

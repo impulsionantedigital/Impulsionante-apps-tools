@@ -15,6 +15,8 @@ import MarcaLockup from '@/components/MarcaLockup'
 import { lerMarca } from '@/server/marca'
 import { temaDaRequisicao } from '@/server/tema'
 import { souDonoDeAlgumWorkspace } from '@/server/auth/comprador'
+import { PRODUTOS } from '@/lib/produtos/catalogo'
+import { estadoDoProduto } from '@/server/vendas/acesso'
 
 
 
@@ -65,6 +67,13 @@ export default async function Rail({ user, wsAtivo, workspaces, avisoAtualizacao
   // Comprador vê só Ferramentas. As rotas já são recusadas no proxy; isto é só o menu.
   const soFerramentas = !(await souDonoDeAlgumWorkspace())
 
+  // As calculadoras entram direto no menu, uma por decreto — sem vitrine intermediária em
+  // /ferramentas. "Não existe vitrine do que o membro não tem" vale aqui também: filtra fora
+  // quem nunca teve acesso, do mesmo jeito que a página de /ferramentas já fazia.
+  const produtosNoMenu = (
+    await Promise.all(PRODUTOS.map(async (produto) => ({ produto, estado: await estadoDoProduto(produto.id) })))
+  ).filter((p) => p.estado !== 'nunca')
+
   return (
     <aside className={estilos.rail}>
       <div className={estilos.marca}>
@@ -113,8 +122,25 @@ export default async function Rail({ user, wsAtivo, workspaces, avisoAtualizacao
         </>
         )}
 
+        {produtosNoMenu.length > 0 && (
+        <>
         <div className={estilos.sec}>Ferramentas</div>
-        <ItemNav href="/ferramentas" rotulo="Ferramentas"><Scale size={16} strokeWidth={2} /></ItemNav>
+        {}
+        <div className={estilos.navGrupo}>
+          <Scale size={16} strokeWidth={2} />
+          <span>Indulto e Comutação</span>
+        </div>
+        {produtosNoMenu.map(({ produto }) => (
+          <ItemNav
+            key={produto.id}
+            href={produto.href}
+            rotulo={produto.menuTitulo}
+            descricao={produto.menuDescricao}
+            indentado
+          />
+        ))}
+        </>
+        )}
 
         {}
         {!soFerramentas && grupos.map(([grupo, itens]) => (

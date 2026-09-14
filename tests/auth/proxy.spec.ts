@@ -48,7 +48,7 @@ describe('rotas do comprador', () => {
   })
 
   it('abre as ferramentas e o que o fluxo de acesso precisa', () => {
-    for (const rota of ['/ferramentas', '/ferramentas/indulto-comutacao/abc', '/trocar-senha', '/recuperar', '/entrar', '/licenca', '/sem-workspace']) {
+    for (const rota of ['/ferramentas', '/ferramentas/cic-2025/abc', '/trocar-senha', '/recuperar', '/entrar', '/licenca', '/sem-workspace']) {
       expect(deveRestringirAoComprador(rota)).toBe(false)
     }
   })

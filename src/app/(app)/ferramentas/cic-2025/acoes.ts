@@ -13,7 +13,7 @@ import { exigirEscrita } from '@/server/vendas/acesso'
 import { produtoDoMotor } from '@/lib/produtos/catalogo'
 import type { Entrada } from '@/lib/indulto-comutacao/tipos'
 
-const BASE = '/ferramentas/indulto-comutacao'
+const BASE = '/ferramentas/cic-2025'
 const TABELA = 'indulto_comutacao_calculos'
 
 const Id = z.string().uuid()

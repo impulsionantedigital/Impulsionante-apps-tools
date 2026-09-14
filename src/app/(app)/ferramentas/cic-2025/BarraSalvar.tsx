@@ -59,7 +59,7 @@ export default function BarraSalvar({
       }
       const r = await salvarCalculo({ titulo, decretoId: motor.id, entrada })
       if ('erro' in r) return avisar('erro', r.erro)
-      router.push(`/ferramentas/indulto-comutacao/${r.id}`)
+      router.push(`/ferramentas/cic-2025/${r.id}`)
     })
   }
 
