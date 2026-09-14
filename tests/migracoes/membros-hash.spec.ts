@@ -20,6 +20,21 @@ describe('o hash da senha temporária continua fora do navegador', () => {
     expect(colunas).not.toContain('senha_temporaria_expira_em')
   })
 
+  it('a 0065 deixa cada um ver só a própria linha, e o owner o workspace', () => {
+    const sql = semComentario(readFileSync(`${DIR}/0065_membros_e_workspaces_so_para_quem_pode.sql`, 'utf8'))
+    expect(sql).toMatch(/create\s+policy\s+membros_sel\s+on\s+public\.membros\s+for\s+select\s+to\s+authenticated\s+using\s*\(\s*user_id\s*=\s*auth\.uid\(\)\s+or\s+public\.e_owner\(workspace_id\)\s*\)/i)
+    expect(sql).toMatch(/revoke\s+execute\s+on\s+function\s+public\.criar_workspace\(text,\s*uuid\)\s+from\s+authenticated/i)
+  })
+
+  it('nenhuma migration posterior recria a membros_sel nem devolve criar_workspace ao navegador', () => {
+    const posteriores = readdirSync(DIR).filter((nome) => nome.endsWith('.sql') && Number(nome.slice(0, 4)) > 65)
+    for (const nome of posteriores) {
+      const sql = semComentario(readFileSync(`${DIR}/${nome}`, 'utf8'))
+      expect(sql, `${nome}: recriar membros_sel pode reabrir a lista de compradores`).not.toMatch(/create\s+policy\s+membros_sel/i)
+      expect(sql, `${nome}: criar_workspace não pode voltar a authenticated`).not.toMatch(/grant\s+execute\s+on\s+function\s+public\.criar_workspace[^;]*\bauthenticated\b/i)
+    }
+  })
+
   it('nenhuma migration posterior reabre o select de membros para o navegador', () => {
     const posteriores = readdirSync(DIR)
       .filter((nome) => nome.endsWith('.sql') && Number(nome.slice(0, 4)) > 64)

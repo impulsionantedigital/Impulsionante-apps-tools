@@ -9,6 +9,8 @@ import { admin } from '@/server/supabase'
 import { fraseDeBanco } from '@/lib/erro-de-banco'
 import { detalheSeguro } from '@/lib/sanitizar-erro'
 import { preparar } from './preparar'
+import { exigirEscrita } from '@/server/vendas/acesso'
+import { produtoDoMotor } from '@/lib/produtos/catalogo'
 import type { Entrada } from '@/lib/indulto-comutacao/tipos'
 
 const BASE = '/ferramentas/indulto-comutacao'
@@ -48,6 +50,10 @@ export async function salvarCalculo(input: {
   if (!ehObjeto(input)) return { erro: 'Confira os dados do cálculo.' }
   const p = preparar(input)
   if ('erro' in p) return { erro: p.erro }
+  // 🔴 O gate de verdade (§9.4): criar e editar exigem acesso ativo ao produto deste decreto.
+  const produto = produtoDoMotor(p.motor.id)
+  const acesso = produto ? await exigirEscrita(produto) : { erro: 'Este decreto não está disponível.' }
+  if ('erro' in acesso) return { erro: acesso.erro }
 
   try {
     // 🔴 workspace_id e user_id vêm da SESSÃO, nunca do input: admin() é
@@ -89,6 +95,10 @@ export async function atualizarCalculo(input: {
   if (!id.success) return { erro: NAO_ACHOU }
   const p = preparar(input)
   if ('erro' in p) return { erro: p.erro }
+  // 🔴 O gate de verdade (§9.4): criar e editar exigem acesso ativo ao produto deste decreto.
+  const produto = produtoDoMotor(p.motor.id)
+  const acesso = produto ? await exigirEscrita(produto) : { erro: 'Este decreto não está disponível.' }
+  if ('erro' in acesso) return { erro: acesso.erro }
 
   try {
     // 🔴 O filtro por user_id NÃO é redundante: service-role não passa por RLS.

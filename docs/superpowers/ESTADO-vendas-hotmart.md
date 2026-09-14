@@ -34,7 +34,7 @@ from emails_fila order by criado_em desc limit 5;
 ```
 
 
-## ▶ RETOMAR AQUI — Plano 2, bloco A PRONTO; bloco B aguarda ok do usuário
+## ▶ RETOMAR AQUI — Plano 2: bloco A publicado; bloco B revisto e pronto, aguarda ok para publicar
 
 Aprovado pelo usuário em 2026-09-13: manter o spec e o plano do Claude, aproveitar só o que faz
 sentido do trabalho do Codex (arquivado fora do repositório, em `scratchpad/codex-arquivo`).
@@ -74,6 +74,95 @@ sobrescreve (os limites por conta não dependem disso); `generateLink` substitui
 pendente no Auth (inofensivo); a `0064` precisa de lock em `membros` no deploy — se estourar o
 tempo, o contentor antigo segue no ar e basta tentar de novo.
 
+### Bloco B — webhook, vendas, acesso e tela comercial
+
+**Publicação do bloco A:** merge `2145a44` no `main` em 2026-09-13, com a `0064`.
+
+**Bloco B:** webhook `/api/webhook/hotmart`, processamento das vendas, controle de acesso na
+calculadora, aba Comercial, CPF/CNPJ na aba Pessoas, e a secção 6.7 do `docs/DEPLOY.md`. Mais a
+migration `0065`.
+
+**A revisão (opus) achou 2 Critical, 1 condicional e 4 Important — todos corrigidos antes de
+publicar** (detalhe na §16.2 do spec):
+
+- **C1** — o owner de qualquer workspace passava por cima do controle de acesso, e qualquer usuário
+  cria workspace: um comprador usaria tudo de graça. Agora só o dono do servidor.
+- **C2** — todo comprador via nome, e-mail e CPF/CNPJ dos outros. Agora cada um vê a própria linha.
+- **C3** — o comprador virava membro do CRM inteiro. **Decisão do usuário: esta instalação é só de
+  ferramentas.** Comprador só entra em `/ferramentas`, e não cria espaço de trabalho.
+- **I1–I4** — questionário desativado em leitura; Comercial só do dono do servidor; documento só
+  associa com e-mail a bater; falha de e-mail vira 500 para a Hotmart reenviar.
+
+Verificado: 1528 testes, tipos e `pnpm build` verdes.
+
+**Re-revisão concluída em 2026-09-13:** todos os achados endereçados, sem quebra nova crítica — sem
+loop de redirecionamento, nenhum dono preso em `/ferramentas`, a `0065` não quebra leitura legítima,
+e revogar `criar_workspace` não afeta o cadastro. Ela apontou que as ações de CRM do painel lateral
+iam no bundle do layout e chegavam ao comprador por chamada direta; corrigido em `sessaoEws()`.
+1529 testes, tipos e build verdes.
+
+**Condições para publicar** (da re-revisão):
+1. Endereço público e SMTP configurados **antes** de ativar a oferta na Hotmart — sem o endereço, a
+   compra fica paga e gravada, mas o comprador não recebe a senha e não entra.
+2. `signup_aberto` continua `false` (é o padrão; nenhuma tela o muda).
+3. Aceitas pelo usuário, pela decisão "só ferramentas": convidados `membro` que não são donos de
+   nenhum workspace perdem o CRM; e as tabelas de CRM seguem legíveis pelo console a qualquer
+   membro (sem dado de CRM, não expõe nada).
+
+**Falta, nesta ordem:**
+1. **Ok do usuário para publicar** (merge no `main` → produção; abre o webhook e aplica a `0065`).
+2. Roteiro de verificação do bloco B no servidor (abaixo).
+
+**Riscos residuais anotados:**
+- Tabelas de CRM continuam legíveis pelo console a qualquer membro (RLS `e_membro`). Aceitável só
+  porque a instalação não tem dado de CRM — **se um dia tiver, isto tem de ser revisto.**
+- As ações de CRM do painel lateral recusam comprador (`sessaoEws()` em `src/server/crm/acoes.ts`);
+  as de outras telas de CRM só são carregadas por rotas que o proxy já recusa.
+- `/sem-workspace` ainda deixa criar workspace a quem tem **zero** vínculos (por exemplo, um cadastro
+  por convite cujo aceite falhou). Exige convite emitido por um owner, logo gente de confiança.
+- O motor da calculadora corre no navegador: com acesso encerrado, quem insistir calcula pelo
+  console. Só a gravação é barrada de verdade.
+- Membros não-owner que já tinham cálculos antes de haver vendas ficam sem acesso a eles.
+- Duas compras do mesmo produto e membro no mesmo instante podem sobrepor dias; cancelar a venda
+  atual com uma renovação empilhada deixa um intervalo sem acesso.
+
+### Roteiro de verificação manual do bloco B
+
+Antes: SMTP a funcionar, **endereço público** configurado, uma oferta cadastrada, e o hottok salvo
+em Configurações → Comercial.
+
+```bash
+BASE=https://SEU-CRM; TOKEN='hottok'; OFERTA='codigo-cadastrado'
+enviar() { # $1=evento $2=transacao $3=email $4=event_id
+  curl -s -o /dev/null -w "%{http_code}\n" -X POST "$BASE/api/webhook/hotmart" \
+    -H 'content-type: application/json' -H "x-hotmart-hottok: $TOKEN" \
+    -d "{\"id\":\"$4\",\"creation_date\":$(date +%s)000,\"event\":\"$1\",\"version\":\"2.0.0\",
+        \"data\":{\"buyer\":{\"name\":\"Teste\",\"email\":\"$3\"},
+        \"purchase\":{\"approved_date\":$(date +%s)000,\"price\":{\"value\":97,\"currency_value\":\"BRL\"},
+        \"transaction\":\"$2\",\"offer\":{\"code\":\"$OFERTA\"}}}}"; }
+```
+
+1. **Comprador preso às ferramentas.** Compre com um e-mail de teste, entre com a senha do e-mail e
+   tente abrir `/painel`, `/contatos`, `/config`: cai sempre em `/ferramentas`, e o menu só mostra
+   Ferramentas.
+2. **Comprador não vê os outros.** Com o token de sessão dele, `GET $SUPABASE/rest/v1/membros?select=nome,cpf_cnpj`
+   devolve só a própria linha.
+3. **Comprador não cria workspace.** `POST $SUPABASE/rest/v1/rpc/criar_workspace` com o token dele
+   é recusado.
+4. **Token.** Sem o cabeçalho, ou com token errado: 401, e nada novo em `webhook_compras_recebidas`.
+5. **Compra nova.** `enviar PURCHASE_APPROVED T1 novo@teste.com e1` → 200; uma venda, um período,
+   um membro `membro`, e na fila as boas-vindas e a entrega.
+6. **Sem duplicar.** `for i in 1 2 3 4 5; do enviar PURCHASE_APPROVED T2 corrida@teste.com e2 & done; wait`
+   → uma venda, um período, sem e-mails repetidos.
+7. **Encerramento depois.** `enviar PURCHASE_REFUNDED T1 x e3` → venda `reembolsada`; o comprador vê
+   "Acesso encerrado", o questionário desativado, e não salva.
+8. **Encerramento antes.** `enviar PURCHASE_CANCELED T4 x e4` e depois `enviar PURCHASE_APPROVED T4 antes@teste.com e5`
+   → a venda nasce `cancelada`, sem período nem e-mail.
+9. **Renovação.** Uma segunda aprovação do mesmo produto e comprador: o período novo começa no
+   vencimento anterior, e sai só o "pagamento recebido".
+10. **Hotmart de verdade.** Mande o teste pelo painel dela e confirme que o `id` do envelope se
+    repete nos reenvios automáticos — a deduplicação por `event_id` depende disso.
+
 ### Roteiro de verificação manual do bloco A
 
 1. **Hash escondido.** No SQL Editor:
@@ -102,20 +191,10 @@ tempo, o contentor antigo segue no ar e basta tentar de novo.
    banco (`src/server/email/modelos.ts`) e a ressincronização da tela depois de salvar
    (`ModelosEmailCard.tsx`). Nada acusa se alguém as reverter.
 
-## Plano 2 — vendas, ofertas, CPF/CNPJ, webhook Hotmart e gate de acesso: PAUSADO
+## Plano 2 — vendas, ofertas, CPF/CNPJ, webhook Hotmart e gate de acesso: EM ANDAMENTO
 
-Pausado a pedido do usuário. **O Codex está a trabalhar no mesmo tema nesta mesma pasta e branch**
-(plano `2026-09-13-compras-hotmart.md`, migration `0064_compras_hotmart.sql` e outros, ainda sem
-commit à data desta nota). Decidido com o usuário: o Codex não cria branches, e a organização de
-branches do Claude prevalece. Antes de retomar o Plano 2, confirmar com o usuário o que o Codex já
-entregou, para não duplicar.
-
-- **O spec está escrito e aprovado** (§4 a §7, §9), mais a **§16**, com cinco correções
-  encontradas ao ler o código antes de planear. Onde a §16 contradiz o resto, vale a §16.
-- **O plano de implementação ainda não foi escrito.** Próximo passo quando retomar.
-- A migration será a `0064`.
-- Combinado com o usuário: plano **mais enxuto** que o do Plano 1 — sem código completo escrito de
-  antemão, revisão só onde há risco real (banco, autorização, dinheiro, webhook).
+Ver **▶ RETOMAR AQUI** acima. O trabalho que o Codex tinha começado foi analisado; ficou só o que
+fazia sentido, e o resto está arquivado fora do repositório.
 
 ## Decisões tomadas que o usuário pode querer desfazer
 

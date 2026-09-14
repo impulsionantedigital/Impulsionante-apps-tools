@@ -14,6 +14,7 @@ import MenuUsuario, { type UsuarioResumo } from './MenuUsuario'
 import MarcaLockup from '@/components/MarcaLockup'
 import { lerMarca } from '@/server/marca'
 import { temaDaRequisicao } from '@/server/tema'
+import { souDonoDeAlgumWorkspace } from '@/server/auth/comprador'
 
 
 
@@ -61,6 +62,8 @@ export default async function Rail({ user, wsAtivo, workspaces, avisoAtualizacao
     else porGrupo.set(item.grupo, [item])
   }
   const grupos = [...porGrupo.entries()]
+  // Comprador vê só Ferramentas. As rotas já são recusadas no proxy; isto é só o menu.
+  const soFerramentas = !(await souDonoDeAlgumWorkspace())
 
   return (
     <aside className={estilos.rail}>
@@ -84,6 +87,8 @@ export default async function Rail({ user, wsAtivo, workspaces, avisoAtualizacao
 
       {}
       <div className={estilos.grupos}>
+        {!soFerramentas && (
+        <>
         <div className={estilos.sec}>Dia a dia</div>
         {}
         <ItemNav href="/painel" rotulo="Painel"><LayoutDashboard size={16} strokeWidth={2} /></ItemNav>
@@ -105,11 +110,14 @@ export default async function Rail({ user, wsAtivo, workspaces, avisoAtualizacao
         <ItemNav href="/agentes" rotulo="Agentes de IA"><Bot size={16} strokeWidth={2} /></ItemNav>
         <ItemNav href="/relatorios" rotulo="Relatórios"><BarChart3 size={16} strokeWidth={2} /></ItemNav>
 
+        </>
+        )}
+
         <div className={estilos.sec}>Ferramentas</div>
         <ItemNav href="/ferramentas" rotulo="Ferramentas"><Scale size={16} strokeWidth={2} /></ItemNav>
 
         {}
-        {grupos.map(([grupo, itens]) => (
+        {!soFerramentas && grupos.map(([grupo, itens]) => (
           <Fragment key={grupo}>
             <div className={estilos.sec}>{grupo}</div>
             {itens.map((item) => (
@@ -124,7 +132,9 @@ export default async function Rail({ user, wsAtivo, workspaces, avisoAtualizacao
       <div className={estilos.rodape}>
         {}
         {}
-        <ItemNav href="/config" rotulo="Configurações" aviso={avisoAtualizacao}><Settings size={16} strokeWidth={2} /></ItemNav>
+        {!soFerramentas && (
+          <ItemNav href="/config" rotulo="Configurações" aviso={avisoAtualizacao}><Settings size={16} strokeWidth={2} /></ItemNav>
+        )}
         <MenuUsuario user={user} tema={tema} />
       </div>
     </aside>

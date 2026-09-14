@@ -3,6 +3,7 @@
 import { criarClienteServidor } from '@/server/supabase-session'
 import { admin } from '@/server/supabase'
 import { resolverWorkspaceAtivo } from '@/server/auth/workspace-ativo'
+import { souDonoDeAlgumWorkspace } from '@/server/auth/comprador'
 import { assertMesmoPipeline } from '@/server/crm/kanban-ordem'
 import { logEtapaMudou } from '@/server/crm/timeline'
 import { camposNegocio, camposContato, camposEmpresa } from '@/server/crm/campos'
@@ -20,6 +21,10 @@ type Res = { ok: true; id?: string } | { erro: string }
 
 async function sessaoEws() {
   const cliente = await criarClienteServidor()
+  // 🔴 Esta instalação é só de ferramentas: comprador não usa o CRM. Estas ações vão no bundle do
+  // layout (DrawerProvider e formulários), por isso chegam ao comprador mesmo com as rotas de CRM
+  // recusadas no proxy — uma chamada direta pelo id da ação passaria. Sem workspace, todas recusam.
+  if (!(await souDonoDeAlgumWorkspace())) return { cliente, ws: null }
   const ws = await resolverWorkspaceAtivo({ cliente })
   return { cliente, ws }
 }

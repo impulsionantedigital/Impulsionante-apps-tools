@@ -30,6 +30,9 @@ const MENSAGENS: Record<string, string> = {
 async function criarWorkspace(formData: FormData): Promise<void> {
   'use server'
   const user = await exigirSessao()
+  // 🔴 A página manda embora quem já tem workspace, mas a server action é um endereço HTTP: sem
+  // esta linha, um comprador criaria o seu, viraria owner e usaria os recursos do servidor.
+  if ((await resolverWorkspaceAtivo()) !== null) redirect('/painel')
   const nome = String(formData.get('nome') ?? '').trim()
   if (!nome) redirect('/sem-workspace?erro=nome_vazio')
 

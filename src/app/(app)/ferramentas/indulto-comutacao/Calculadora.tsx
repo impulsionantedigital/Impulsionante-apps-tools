@@ -33,11 +33,14 @@ export default function Calculadora({
   inicial,
   calculoId,
   tituloInicial,
+  somenteLeitura = false,
 }: {
   motor: MotorDecreto
   inicial?: Entrada
   calculoId?: string
   tituloInicial?: string
+  /** Acesso encerrado: vê o cálculo, não salva. A ação no servidor recusa de qualquer forma. */
+  somenteLeitura?: boolean
 }) {
   const [entrada, setEntrada] = useState<Entrada>(() => inicial ?? entradaInicial(motor))
 
@@ -45,21 +48,30 @@ export default function Calculadora({
   // Nada sai daqui até o membro salvar.
   const resultado = useMemo(() => motor.calcular(entrada), [motor, entrada])
 
-  const aoMudar = (chave: string, valor: Entrada[string]) =>
+  const aoMudar = (chave: string, valor: Entrada[string]) => {
+    if (somenteLeitura) return
     setEntrada((atual) => ({ ...atual, [chave]: valor }))
+  }
 
   return (
     <div className={estilos.layout}>
       <div className={estilos.coluna}>
-        <Questionario secoes={motor.questionario} entrada={entrada} aoMudar={aoMudar} />
+        <Questionario secoes={motor.questionario} entrada={entrada} aoMudar={aoMudar} desabilitado={somenteLeitura} />
       </div>
       <div className={estilos.coluna}>
-        <BarraSalvar
-          motor={motor}
-          entrada={entrada}
-          calculoId={calculoId}
-          tituloInicial={tituloInicial}
-        />
+        {somenteLeitura ? (
+          <div className={estilos.avisoVersao} role="status">
+            <b>Acesso encerrado.</b> Você pode consultar e excluir os seus cálculos, mas criar e
+            editar exige renovar o acesso.
+          </div>
+        ) : (
+          <BarraSalvar
+            motor={motor}
+            entrada={entrada}
+            calculoId={calculoId}
+            tituloInicial={tituloInicial}
+          />
+        )}
         <Resultado motor={motor} resultado={resultado} />
       </div>
     </div>

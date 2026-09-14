@@ -39,6 +39,8 @@ export async function enfileirar(args: {
   tipo: TipoModelo
   para: string
   valores: Record<string, string>
+  /** Idempotência: com a mesma chave, só o primeiro enfileiramento vale (emails_fila_chave_evento_key). */
+  chave?: string
 }): Promise<{ ok: true } | { erro: string }> {
   const modelo = await lerModelo(args.workspaceId, args.tipo)
   const { assunto, html } = renderizarParaFila(modelo, args.valores)
@@ -48,7 +50,10 @@ export async function enfileirar(args: {
     destinatario: args.para,
     assunto,
     html,
+    chave_evento: args.chave ?? null,
   })
+  // Chave repetida: este e-mail já está na fila, ou já saiu. Reprocessar não pode duplicá-lo.
+  if (error && args.chave && error.code === '23505') return { ok: true }
   if (error) return { erro: 'falha_enfileirar' }
   return { ok: true }
 }
