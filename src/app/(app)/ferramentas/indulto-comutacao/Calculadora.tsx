@@ -94,10 +94,15 @@ export default function Calculadora({
       </div>
       <div className={estilos.coluna}>
         {somenteLeitura ? (
-          <div className={estilos.avisoVersao} role="status">
-            <b>Acesso encerrado.</b> Você pode consultar e excluir os seus cálculos, mas criar e
-            editar exige renovar o acesso.
-          </div>
+          <>
+            <div className={estilos.avisoVersao} role="status">
+              <b>Acesso encerrado.</b> Você pode consultar e excluir os seus cálculos, mas criar e
+              editar exige renovar o acesso.
+            </div>
+            <div className={estilos.barraImprimir}>
+              <BotaoImprimir />
+            </div>
+          </>
         ) : (
           <BarraSalvar
             motor={motor}
@@ -105,11 +110,9 @@ export default function Calculadora({
             calculoId={calculoId}
             titulo={titulo}
             aoMudarTitulo={setTitulo}
+            acoesExtras={<BotaoImprimir />}
           />
         )}
-        {/* Depois da barra e antes do resultado: é o resultado que vai para o papel. Vale
-            também com o acesso encerrado — por isso não depende de `somenteLeitura`. */}
-        <BotaoImprimir />
         {/* Só no papel: identifica o caso e lista as premissas. Ver CabecalhoAnexo.tsx. */}
         <CabecalhoAnexo motor={motor} entrada={entrada} titulo={titulo} />
         <Resultado motor={motor} resultado={resultado} />

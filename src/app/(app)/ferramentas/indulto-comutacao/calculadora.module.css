@@ -205,6 +205,8 @@
 .barraImprimir {
   display: flex;
   justify-content: flex-end;
+  gap: var(--s-3);
+  margin-bottom: var(--s-5);
 }
 
 /* A barra, a exclusão e o próprio botão de imprimir são da tela, não do anexo. */

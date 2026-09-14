@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import Botao from '@/components/ui/Botao'
 // Mesmo vocabulário de formulário do produto que o Questionario.tsx já usa —
@@ -25,6 +25,7 @@ export default function BarraSalvar({
   calculoId,
   titulo,
   aoMudarTitulo,
+  acoesExtras,
 }: {
   motor: MotorDecreto
   entrada: Entrada
@@ -33,6 +34,10 @@ export default function BarraSalvar({
    *  a barra some na impressão. Duas cópias do mesmo texto divergiriam ao primeiro rascunho. */
   titulo: string
   aoMudarTitulo: (valor: string) => void
+  /** Botões que entram na mesma linha do "Salvar alterações" — hoje o Imprimir e, quando
+   *  aplicável, a Petição. Ficam aqui, e não soltos em `Calculadora`, porque é esta linha
+   *  (`.linhaTitulo`) que já resolve o alinhamento com o campo de título. */
+  acoesExtras?: ReactNode
 }) {
   const router = useRouter()
   const [aviso, setAviso] = useState<Aviso | null>(null)
@@ -78,6 +83,7 @@ export default function BarraSalvar({
           <Botao variante="primario" onClick={salvar} carregando={pendente} desabilitado={pendente}>
             {calculoId ? 'Salvar alterações' : 'Salvar cálculo'}
           </Botao>
+          {acoesExtras}
         </div>
       </CampoUI>
       {aviso && (
