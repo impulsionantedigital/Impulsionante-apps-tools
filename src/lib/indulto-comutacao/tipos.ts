@@ -108,6 +108,15 @@ export type Secao = {
   campos: Campo[]
 }
 
+/** O que um gerador de petição de decreto recebe: a entrada, o resultado calculado e o título
+ *  do cálculo. O `motor` não entra aqui — cada gerador já é método DO motor a que pertence — e
+ *  o anexo de premissas é montado por dentro do próprio gerador, via `formatarAnexoTexto`. */
+export type DadosPeticao = {
+  entrada: Entrada
+  resultado: Resultado
+  titulo: string
+}
+
 export type MotorDecreto = {
   id: string
   ano: number
@@ -119,4 +128,12 @@ export type MotorDecreto = {
   incisos: { indulto: MetaInciso[]; comutacao: MetaInciso[] }
   avisos: { fixos: string[]; validarJuridicamente: string[] }
   calcular(entrada: Entrada): Resultado
+
+  /** Ausente num decreto que ainda não tem modelo de petição — o botão "Petição"
+   *  (`BotaoPeticao.tsx`) só aparece quando isto existe E há pelo menos um dispositivo
+   *  aplicável (ver `enquadramentos.ts`). Cada função devolve o texto pronto, anexo incluído. */
+  peticoes?: {
+    indulto: (dados: DadosPeticao) => string
+    comutacao: (dados: DadosPeticao) => string
+  }
 }
