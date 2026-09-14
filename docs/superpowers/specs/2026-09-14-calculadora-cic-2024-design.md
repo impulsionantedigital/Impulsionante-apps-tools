@@ -2,7 +2,46 @@
 
 > Spec de implementação da segunda calculadora de indulto e comutação.
 > Data: 2026-09-14. Branch: `calculadora2024`.
-> Fonte de verdade jurídica: `validacao/2024/planilha.xlsx`.
+> Fonte de verdade jurídica: `validacao/2024/planilha.xlsx` — a **versão comercial**, publicada.
+
+## 0. As duas planilhas de 2024, e qual vale
+
+Chegaram dois arquivos do mesmo decreto. **Vale a comercial**, que está em
+`validacao/2024/planilha.xlsx`; a outra ficou em `validacao/2024/planilha-rascunho.xlsx`.
+
+| | `planilha.xlsx` (comercial) | `planilha-rascunho.xlsx` |
+|---|---|---|
+| abas `Cálculo` e `Valid_dados` | ocultas | visíveis |
+| rótulos descritivos na coluna `C` do `Cálculo` | apagados | **presentes** |
+| marca (`@gpsdapena`, URL, 3 imagens) | sim | não |
+| dados de exemplo preenchidos | não, vem limpa | sim, com um caso dentro |
+| aba auxiliar "Calculadora de Data - Tempo" | não | sim |
+
+A comercial é a publicada: corrige textos, vem sem dados de exemplo e esconde a maquinaria. Os
+730 KB contra 172 KB são imagens, não regra.
+
+**O rascunho continua no repositório por um motivo:** a coluna `C` do `Cálculo` dele traz a
+descrição em português de cada requisito ("TEM QUE TER CUMPRIDO 2/3 SE TIVER PENA NA L6"), que a
+comercial apagou. Serve de documentação de intenção na hora de transcrever. As datas nesses
+rótulos estão desatualizadas (ver §5.2) — vale a fórmula, nunca o rótulo.
+
+### 0.1 O que muda de fato entre as duas
+
+Três células de fórmula, e só três em toda a pasta de trabalho:
+
+| Célula | Rascunho | Comercial | Efeito |
+|---|---|---|---|
+| `P69`…`P99` e `I135` — o §2º, 12 células | idade ≥ **70 anos** | idade ≥ **60 anos** | **real** |
+| `I90` — Art. 9º, VIII, regra geral | `M16`, remanescente total | `M17`, remanescente não impeditivo | **real** |
+| `K69`, `K72`, `K75`, `K111` | `IF(I66=1,"OK",IF(I66=3,"OK","NÃO"))` | `IF(I66=1,"OK","NÃO")` | **nenhum** |
+
+A terceira é remoção de ramo morto: `I66` só produz `1`, `2` ou `"Erro"` — nunca `3` — nas duas
+versões. Comportamento idêntico.
+
+Correções de texto da comercial: `Resultado!B9` passa a trazer o texto do **inciso II** (o
+rascunho repetia o do inciso I); o inciso XI passa a exigir "por, no mínimo, doze meses"; entram
+os alertas "(Cuidado! Ao selecionar NÃO, a Calculadora bloqueará tanto o Indulto quanto a
+Comutação.)" nos dois requisitos da data do fato; e corrigem-se "supensão" e "patromônio".
 
 ## 1. Objetivo
 
@@ -65,34 +104,40 @@ transcrição de 2024 é feita a partir da planilha de 2024, célula a célula.
 
 ## 4. Diferenças de regra entre 2024 e 2025
 
-Apuradas por diff mecânico das duas abas `Cálculo`, normalizando o deslocamento de linha (+6) e
-de coluna (`M`→`N`, `I`→`J` para a fração 1/6). Tudo o que **não** está nesta tabela é regra
+Apuradas por diff mecânico das abas `Cálculo`, normalizando o deslocamento de linha (+6) e de
+coluna (`M`→`N`, e `I`→`J` para a fração 1/6), e depois reconciliadas com as três divergências do
+§0.1 para valerem para a **versão comercial**. Tudo o que **não** está nesta tabela é regra
 idêntica, e o motor de 2024 deve reproduzi-la com os mesmos números.
 
-| # | Onde | 2024 | 2025 |
+| # | Onde | 2024 (comercial) | 2025 |
 |---|---|---|---|
-| 1 | **Regra especial do §2º** (todos os incisos do Art. 9º e o Art. 13 §4º) | idade **≥ 70 anos**; perfil com **5** marcadores | idade ≥ 60; perfil com 8 marcadores |
+| 1 | **Perfil da regra especial do §2º** (todos os incisos do Art. 9º e o Art. 13 §4º) — a idade-limite é 60 nos dois anos | **5** marcadores | **8** marcadores |
 | 2 | Art. 9º, **XII** — fração exigida | **1/5** (não reinc.) / **1/4** (reinc.) | 1/6 / 1/5 |
-| 3 | Art. 9º, **VIII** — base do §2º | **pena remanescente NÃO impeditiva** (`M17`) | remanescente total (`N16`) |
+| 3 | Art. 9º, **VIII** — base da pena remanescente | **remanescente NÃO impeditiva** (`M17`), na regra geral e na especial | remanescente **total** (`N16`), nas duas |
 | 4 | Art. **11, II e III** — requisito do filho | marcador **único** (mulher com filho < 16 anos, ou com deficiência/doença crônica grave que necessite de cuidados) | `OR` de três combinações de marcadores |
 | 5 | Art. **10** — perfil | avó com netos até 12 anos + pessoa com deficiência | combinações desmembradas |
 | 6 | Comutação — pena após | **não existe**: a planilha só calcula o quantum | existe |
 
 ### 4.1 O perfil do §2º em 2024
 
-`IF(OR(D47<=DATE(2024-70,12,25), I32=1, I35=1, I36=1, I38=1, I39=1), "OK", "NÃO")`
+`IF(OR(D47<=DATE(2024-60,12,25), I32=1, I35=1, I36=1, I38=1, I39=1), "OK", "NÃO")`
 
 | Marcador | Célula | Pergunta (Questionário) |
 |---|---|---|
-| idade ≥ 70 anos em 25/12/2024 | `D47` | data de nascimento (`E33`) |
+| idade ≥ 60 anos em 25/12/2024 | `D47` | data de nascimento (`E33`) |
 | mulher gestante ou com filho até 14 anos, ou com doença crônica grave ou deficiência | `I32` | `E75` |
 | homem único responsável por filho menor de 14 anos, ou com doença crônica grave ou deficiência | `I35` | `E81` |
 | pessoa imprescindível aos cuidados de criança de até 12 anos, ou com doença grave/deficiência | `I36` | `E83` |
 | pessoa com deficiência | `I38` | `E71` |
 | submetida a programa de justiça restaurativa | `I39` | `E51` |
 
-Atenção: o **Art. 10** usa `DATE(2024-60,...)` e `DATE(2024-21,...)` — 60 e 21 anos —, não os 70
-do §2º. As duas idades convivem na mesma planilha e não devem ser unificadas.
+A idade é a mesma de 2025. O que difere é o **conjunto de marcadores**: 5 aqui, 8 em 2025, porque
+2025 desmembrou as perguntas de "mulher com filho" em várias. Um marcador de 2024 cobre o que em
+2025 virou duas ou três respostas — não há correspondência de um para um, e é por isso que o
+questionário de 2024 não pode ser derivado do de 2025.
+
+O **Art. 10** usa `DATE(2024-60,...)` e também `DATE(2024-21,...)` — este último para quem tem
+menos de 21 anos. São duas faixas etárias no mesmo dispositivo, e nenhuma delas é o §2º.
 
 ### 4.2 Diferenças de REDAÇÃO, que não são diferenças de regra
 
@@ -100,18 +145,22 @@ Perguntas cujo texto mudou de um ano para o outro mas que continuam reduzindo ao
 `SIM`/`NÃO`, alimentando fórmula idêntica. **Devem ser transcritas com a redação de 2024**,
 porque é o que o advogado lê na tela e imprime no anexo — mas não implicam lógica diferente.
 
-| Campo | 2024 | 2025 |
+| Campo | 2024 (comercial) | 2025 |
 |---|---|---|
-| saídas temporárias / trabalho externo (Art. 9º, XI) | "obteve 05 saídas temporárias ou trabalhou externamente nos três anos anteriores" | acrescenta "por, no mínimo, doze meses" |
 | pena substituída (Art. 9º, VII) | "**Tem** pena substituída por restritiva de direito ou beneficiadas com a suspensão condicional da pena?" | "**Todas as penas** foram substituídas…" |
 | regime aberto (Art. 9º, VII) | "**Tem** condenação em regime aberto?" | "**Todas as condenações** foram em regime aberto?" |
 | reincidência | "Reincidente?" | "Reincidente em 25/12/2025?" |
-| hipossuficiência (Art. 12) | "Sentenciado hipossuficiente?" | "…nos termos do Art. 12, §2º" |
-| requisitos da data do fato | sem alerta | trazem "(Cuidado! Ao selecionar NÃO, a Calculadora bloqueará tanto o Indulto quanto a Comutação.)" |
+| hipossuficiência | "…nos termos do **Art. 9, §2º**" | "…nos termos do **Art. 12, §2º**" |
 
 A diferença de "Tem" para "Todas as" é a que mais muda o sentido para quem responde, mesmo com a
 fórmula igual. Fica registrada aqui para que a transcrição não "melhore" o texto de 2024 usando o
 de 2025 como modelo.
+
+**A hipossuficiência tem rótulo provavelmente errado na planilha de 2024.** A resposta (`E113` →
+`I54`) alimenta dois pontos: `G111`, o Art. 9º, XV — "reparou o dano **ou** é hipossuficiente" —
+e `F120`, o Art. 12, que exige hipossuficiência quando a multa passa de R$ 20.000. Nenhum dos
+dois é o §2º. O rótulo de 2025 ("Art. 12, §2º") é o plausível. **Transcrever o texto de 2024 como
+está** e levar o ponto ao dono do produto: é rótulo de tela, não muda cálculo nenhum.
 
 ## 5. Ambiguidades jurídicas
 
@@ -119,11 +168,12 @@ Vão para `AVISOS_2024.validarJuridicamente` e aparecem ao advogado em "Pontos a
 juridicamente", como já acontece em 2025. **Nenhuma delas é corrigida no motor**: a planilha é a
 fonte de verdade, e corrigi-la é decisão dos autores do método.
 
-1. **Art. 9º, VIII — a regra especial troca de base.** A regra geral compara a pena remanescente
-   **total** (`M16`) com o teto; o §2º compara a remanescente **não impeditiva** (`M17`) com o
-   teto dobrado. Nenhum outro inciso troca de base entre a regra geral e a especial, e em 2025 o
-   mesmo dispositivo usa a mesma base nas duas. **Esta é nova de 2024** e é a mais relevante da
-   lista.
+1. **Art. 9º, VIII — a base da pena remanescente difere de 2025.** Em 2024 as duas regras usam a
+   remanescente **não impeditiva** (`M17`); em 2025, as duas usam a **total** (`N16`). Cada
+   planilha é coerente consigo mesma, mas o mesmo dispositivo mede coisa diferente em cada ano.
+   Conferir contra o texto dos dois decretos.
+   *(No `planilha-rascunho.xlsx` a regra geral usava `M16` e a especial `M17` — incoerência
+   interna que a versão comercial corrigiu. O motor segue a comercial.)*
 2. **Art. 9º, VIII — o §2º dobra o teto.** Como em 2025: a regra especial multiplica o teto por 2
    em vez de reduzir a fração pela metade. Faz sentido porque ali o §2º incide sobre um teto e
    não sobre uma fração exigida, mas é interpretação.
@@ -144,16 +194,21 @@ o seu. O motor de 2024 não deve reproduzir aquele desvio nem o tratamento de te
 
 ### 5.2 Ruído da planilha, a ignorar
 
-Vários rótulos da aba `Cálculo` de 2024 dizem "25/12/2023" (`C18`, `C23`, `C24`, `C45`, `C57`,
-`C58`, `C60`) e a célula `E47` guarda `2023-12-25`. São sobras da planilha do decreto anterior:
-as **fórmulas** leem o Questionário, que diz 25/12/2024, e o §2º usa `DATE(2024-70,12,25)`
-literal. Transcrever o rótulo em vez da fórmula seria erro.
+Na comercial a coluna `C` do `Cálculo` está apagada, então o ruído aparece só no
+`planilha-rascunho.xlsx` — de onde vêm as descrições de requisito usadas como documentação.
+Quem consultar o rascunho precisa saber:
 
-Dois erros de rótulo na aba `Resultado`, também a ignorar:
-- a linha do **inciso II** (`B9`) repete o texto do inciso I; o texto correto está em `Cálculo!C72`;
-- as linhas de comutação do **Art. 13** estão rotuladas "ART 12" em `Cálculo!C142`/`C143`,
-  enquanto `Resultado!B51`/`B53` as chamam de Art. 13 e Art. 13 §4º. Vale o `Resultado`, que é o
-  que o advogado lê.
+- vários rótulos dizem **"25/12/2023"** (`C18`, `C23`, `C24`, `C45`, `C57`, `C58`, `C60`) e a
+  célula `E47` guarda `2023-12-25`. São sobras da planilha do decreto anterior. As **fórmulas**
+  leem o Questionário, que diz 25/12/2024, e o §2º usa `DATE(2024-60,12,25)` literal;
+- as linhas de comutação do **Art. 13** estão rotuladas "ART 12" em `Cálculo!C142`/`C143` nas
+  **duas** versões, enquanto `Resultado!B51`/`B53` as chamam de Art. 13 e Art. 13 §4º. Vale o
+  `Resultado`, que é o que o advogado lê.
+
+Transcrever o rótulo em vez da fórmula seria erro em qualquer um desses casos.
+
+*(O erro do `Resultado!B9`, que repetia o texto do inciso I na linha do inciso II, existe só no
+rascunho. A comercial já traz o texto certo e é dela que se transcreve.)*
 
 ## 6. Arquitetura
 
@@ -289,6 +344,11 @@ transcrição. A perda é real mas é da camada mais fraca.
 `build_inputs`/`OUT_MAP` é do mapeamento de 2025 e não serve para outro ano. Passa a aceitar
 `2024` com um mapa próprio, escolhido pelo argumento. O mapa de 2025 **não é tocado**.
 
+**As abas ocultas não atrapalham — verificado.** Na planilha comercial, `Cálculo` e `Valid_dados`
+têm `sheet_state = hidden`. A `formulas` lê o XML e ignora a visibilidade: carregando
+`validacao/2024/planilha.xlsx` e avaliando, `Resultado!C7`, `Resultado!D7`, `Cálculo!P69` e
+`Cálculo!M9` respondem normalmente. Não é preciso desocultar nada nem mexer no arquivo.
+
 Mapa de saída de 2024 (`OUT_MAP`), que **não** coincide com o de 2025 — lá a aba `Resultado`
 começa uma coluna e duas linhas adiante:
 
@@ -305,9 +365,10 @@ O `build_inputs` de 2024 também é próprio: as perguntas vivem em `Questionari
 `E31..E119` em 2025, e o bloco de filhos/cuidados não tem correspondência de um para um (ver §4).
 
 - `validacao/2024/cenarios.json` — os 21 cenários de 2025 traduzidos para os campos de 2024, mais
-  ~6 desenhados para o que só existe aqui: a fronteira dos 70 anos do §2º, o perfil reduzido de 5
-  marcadores, a fração 1/5–1/4 do inciso XII, a base trocada do §2º do inciso VIII, e um caso sem
-  pena impeditiva.
+  ~6 desenhados para o que só existe aqui: o perfil do §2º com 5 marcadores (inclusive um caso em
+  que a pessoa se enquadra por um marcador que 2025 desmembrou), a fração 1/5–1/4 do inciso XII,
+  a base não impeditiva do inciso VIII, a fronteira dos 60 anos do §2º, e um caso sem pena
+  impeditiva.
 - `validacao/2024/esperado.json` — gerado pelo oráculo, com o sha256 da planilha. Nunca editado à
   mão.
 - `tests/indulto-comutacao/motor-2024.spec.ts` — compara o motor contra o congelado, dentro do
