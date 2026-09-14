@@ -4,13 +4,15 @@ import { useState } from 'react'
 import { FileText } from 'lucide-react'
 import Botao from '@/components/ui/Botao'
 import PeticaoOverlay from './PeticaoOverlay'
-import { temAplicavel } from '@/lib/indulto-comutacao/enquadramentos'
 import type { Entrada, MotorDecreto, Resultado } from '@/lib/indulto-comutacao/tipos'
 
 /**
- * Só aparece quando o motor tem modelo de petição (`motor.peticoes`) E há pelo menos um
- * dispositivo aplicável — nem todo decreto vai ter petição pronta, e mesmo o que tem não deve
- * oferecer o botão para um caso que não preenche requisito nenhum.
+ * Só aparece quando o motor tem modelo de petição (`motor.peticoes`) E pelo menos um dos dois
+ * geradores produz texto de fato — não usa `temAplicavel` (enquadramentos.ts) porque a
+ * comutação (`motores/2025/peticoes.ts`) restringe a própria petição a um subconjunto dos
+ * dispositivos aplicáveis (ver o comentário lá): perguntar direto ao gerador se ele devolveu
+ * string vazia é o único jeito de o botão nunca prometer uma petição que o overlay mostraria em
+ * branco.
  */
 export default function BotaoPeticao({
   motor,
@@ -26,11 +28,13 @@ export default function BotaoPeticao({
   const [aberto, setAberto] = useState(false)
 
   if (!motor.peticoes) return null
-  const temIndulto = temAplicavel(motor, resultado, 'indulto')
-  const temComutacao = temAplicavel(motor, resultado, 'comutacao')
-  if (!temIndulto && !temComutacao) return null
 
-  const peticoes = motor.peticoes
+  const dadosPeticao = { entrada, resultado, titulo }
+  const textoIndulto = motor.peticoes.indulto(dadosPeticao)
+  const textoComutacao = motor.peticoes.comutacao(dadosPeticao)
+  const temIndulto = textoIndulto !== ''
+  const temComutacao = textoComutacao !== ''
+  if (!temIndulto && !temComutacao) return null
 
   return (
     <>
@@ -43,7 +47,7 @@ export default function BotaoPeticao({
         aoFechar={() => setAberto(false)}
         temIndulto={temIndulto}
         temComutacao={temComutacao}
-        gerarTexto={(tipo) => peticoes[tipo]({ entrada, resultado, titulo })}
+        gerarTexto={(tipo) => (tipo === 'indulto' ? textoIndulto : textoComutacao)}
       />
     </>
   )

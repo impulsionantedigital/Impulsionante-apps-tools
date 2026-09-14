@@ -12,7 +12,7 @@
 import type { DadosPeticao, MotorDecreto } from '../../tipos'
 import type { Tempo } from '../../tempo'
 import { dias, fmtDias } from '../../tempo'
-import { primeiroAplicavel } from '../../enquadramentos'
+import { enquadramentosDe, primeiroAplicavel } from '../../enquadramentos'
 import { formatarAnexoTexto } from '../../anexo-texto'
 
 const NUMERO_DECRETO = '12.970/2025'
@@ -107,7 +107,7 @@ No caso concreto, mostra-se aplicável o disposto no ${enquadramento.rotulo} do 
 
 Na data de referência estabelecida pelo Decreto, ${dataBaseFormatada(motor)}, o sentenciado havia cumprido ${fmtDias(resultado.resumo.totalCumprido)} de pena.
 
-A pena considerada para fins de análise corresponde a ${fmtDias(resultado.resumo.totalImposto)}, sendo que o Decreto exige o cumprimento de ${enquadramento.descricao}
+A pena considerada para fins de análise corresponde a ${fmtDias(resultado.resumo.totalImposto)}, sendo que o Decreto exige o cumprimento do requisito temporal previsto no ${enquadramento.rotulo}.
 
 Conforme cálculo de liquidação da pena, considerando-se o tempo de prisão efetivamente cumprido, a detração e os dias de remição regularmente reconhecidos, o requisito temporal encontra-se preenchido.
 
@@ -126,7 +126,7 @@ Em síntese:
 - Data de referência: ${dataBaseFormatada(motor)};
 - Pena total: ${fmtDias(resultado.resumo.totalImposto)};
 - Pena cumprida até a data de referência: ${fmtDias(resultado.resumo.totalCumprido)};
-- Requisito temporal exigido: ${enquadramento.descricao}
+- Requisito temporal exigido: o do ${enquadramento.rotulo}.
 
 Portanto, estando presentes os requisitos estabelecidos no Decreto, o sentenciado faz jus ao reconhecimento do direito ao indulto.
 
@@ -153,7 +153,18 @@ OAB/[UF] nº [_____]`
 
 export function gerarPeticaoComutacao2025(motor: MotorDecreto, dados: DadosPeticao): string {
   const { entrada, resultado } = dados
-  const enquadramento = primeiroAplicavel(motor, resultado, 'comutacao')
+  // 🔴 Restrito ao Art. 13/§4º (regra geral) por decisão do usuário em 14/09/2026: a Seção 3
+  // abaixo argumenta especificamente a lógica impeditivo (2/3) / permissivo (1/5 ou 1/4) do
+  // Art. 13, que não vale para os incisos do Art. 11 (mulher, frações fixas de 1/4, 2/3 ou 1/2,
+  // sem essa distinção). Gerar a petição para um caso que só se enquadra no Art. 11 citaria um
+  // artigo na Seção 1 e argumentaria a regra de outro na Seção 3 — incoerente. Sem modelo
+  // próprio para o Art. 11 ainda, o botão de petição de comutação não deve nem aparecer nesse
+  // caso (ver `BotaoPeticao.tsx`, que decide a visibilidade chamando este mesmo gerador e
+  // conferindo se ele devolveu string vazia — não usa uma checagem de aplicabilidade separada,
+  // exatamente para nunca divergir desta regra).
+  const enquadramento = enquadramentosDe(motor, resultado, 'comutacao').find(
+    (e) => e.geral === 'preenche' && (e.id === 'art13' || e.id === 'art13_4'),
+  )
   if (!enquadramento) return ''
 
   const sentenciado = String(entrada.sentenciado ?? '').trim() || '[NOME DO SENTENCIADO]'
@@ -222,7 +233,7 @@ No caso concreto, mostra-se aplicável o disposto no ${enquadramento.rotulo} do 
 
 Na data de referência estabelecida pelo Decreto, ${dataBaseFormatada(motor)}, o sentenciado havia cumprido ${fmtDias(resultado.resumo.totalCumprido)} de pena.
 
-A pena considerada para fins de análise corresponde a ${fmtDias(resultado.resumo.totalImposto)}, sendo que o Decreto exige o cumprimento de ${enquadramento.descricao}
+A pena considerada para fins de análise corresponde a ${fmtDias(resultado.resumo.totalImposto)}, sendo que o Decreto exige o cumprimento do requisito temporal previsto no ${enquadramento.rotulo}.
 
 Conforme cálculo de liquidação da pena, considerando-se o tempo de prisão efetivamente cumprido, a detração e os dias de remição regularmente reconhecidos, o requisito temporal encontra-se preenchido.
 
@@ -241,7 +252,7 @@ Em síntese:
 - Data de referência: ${dataBaseFormatada(motor)};
 - Pena total: ${fmtDias(resultado.resumo.totalImposto)};
 - Pena cumprida até a data de referência: ${fmtDias(resultado.resumo.totalCumprido)};
-- Requisito temporal exigido: ${enquadramento.descricao}
+- Requisito temporal exigido: o do ${enquadramento.rotulo}.
 
 Portanto, estando presentes os requisitos estabelecidos no Decreto, o sentenciado faz jus ao reconhecimento do direito à comutação.
 

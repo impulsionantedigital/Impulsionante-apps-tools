@@ -77,6 +77,8 @@ describe('gerarPeticaoIndulto2025', () => {
     expect(texto).toContain('25/12/2025')
     expect(texto).toContain('4 anos 0 meses 0 dias')
     expect(texto).toContain('ANEXO — CÁLCULO DE INDULTO E COMUTAÇÃO')
+    expect(texto).toContain('requisito temporal previsto no Art. 9º, I')
+    expect(texto).toContain('Requisito temporal exigido: o do Art. 9º, I.')
   })
 
   it('usa placeholder quando sentenciado/execução não foram informados', () => {
@@ -148,5 +150,43 @@ describe('gerarPeticaoComutacao2025', () => {
     expect(texto).toContain('crime impeditivo')
     expect(texto).toContain('fração temporal aplicável corresponde a 2/3')
     expect(texto).toContain('RECONHECIMENTO DO DIREITO À COMUTAÇÃO')
+  })
+
+  it('devolve string vazia quando só um dispositivo do Art. 11 preenche (sem Art. 13/§4º aplicável)', () => {
+    const motorComArt11: MotorDecreto = {
+      ...motorFalso,
+      incisos: {
+        ...motorFalso.incisos,
+        comutacao: [
+          {
+            id: 'art11_II',
+            rotulo: 'Art. 11, II',
+            descricao: 'Mulher condenada: comutação de 2/3 da pena.',
+            temRegraEspecial: false,
+          },
+          motorFalso.incisos.comutacao[0], // art13, não preenchido neste caso
+        ],
+      },
+    }
+    const r = resultado({}, [
+      { id: 'art11_II', geral: 'preenche', especial: 'sem_previsao' },
+      { id: 'art13', geral: 'nao_preenche', especial: 'sem_previsao' },
+    ])
+    expect(gerarPeticaoComutacao2025(motorComArt11, { entrada: {}, resultado: r, titulo: 'X' })).toBe('')
+  })
+
+  it('referencia o rótulo do dispositivo em vez da descrição-blurb do card', () => {
+    const r = resultado({}, [{ id: 'art13', geral: 'preenche', especial: 'sem_previsao' }])
+    const texto = gerarPeticaoComutacao2025(motorFalso, { entrada: {}, resultado: r, titulo: 'X' })
+    expect(texto).toContain('requisito temporal previsto no Art. 13')
+    expect(texto).toContain('Requisito temporal exigido: o do Art. 13.')
+    // A descrição-blurb do card ("Comutação de 1/5 da remanescente...") ainda aparece uma vez na
+    // Seção 1 (citação completa do dispositivo, não alterada pela Decisão 2) e uma vez no ANEXO
+    // (listagem de referência, também intocada) — mas não mais nas Seções 2 e 5, onde antes era
+    // encaixada em prosa corrida. Contar as ocorrências no corpo (antes do separador do anexo)
+    // prova que os dois pontos-alvo foram reescritos sem exigir a remoção das citações legítimas.
+    const corpo = texto.split('\n\n---\n\n')[0]
+    const ocorrenciasNoCorpo = corpo.split('Comutação de 1/5 da remanescente').length - 1
+    expect(ocorrenciasNoCorpo).toBe(1)
   })
 })
