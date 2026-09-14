@@ -202,7 +202,7 @@ end $$;
 -- A API de admin do Supabase não busca por e-mail (só lista paginado). Só o servidor executa.
 create or replace function public.buscar_usuario_por_email(p_email text)
 returns uuid language sql stable security definer set search_path = '' as $$
-  select id from auth.users where lower(email) = lower(trim(p_email)) limit 1;
+  select id from auth.users where lower(email) = lower(trim(p_email)) order by created_at limit 1;
 $$;
 
 revoke all on function public.buscar_usuario_por_email(text) from public, anon, authenticated;

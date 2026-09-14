@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
-  criarCredencial, verificarCredencial, credencialPendente, decidirEmissao, validarNovaSenha, VALIDADE_MS,
+  criarCredencial, verificarCredencial, credencialPendente, decidirEmissao, validarNovaSenha, VALIDADE_MS, sessaoVeioDeSenhaTemporaria,
 } from '@/lib/auth/credenciais'
 
 const SETE_DIAS = 7 * 24 * 60 * 60 * 1000
@@ -49,7 +49,7 @@ describe('verificarCredencial', () => {
     expect(await verificarCredencial(c.segredo, c.hash, null, 1_001)).toBe(false)
   })
 
-  it('recusa segredo vazio ou gigante sem calcular nada', async () => {
+  it('recusa segredo vazio ou gigante', async () => {
     const c = await criarCredencial(1_000)
     expect(await verificarCredencial('', c.hash, c.expiraEm, 1_001)).toBe(false)
     expect(await verificarCredencial('a'.repeat(257), c.hash, c.expiraEm, 1_001)).toBe(false)
@@ -91,5 +91,34 @@ describe('validarNovaSenha', () => {
 
   it('recusa o que não é texto', () => {
     expect(validarNovaSenha(null, null)).toEqual({ erro: 'curta' })
+  })
+})
+
+describe('entropia da senha temporária', () => {
+  it('tem 12 bytes aleatórios, em 16 caracteres base64url', async () => {
+    const c = await criarCredencial()
+    expect(c.segredo).toMatch(/^[A-Za-z0-9_-]{16}$/)
+    expect(Buffer.from(c.segredo, 'base64url')).toHaveLength(12)
+  })
+})
+
+describe('sessaoVeioDeSenhaTemporaria', () => {
+  it('reconhece sessão de link mágico ou OTP, nos dois formatos do claim', () => {
+    expect(sessaoVeioDeSenhaTemporaria([{ method: 'magiclink', timestamp: 1 }])).toBe(true)
+    expect(sessaoVeioDeSenhaTemporaria([{ method: 'otp', timestamp: 1 }])).toBe(true)
+    expect(sessaoVeioDeSenhaTemporaria(['otp'])).toBe(true)
+  })
+
+  it('sessão provada por senha nunca conta, mesmo com outro método junto', () => {
+    expect(sessaoVeioDeSenhaTemporaria([{ method: 'password', timestamp: 1 }])).toBe(false)
+    expect(sessaoVeioDeSenhaTemporaria([{ method: 'password' }, { method: 'otp' }])).toBe(false)
+    expect(sessaoVeioDeSenhaTemporaria(['password', 'magiclink'])).toBe(false)
+  })
+
+  it('sem claim reconhecível, não conta', () => {
+    expect(sessaoVeioDeSenhaTemporaria(undefined)).toBe(false)
+    expect(sessaoVeioDeSenhaTemporaria([])).toBe(false)
+    expect(sessaoVeioDeSenhaTemporaria([{ method: 'oauth' }])).toBe(false)
+    expect(sessaoVeioDeSenhaTemporaria('otp')).toBe(false)
   })
 })

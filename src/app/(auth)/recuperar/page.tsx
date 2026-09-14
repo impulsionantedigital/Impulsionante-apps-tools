@@ -2,7 +2,8 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import MarcaLockup from '@/components/MarcaLockup'
 import { lerMarca, tituloDaPagina } from '@/server/marca'
-import { recuperarSenha } from '@/server/auth/temporaria'
+import { after } from 'next/server'
+import { origemDaRequisicao, recuperarSenha } from '@/server/auth/temporaria'
 import Botao from '@/components/ui/Botao'
 import { Campo, Entrada } from '@/components/ui/Campo'
 import SeletorTema from '@/components/ui/SeletorTema'
@@ -16,8 +17,12 @@ export async function generateMetadata() {
 
 async function acaoRecuperar(formData: FormData): Promise<void> {
   'use server'
-  await recuperarSenha(String(formData.get('email') ?? ''))
-  // 🔴 Sempre a mesma resposta, exista a conta ou não: senão a tela diz quem é cliente.
+  const email = String(formData.get('email') ?? '')
+  const origem = await origemDaRequisicao()
+  // 🔴 A emissão corre DEPOIS da resposta. Com conta, ela faz scrypt, grava e enfileira; sem conta,
+  // não faz nada. Se corresse aqui, o tempo da resposta diria quem é cliente — e a mensagem já é
+  // a mesma nos dois casos.
+  after(() => recuperarSenha(email, origem))
   redirect('/recuperar?enviado=1')
 }
 

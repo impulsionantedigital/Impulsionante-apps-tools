@@ -64,3 +64,21 @@ describe('calcularPeriodos', () => {
     expect(calcular([A], '2027-01-01T00:00:00Z', [], 'vitalicio')[0].expiraEm).toBeNull()
   })
 })
+
+describe('calcularPeriodos — travas de regressão', () => {
+  it('vitalício de venda ENCERRADA não impede o empilhamento', () => {
+    const existentes = [
+      { produtoId: A, expiraEm: null, vendaAtiva: false },
+      { produtoId: A, expiraEm: d('2027-05-01T00:00:00Z'), vendaAtiva: true },
+    ]
+    expect(calcular([A], '2027-01-20T00:00:00Z', existentes)[0].iniciaEm).toEqual(d('2027-05-01T00:00:00Z'))
+  })
+
+  it('acha o maior vencimento qualquer que seja a ordem dos períodos', () => {
+    const existentes = [
+      { produtoId: A, expiraEm: d('2027-03-01T00:00:00Z'), vendaAtiva: true },
+      { produtoId: A, expiraEm: d('2027-02-01T00:00:00Z'), vendaAtiva: true },
+    ]
+    expect(calcular([A], '2027-01-20T00:00:00Z', existentes)[0].iniciaEm).toEqual(d('2027-03-01T00:00:00Z'))
+  })
+})

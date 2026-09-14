@@ -27,7 +27,8 @@ async function acaoTrocar(formData: FormData): Promise<void> {
   'use server'
   const r = await trocarSenha(formData.get('senha'), formData.get('confirmacao'))
   if ('erro' in r) redirect('/trocar-senha?erro=' + encodeURIComponent(r.erro))
-  redirect('/painel')
+  // As sessões foram todas encerradas: entra-se de novo, já com a senha nova.
+  redirect('/entrar?definida=1')
 }
 
 export default async function TrocarSenhaPage({
@@ -58,7 +59,7 @@ export default async function TrocarSenhaPage({
 
         <h1 className={estilos.titulo}>Defina a sua senha</h1>
         <p className={estilos.sub}>
-          Você entrou com uma senha temporária. Escolha agora a senha que vai usar daqui em diante.
+          Você entrou com uma senha temporária. Escolha agora a senha que vai usar daqui em diante — depois de salvar, entre de novo com ela.
         </p>
 
         {erro && <p className={estilos.erro}>{MENSAGENS[erro] ?? MENSAGENS.falha}</p>}

@@ -119,3 +119,15 @@ describe('statusInicialDaVenda', () => {
     expect(statusDoEncerramento(null)).toBeNull()
   })
 })
+
+describe('lerEventoHotmart — documento do comprador', () => {
+  it('aceita CNPJ formatado e o normaliza', () => {
+    const r = lerEventoHotmart(com((p) => { p.data.buyer.document = '11.222.333/0001-81' }))
+    expect(r.tipo === 'aprovada' && r.comprador.documento).toBe('11222333000181')
+  })
+
+  it('aceita CNPJ alfanumérico formatado em minúsculas', () => {
+    const r = lerEventoHotmart(com((p) => { p.data.buyer.document = '12.abc.345/01de-35' }))
+    expect(r.tipo === 'aprovada' && r.comprador.documento).toBe('12ABC34501DE35')
+  })
+})

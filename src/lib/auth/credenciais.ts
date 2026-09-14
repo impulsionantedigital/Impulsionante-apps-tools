@@ -71,3 +71,20 @@ export function validarNovaSenha(
   if (senha !== confirmacao) return { erro: 'diferente' }
   return { ok: true, senha }
 }
+
+/**
+ * A sessão nasceu da senha temporária? Decide-se pelo claim `amr` do token — a ORIGEM da sessão —
+ * e não pela presença do hash. O login temporário usa link mágico (`magiclink` ou `otp`, conforme
+ * a versão do Auth); o produto não oferece nenhum outro login por link. Uma sessão que traga
+ * `password` nunca conta, mesmo com outro método junto.
+ */
+export function sessaoVeioDeSenhaTemporaria(amr: unknown): boolean {
+  if (!Array.isArray(amr)) return false
+  const metodos = amr.map((entrada) => {
+    if (typeof entrada === 'string') return entrada
+    if (typeof entrada === 'object' && entrada !== null) return (entrada as { method?: unknown }).method
+    return null
+  })
+  if (metodos.includes('password')) return false
+  return metodos.some((m) => m === 'magiclink' || m === 'otp')
+}

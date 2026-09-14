@@ -63,6 +63,8 @@ async function desistirAntigosSemSmtp(): Promise<void> {
     .from('emails_fila')
     .update({
       desistido_em: new Date().toISOString(),
+      // Desistir também apaga o corpo: ele pode levar a senha temporária em texto claro.
+      html: '',
       ultimo_erro: 'smtp_nao_configurado',
     })
     .is('enviado_em', null)
@@ -135,6 +137,7 @@ export async function drenarEmail(
         ultimo_erro: resultado.erro,
         proxima_tentativa: new Date(Date.now() + backoff(tentativas)).toISOString(),
         desistido_em: desiste ? new Date().toISOString() : null,
+        ...(desiste ? { html: '' } : {}),
       })
       .eq('id', linha.id)
     if (erroFalha) {

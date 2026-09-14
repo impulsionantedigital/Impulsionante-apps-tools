@@ -34,23 +34,58 @@ from emails_fila order by criado_em desc limit 5;
 ```
 
 
-## ▶ RETOMAR AQUI — Plano 2, bloco A (em andamento)
+## ▶ RETOMAR AQUI — Plano 2, bloco A (escrito, revisto e corrigido)
 
 Aprovado pelo usuário em 2026-09-13: manter o spec e o plano do Claude, aproveitar só o que faz
-sentido do trabalho do Codex (arquivado fora do repo, em `scratchpad/codex-arquivo`).
-**Pausado por limite de uso** com o bloco A ESCRITO mas NÃO VERIFICADO (commit "em andamento").
+sentido do trabalho do Codex (arquivado fora do repositório, em `scratchpad/codex-arquivo`).
 
-Bloco A = itens 1–4: §16.1 do spec · migration `0064_vendas_e_ofertas.sql` · identidade
-(`src/lib/documento.ts`, `src/lib/auth/credenciais.ts`, `src/server/auth/temporaria.ts`, login com
+**Bloco A** = itens 1–4: §16.1 do spec · migration `0064_vendas_e_ofertas.sql` · identidade
+(`src/lib/documento.ts`, `src/lib/auth/credenciais.ts`, `src/server/auth/temporaria.ts`, login pelo
 segundo caminho em `sessao.ts`, troca obrigatória no `(app)/layout.tsx`, telas `/trocar-senha` e
-`/recuperar`, `/recuperar` pública no `proxy.ts`) · lógica pura de venda (`src/lib/produtos/catalogo.ts`,
-`src/lib/vendas/{duracao,periodos,emails,hotmart}.ts`) com testes.
+`/recuperar`) · lógica pura de venda (`src/lib/produtos/catalogo.ts`,
+`src/lib/vendas/{duracao,periodos,emails,hotmart}.ts`).
 
-Próximos passos, nesta ordem:
-1. `pnpm test` e `pnpm exec tsc --noEmit`; corrigir o que falhar (nada foi rodado ainda).
-2. Uma revisão do bloco A inteiro (auth + banco são risco real).
-3. Corrigir achados, atualizar este documento, commitar.
-4. **Parar e pedir ok ao usuário antes do bloco B** (webhook, processamento, gate, tela comercial, docs).
+**Estado:** 1476 testes verdes, tipos limpos. Revisão sem nenhum Critical; os quatro Important
+foram corrigidos:
+
+- **Troca obrigatória decidida pela ORIGEM da sessão** (claim `amr` do token), e não pela presença
+  do hash. Antes, um terceiro que pedisse `/recuperar` prendia a sessão do dono na troca de senha.
+  Definir a senha agora encerra **todas** as sessões e manda entrar de novo.
+- **O usuário do link mágico é conferido antes de a sessão existir.**
+- **`/recuperar` emite depois da resposta** (`after()`), sem oráculo de tempo.
+- **Testes para as mutações que passavam** (entropia da senha, empilhamento, documento).
+
+Também corrigidos: o desfazer da emissão restaura a senha anterior; limite do login por conta e IP;
+busca por e-mail determinística; a fila apaga o HTML também quando desiste; e uma guarda em teste
+impede que uma migration futura volte a expor o hash de `membros` ao navegador.
+
+**Falta, nesta ordem:**
+1. Re-revisão escopada destas correções.
+2. **Verificação manual num Supabase real** (roteiro abaixo). Exige a `0064` aplicada — ou seja,
+   publicar. Decidir com o usuário quando, porque o `main` vai direto para produção.
+3. **Pedir ok ao usuário antes do bloco B** (webhook, processamento, gate, tela comercial, docs).
+
+**Riscos aceites e anotados:** `x-forwarded-for` só é confiável se o proxy do EasyPanel o
+sobrescreve (os limites por conta não dependem disso); `generateLink` substitui um link mágico
+pendente no Auth (inofensivo); a `0064` precisa de lock em `membros` no deploy — se estourar o
+tempo, o contentor antigo segue no ar e basta tentar de novo.
+
+### Roteiro de verificação manual do bloco A
+
+1. **Hash escondido.** No SQL Editor:
+   `select has_column_privilege('authenticated','public.membros','senha_temporaria_hash','select'), has_table_privilege('authenticated','public.membros','select');`
+   → os dois `false`. Depois, como membro comum, abrir `/painel`, `/config` (Pessoas), `/conversas`
+   e um negócio com responsável: nenhum erro `42501`.
+2. **Login pela temporária.** `/recuperar` para um membro de teste → entrar com a senha do e-mail
+   → cai em `/trocar-senha` → definir → cai em `/entrar` com "Senha definida" → entrar com a nova
+   → `/painel`. Em `auth.users`, nenhum usuário novo criado.
+3. **A correção do I1.** Com o dono logado pela senha principal, pedir `/recuperar` para o e-mail
+   dele noutro navegador e recarregar: ele **não** pode cair em `/trocar-senha`.
+4. **E-mail com maiúsculas e espaços** no login pela temporária.
+5. **Nenhum e-mail de link mágico** do Supabase disparado (logs de Auth).
+6. **Entrar pela senha principal** com uma temporária pendente → `senha_temporaria_hash` nulo.
+7. **Limite do Supabase:** Auth → Rate Limits, verificações de token por IP — todos os logins pela
+   temporária saem do IP do servidor.
 
 ## Pendências
 

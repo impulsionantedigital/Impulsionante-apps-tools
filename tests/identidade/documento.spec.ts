@@ -71,3 +71,9 @@ describe('formatar', () => {
     expect(formatar('1234')).toBe('1234')
   })
 })
+
+describe('normalizar — espaços internos', () => {
+  it('retira espaços no meio do documento', () => {
+    expect(normalizar('529 982 247 25')).toBe('52998224725')
+  })
+})

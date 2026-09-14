@@ -6,18 +6,24 @@ import { enfileirar } from '@/server/email/fila'
 import { CHAVE_URL_PUBLICA } from '@/lib/canais/url-publica'
 import { consumir, type Balde, type EstadoBalde } from '@/lib/canais/rateLimit'
 import { detalheSeguro } from '@/lib/sanitizar-erro'
-import { criarCredencial, decidirEmissao, validarNovaSenha, verificarCredencial } from '@/lib/auth/credenciais'
+import {
+  criarCredencial,
+  decidirEmissao,
+  sessaoVeioDeSenhaTemporaria,
+  validarNovaSenha,
+  verificarCredencial,
+} from '@/lib/auth/credenciais'
 
 // A senha temporária é uma credencial PARALELA (§8.5): emiti-la nunca toca na senha principal.
 
 const POR_CONTA: Balde = { capacidade: 5, recargaPorMs: 5 / 3_600_000, teto: 10_000 }
 const POR_ORIGEM: Balde = { capacidade: 30, recargaPorMs: 30 / 3_600_000, teto: 10_000 }
-const LOGIN_POR_CONTA: Balde = { capacidade: 10, recargaPorMs: 10 / 3_600_000, teto: 10_000 }
+const LOGIN_POR_CONTA_E_ORIGEM: Balde = { capacidade: 10, recargaPorMs: 10 / 3_600_000, teto: 10_000 }
 
 // Um mapa por balde: podar() usa os parâmetros do balde, e misturá-los podaria errado.
 const RECUPERAR_CONTA = new Map<string, EstadoBalde>()
 const RECUPERAR_ORIGEM = new Map<string, EstadoBalde>()
-const ENTRAR_CONTA = new Map<string, EstadoBalde>()
+const ENTRAR = new Map<string, EstadoBalde>()
 
 type LinhaCredencial = {
   nome: string | null
@@ -25,7 +31,11 @@ type LinhaCredencial = {
   senha_temporaria_expira_em: string | null
 }
 
-async function origemDaRequisicao(): Promise<string> {
+/**
+ * ⚠️ Só é confiável se o proxy de entrada sobrescreve `x-forwarded-for`. Os limites por conta não
+ * dependem disto.
+ */
+export async function origemDaRequisicao(): Promise<string> {
   const { headers } = await import('next/headers')
   return (await headers()).get('x-forwarded-for')?.split(',')[0]?.trim() || 'desconhecida'
 }
@@ -97,23 +107,34 @@ export async function emitirSenhaTemporaria(args: {
   if (erroGravacao) return { erro: 'falha_emitir' }
   if (!gravado?.length) return { ok: true, emitida: false }
 
-  const fila = await enfileirar({
-    workspaceId: args.workspaceId,
-    tipo: args.tipo,
-    para: email,
-    valores: {
-      MEMBER_NAME: atual.nome ?? email,
-      MEMBER_EMAIL: email,
-      TEMP_PASSWORD: credencial.segredo,
-      LOGIN_URL: login,
-    },
-  })
+  let fila: { ok: true } | { erro: string }
+  try {
+    fila = await enfileirar({
+      workspaceId: args.workspaceId,
+      tipo: args.tipo,
+      para: email,
+      valores: {
+        MEMBER_NAME: atual.nome ?? email,
+        MEMBER_EMAIL: email,
+        TEMP_PASSWORD: credencial.segredo,
+        LOGIN_URL: login,
+      },
+    })
+  } catch (err) {
+    console.warn('[auth] enfileirar a senha temporária lançou:', detalheSeguro(err))
+    fila = { erro: 'excecao' }
+  }
+
   if ('erro' in fila) {
-    // Desfaz só a NOSSA emissão: uma senha que ninguém recebeu não pode ficar pendente, e o
-    // filtro pelo hash impede apagar uma emissão concorrente que venceu.
+    // Desfaz só a NOSSA emissão, e devolve o que havia antes: numa recuperação forçada, a senha
+    // anterior pode já ter ido por e-mail e continuar a ser a única que o comprador tem. O filtro
+    // pelo hash impede desfazer uma emissão concorrente que venceu.
     await cli
       .from('membros')
-      .update({ senha_temporaria_hash: null, senha_temporaria_expira_em: null })
+      .update({
+        senha_temporaria_hash: atual.senha_temporaria_hash,
+        senha_temporaria_expira_em: atual.senha_temporaria_expira_em,
+      })
       .eq('user_id', args.userId)
       .eq('workspace_id', args.workspaceId)
       .eq('senha_temporaria_hash', credencial.hash)
@@ -122,13 +143,16 @@ export async function emitirSenhaTemporaria(args: {
   return { ok: true, emitida: true }
 }
 
-/** Resposta pública uniforme: exista a conta ou não, o chamador não descobre. */
-export async function recuperarSenha(emailBruto: string): Promise<void> {
+/**
+ * Corre DEPOIS da resposta (ver `/recuperar`), para a tela responder no mesmo tempo exista a conta
+ * ou não. Por isso recebe a origem já lida: aqui não há garantia de acesso à requisição.
+ */
+export async function recuperarSenha(emailBruto: string, origem: string): Promise<void> {
   const email = typeof emailBruto === 'string' ? emailBruto.trim().toLowerCase() : ''
   if (!email || email.length > 254 || !email.includes('@')) return
   try {
     const agora = Date.now()
-    if (!consumir(RECUPERAR_ORIGEM, POR_ORIGEM, await origemDaRequisicao(), agora)) return
+    if (!consumir(RECUPERAR_ORIGEM, POR_ORIGEM, origem, agora)) return
     if (!consumir(RECUPERAR_CONTA, POR_CONTA, email, agora)) return
 
     const userId = await buscarUsuarioPorEmail(email)
@@ -155,8 +179,8 @@ export async function recuperarSenha(emailBruto: string): Promise<void> {
  * mágico no servidor e troca-se o token dele por sessão no cliente de cookies. Nada é enviado.
  */
 export async function entrarComSenhaTemporaria(emailBruto: string, senha: string): Promise<boolean> {
-  const email = emailBruto.trim().toLowerCase()
-  if (!email || !senha) return false
+  const email = typeof emailBruto === 'string' ? emailBruto.trim().toLowerCase() : ''
+  if (!email || typeof senha !== 'string' || !senha) return false
   try {
     const cli = admin()
     const userId = await buscarUsuarioPorEmail(email)
@@ -169,8 +193,11 @@ export async function entrarComSenhaTemporaria(emailBruto: string, senha: string
       .not('senha_temporaria_hash', 'is', null)
     if (error || !data?.length) return false
 
-    // O limite só entra quando há credencial a verificar: é o scrypt que ele protege.
-    if (!consumir(ENTRAR_CONTA, LOGIN_POR_CONTA, email, Date.now())) return false
+    // Só entra quando há credencial a verificar — é o scrypt que ele protege. Por conta E origem:
+    // por conta apenas, dez tentativas de um estranho trancariam o comprador verdadeiro.
+    if (!consumir(ENTRAR, LOGIN_POR_CONTA_E_ORIGEM, `${email}|${await origemDaRequisicao()}`, Date.now())) {
+      return false
+    }
 
     let valida = false
     for (const linha of data as LinhaCredencial[]) {
@@ -181,9 +208,16 @@ export async function entrarComSenhaTemporaria(emailBruto: string, senha: string
     }
     if (!valida) return false
 
-    const link = await cli.auth.admin.generateLink({ type: 'magiclink', email })
+    // 🔴 O link sai para o e-mail que o Auth guarda para ESTE usuário, e o usuário do link é
+    // conferido ANTES do verifyOtp — o verifyOtp grava o cookie de sessão na hora, e conferir
+    // depois deixaria gravada a sessão de outra conta.
+    const { data: conta, error: erroConta } = await cli.auth.admin.getUserById(userId)
+    const emailDaConta = conta?.user?.email
+    if (erroConta || !emailDaConta) return false
+
+    const link = await cli.auth.admin.generateLink({ type: 'magiclink', email: emailDaConta })
     const tokenHash = link.data?.properties?.hashed_token
-    if (link.error || !tokenHash) return false
+    if (link.error || !tokenHash || link.data?.user?.id !== userId) return false
 
     const sessao = await criarClienteServidor()
     const { data: verificado, error: erroOtp } = await sessao.auth.verifyOtp({ type: 'magiclink', token_hash: tokenHash })
@@ -204,11 +238,26 @@ export async function limparSenhaTemporaria(userId: string): Promise<void> {
   if (error) console.warn('[auth] senha temporária não foi limpa:', detalheSeguro(error))
 }
 
+/** A sessão atual nasceu da senha temporária? Pela origem gravada no token, verificado. */
+export async function sessaoVeioDaTemporaria(): Promise<boolean> {
+  try {
+    const sessao = await criarClienteServidor()
+    const { data, error } = await sessao.auth.getClaims()
+    if (error || !data?.claims) return false
+    return sessaoVeioDeSenhaTemporaria(data.claims.amr)
+  } catch {
+    return false
+  }
+}
+
 /**
- * Hash presente = a sessão veio da senha temporária, porque entrar com a principal o apaga.
- * Enquanto for verdade, o membro fica preso em /trocar-senha.
+ * 🔴 Decide-se pela ORIGEM da sessão, e não só pela presença do hash: uma recuperação pedida por
+ * terceiro cria hash sem mudar a origem das sessões abertas, e prender quem entrou pela senha
+ * principal daria a quem tiver um cookie roubado a troca de senha sem saber a atual.
+ * A pergunta ao banco só acontece para sessões que vieram da temporária.
  */
 export async function precisaTrocarSenha(userId: string): Promise<boolean> {
+  if (!(await sessaoVeioDaTemporaria())) return false
   const { data, error } = await admin()
     .from('membros')
     .select('id')
@@ -233,5 +282,12 @@ export async function trocarSenha(senha: unknown, confirmacao: unknown): Promise
   const { error } = await admin().auth.admin.updateUserById(user.id, { password: validacao.senha })
   if (error) return { erro: 'falha' }
   await limparSenhaTemporaria(user.id)
+
+  // 🔴 Encerra TODAS as sessões, incluindo esta. A sessão que veio da senha temporária continuaria
+  // a parecer temporária (a origem fica no token); se um terceiro pedisse depois uma recuperação,
+  // ela voltaria a poder trocar a senha. Assim, sessão de senha temporária só existe até a senha
+  // ser definida — daí em diante, só sessão provada pela senha nova.
+  const { error: erroSaida } = await sessao.auth.signOut({ scope: 'global' })
+  if (erroSaida) console.warn('[auth] sessões não foram encerradas após a troca:', detalheSeguro(erroSaida))
   return { ok: true }
 }

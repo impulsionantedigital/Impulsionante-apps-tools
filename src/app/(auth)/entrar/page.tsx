@@ -35,10 +35,10 @@ async function acaoEntrar(formData: FormData): Promise<void> {
 export default async function EntrarPage({
   searchParams,
 }: {
-  searchParams: Promise<{ erro?: string }>
+  searchParams: Promise<{ erro?: string; definida?: string }>
 }) {
   if (await ehInstalacaoNova()) redirect('/cadastrar?boasvindas=1')
-  const { erro } = await searchParams
+  const { erro, definida } = await searchParams
   const marca = await lerMarca()
   const tema = await temaDaRequisicao()
   const podeCriarConta = await podeCadastrarSemConvite()
@@ -61,6 +61,7 @@ export default async function EntrarPage({
         <p className={estilos.sub}>Acesse o painel do seu espaço de trabalho.</p>
 
         {erro && <p className={estilos.erro}>{MENSAGENS[erro] ?? 'Não foi possível entrar.'}</p>}
+        {definida && !erro && <p className={estilos.sub}>Senha definida. Entre com a senha nova.</p>}
 
         <form className={estilos.form} action={acaoEntrar}>
           <Campo id="email" rotulo="E-mail">
