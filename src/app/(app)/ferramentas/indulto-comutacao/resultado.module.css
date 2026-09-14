@@ -180,11 +180,6 @@
     padding-bottom: var(--s-1);
   }
 
-  .anexoVazio {
-    margin: 0;
-    font-size: 0.85rem;
-  }
-
   /* Rótulo à esquerda, resposta à direita, cada par numa linha — e nenhum par partido entre
    * duas páginas, que num anexo jurídico faz o juiz procurar o resto noutra folha. */
   .anexoLista {

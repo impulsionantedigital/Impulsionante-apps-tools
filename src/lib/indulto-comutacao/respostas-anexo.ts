@@ -24,46 +24,45 @@ function ehTempo(v: unknown): v is Tempo {
   return typeof t.anos === 'number' && typeof t.meses === 'number' && typeof t.dias === 'number'
 }
 
-/** O que o membro respondeu neste campo, ou `null` quando está como nasceu. */
-function respostaDe(campo: Campo, bruto: unknown): string | null {
+/** O valor deste campo para o anexo — SEMPRE uma string, nunca `null`: campo sem resposta
+ *  aparece com o valor que tinha ao nascer (tempo zerado, seleção no padrão, texto/data/número
+ *  vazios viram "Não informado"/"0"). */
+function respostaDe(campo: Campo, bruto: unknown): string {
   if (campo.tipo === 'tempo') {
-    if (!ehTempo(bruto)) return null
-    if (bruto.anos === 0 && bruto.meses === 0 && bruto.dias === 0) return null
-    return formatarTempo(bruto)
+    return formatarTempo(ehTempo(bruto) ? bruto : { anos: 0, meses: 0, dias: 0 })
   }
   if (campo.tipo === 'selecao') {
-    const valor = typeof bruto === 'string' ? bruto : ''
-    // 🔴 Compara com `padraoDoCampo`, NUNCA com 'NÃO': há campo cujo padrão declarado é 'SIM'
-    // (os dois requisitos da data do fato). Neles é o 'NÃO' que muda o cálculo, e é ele que
-    // precisa aparecer no anexo — o contrário esconderia justamente a premissa decisiva.
-    return valor === '' || valor === padraoDoCampo(campo) ? null : valor
+    // 🔴 Padrão de `padraoDoCampo`, NUNCA 'NÃO' fixo: há campo cujo padrão declarado é 'SIM'
+    // (os dois requisitos da data do fato) — é ele que precisa aparecer quando não respondido.
+    return typeof bruto === 'string' && bruto !== '' ? bruto : padraoDoCampo(campo)
   }
   if (campo.tipo === 'numero') {
     const n = typeof bruto === 'number' ? bruto : Number(bruto)
-    if (!Number.isFinite(n) || n === 0) return null
-    return String(n)
+    return Number.isFinite(n) ? String(n) : '0'
   }
   const texto = typeof bruto === 'string' ? bruto.trim() : ''
-  if (texto === '') return null
+  if (texto === '') return 'Não informado'
   return campo.tipo === 'data' ? formatarData(texto) : texto
 }
 
 /**
- * As respostas que saem do padrão, na ordem do questionário — as premissas do cálculo.
+ * TODAS as respostas do questionário, na ordem dele — inclusive as que ficaram no valor com que
+ * o campo nasce.
  *
- * 🔴 Só as preenchidas, por decisão do usuário em 14/09/2026: o questionário tem cerca de 60
- * perguntas, e imprimir as ~50 que ficaram em 'NÃO' afogaria as poucas que produziram o
- * resultado. O anexo existe para o juiz ver de onde saiu o número.
+ * 🔴 Decisão revista em 14/09/2026, no mesmo dia da decisão anterior: a versão anterior
+ * (`respostasPreenchidas`) só listava o que havia sido alterado do padrão, para não afogar os
+ * poucos preenchimentos relevantes em ~50 "NÃO". O usuário pediu o inverso — o anexo agora é o
+ * retrato completo do questionário no momento do cálculo, respondido ou não. Não há mais duas
+ * funções concorrentes: esta substitui `respostasPreenchidas` para todo consumidor.
  *
  * Chave que o questionário não declara é ignorada — mesma regra de `preparar()`, que filtra por
  * chave ao gravar. O anexo não pode ressuscitar o que a gravação descartou.
  */
-export function respostasPreenchidas(motor: MotorDecreto, entrada: Entrada): RespostaDoAnexo[] {
+export function todasAsRespostas(motor: MotorDecreto, entrada: Entrada): RespostaDoAnexo[] {
   const linhas: RespostaDoAnexo[] = []
   for (const secao of motor.questionario) {
     for (const campo of secao.campos) {
-      const valor = respostaDe(campo, entrada[campo.chave])
-      if (valor !== null) linhas.push({ secao: secao.titulo, rotulo: campo.rotulo, valor })
+      linhas.push({ secao: secao.titulo, rotulo: campo.rotulo, valor: respostaDe(campo, entrada[campo.chave]) })
     }
   }
   return linhas
