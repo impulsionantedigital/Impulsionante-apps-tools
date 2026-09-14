@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
-  criarCredencial, verificarCredencial, credencialPendente, decidirEmissao, validarNovaSenha, VALIDADE_MS, sessaoVeioDeSenhaTemporaria,
+  criarCredencial, criarCredencialComSegredo, gerarSegredo, verificarCredencial, credencialPendente, decidirEmissao, validarNovaSenha, VALIDADE_MS, sessaoVeioDeSenhaTemporaria,
 } from '@/lib/auth/credenciais'
 
 const SETE_DIAS = 7 * 24 * 60 * 60 * 1000
@@ -94,11 +94,62 @@ describe('validarNovaSenha', () => {
   })
 })
 
-describe('entropia da senha temporária', () => {
-  it('tem 12 bytes aleatórios, em 16 caracteres base64url', async () => {
+describe('formato da senha temporária', () => {
+  // 🔴 O formato antigo era base64url (`eQroVvdHehFnLoum`). Ele mistura maiúscula e minúscula e
+  // contém l/I/1 e O/0 — impossível de ditar ao telefone e fácil de digitar errado a partir do
+  // e-mail. Trocado por grupos, num alfabeto sem ambiguidade.
+  it('vem em três grupos de quatro, separados por hífen', async () => {
     const c = await criarCredencial()
-    expect(c.segredo).toMatch(/^[A-Za-z0-9_-]{16}$/)
-    expect(Buffer.from(c.segredo, 'base64url')).toHaveLength(12)
+    expect(c.segredo).toMatch(/^[A-Z2-9]{4}-[A-Z2-9]{4}-[A-Z2-9]{4}$/)
+  })
+
+  it('nunca usa caractere que se confunde com outro', () => {
+    const proibidos = ['I', 'O', '0', '1']
+    const visto = new Set<string>()
+    for (let i = 0; i < 300; i++) {
+      for (const ch of gerarSegredo().replace(/-/g, '')) visto.add(ch)
+    }
+    for (const p of proibidos) expect(visto.has(p), `usou ${p}`).toBe(false)
+    // E o alfabeto tem de ser realmente usado: 300 senhas × 12 caracteres cobrem as 32 letras.
+    expect(visto.size).toBe(32)
+  })
+
+  it('tem 60 bits de entropia: 12 posições sorteadas num alfabeto de 32', () => {
+    const segredos = Array.from({ length: 200 }, () => gerarSegredo())
+    expect(new Set(segredos).size).toBe(segredos.length)
+    // Cada posição varia entre as amostras — pega gerador que fixa uma posição.
+    for (let pos = 0; pos < 12; pos++) {
+      const nessaPos = new Set(segredos.map((s) => s.replace(/-/g, '')[pos]))
+      expect(nessaPos.size, `posição ${pos} quase não varia`).toBeGreaterThan(8)
+    }
+  })
+
+  it('aceita a senha digitada sem hífen, em minúscula ou com espaço', async () => {
+    const c = await criarCredencial()
+    const nu = c.segredo.replace(/-/g, '')
+    for (const digitado of [nu, nu.toLowerCase(), c.segredo.toLowerCase(), c.segredo.replace(/-/g, ' ')]) {
+      expect(await verificarCredencial(digitado, c.hash, c.expiraEm), digitado).toBe(true)
+    }
+  })
+
+  it('continua aceitando credencial antiga, em base64url', async () => {
+    // Uma senha emitida antes da troca de formato não pode deixar de funcionar: há contas com
+    // temporária pendente e válida por sete dias.
+    const antiga = await criarCredencialComSegredo('eQroVvdHehFnLoum')
+    expect(await verificarCredencial('eQroVvdHehFnLoum', antiga.hash, antiga.expiraEm)).toBe(true)
+    // E a normalização não pode fazer uma senha ERRADA passar.
+    expect(await verificarCredencial('eqrovvdhehfnloum', antiga.hash, antiga.expiraEm)).toBe(false)
+  })
+
+  it('não deixa a normalização virar porta dos fundos', async () => {
+    const c = await criarCredencial()
+    const nu = c.segredo.replace(/-/g, '')
+    // Trocar um caractere continua recusado, mesmo depois de normalizar.
+    const trocado = (nu[0] === 'A' ? 'B' : 'A') + nu.slice(1)
+    expect(await verificarCredencial(trocado, c.hash, c.expiraEm)).toBe(false)
+    // Sobra ou falta de caractere também.
+    expect(await verificarCredencial(nu.slice(0, 11), c.hash, c.expiraEm)).toBe(false)
+    expect(await verificarCredencial(nu + 'A', c.hash, c.expiraEm)).toBe(false)
   })
 })
 

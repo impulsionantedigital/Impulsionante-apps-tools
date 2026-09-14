@@ -53,3 +53,30 @@ export function lerConfigSmtp(env: Record<string, string | undefined>): LeituraS
     },
   }
 }
+
+/**
+ * Porta e modo de TLS combinam? Devolve o aviso, ou `null` quando está tudo certo.
+ *
+ * 🔴 Isto NÃO recusa a configuração — `lerConfigSmtp` continua devolvendo `ok`. É um aviso de
+ * tela, e a distinção importa: um provedor pode legitimamente falar TLS implícito numa porta
+ * fora de convenção, e recusar por palpite deixaria de pé uma instalação que funcionava.
+ *
+ * Existe por um caso real: em 13/09/2026 a produção rodou com `SMTP_SECURE=true` na porta 587.
+ * A configuração passava por válida, a tela dizia "SMTP configurado", e TODO envio morria no
+ * handshake com "wrong version number" — visível só no `ultimo_erro` de cada linha da fila.
+ *
+ * A convenção: 465 é TLS implícito (`secure: true`); 25 e 587 começam em texto claro e sobem
+ * para TLS com STARTTLS (`secure: false`), que é o que o nodemailer faz sozinho.
+ */
+export function avisoDeTls(config: ConfigSmtp): string | null {
+  if (config.porta === 465 && !config.seguro) {
+    return 'A porta 465 espera TLS desde o primeiro byte, mas SMTP_SECURE está desligado. ' +
+      'O envio tende a falhar no handshake. Use SMTP_SECURE=true, ou mude para a porta 587.'
+  }
+  if ((config.porta === 587 || config.porta === 25) && config.seguro) {
+    return `A porta ${config.porta} começa em texto claro e sobe para TLS com STARTTLS, mas ` +
+      'SMTP_SECURE está ligado. O envio tende a falhar no handshake com "wrong version number". ' +
+      'Deixe SMTP_SECURE em branco ou false — o STARTTLS acontece sozinho.'
+  }
+  return null
+}

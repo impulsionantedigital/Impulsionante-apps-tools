@@ -153,3 +153,64 @@ export async function drenarEmail(
 
   return { enviados, falhas, pulados }
 }
+
+export interface SaudeDaFila {
+  /** Falha mais recente, entregue ou não — é o que denuncia SMTP mal configurado. */
+  ultimaFalha: { quando: string; destinatario: string; erro: string; tentativas: number } | null
+  /** Ainda vão ser tentadas. */
+  pendentes: number
+  /** A fila desistiu: passaram da idade máxima sem sair. Estes NÃO voltam sozinhos. */
+  desistidos: number
+}
+
+/**
+ * O que a tela de Configurações precisa dizer sobre os envios (§ "mostrar o último erro").
+ *
+ * 🔴 Existe porque o erro de envio morria dentro da coluna `ultimo_erro` de cada linha: o CRM
+ * mostrava "SMTP configurado", a fila enchia, e o dono do servidor só descobria quando um
+ * comprador reclamava que não recebeu a senha.
+ */
+export async function saudeDaFila(workspaceId: string): Promise<SaudeDaFila> {
+  const cli = admin()
+  const [falha, pendentes, desistidos] = await Promise.all([
+    cli
+      .from('emails_fila')
+      .select('criado_em, destinatario, ultimo_erro, tentativas')
+      .eq('workspace_id', workspaceId)
+      .not('ultimo_erro', 'is', null)
+      .order('criado_em', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    cli
+      .from('emails_fila')
+      .select('id', { count: 'exact', head: true })
+      .eq('workspace_id', workspaceId)
+      .is('enviado_em', null)
+      .is('desistido_em', null),
+    cli
+      .from('emails_fila')
+      .select('id', { count: 'exact', head: true })
+      .eq('workspace_id', workspaceId)
+      .not('desistido_em', 'is', null),
+  ])
+  // 🔴 Erro de leitura não pode derrubar a tela inteira de Configurações: o diagnóstico é
+  // acessório. Sem ele, a tela volta a ser o que era antes — nunca uma página de erro.
+  const linha = falha.error ? null : (falha.data as {
+    criado_em: string
+    destinatario: string
+    ultimo_erro: string
+    tentativas: number
+  } | null)
+  return {
+    ultimaFalha: linha
+      ? {
+          quando: linha.criado_em,
+          destinatario: linha.destinatario,
+          erro: linha.ultimo_erro,
+          tentativas: linha.tentativas,
+        }
+      : null,
+    pendentes: pendentes.error ? 0 : (pendentes.count ?? 0),
+    desistidos: desistidos.error ? 0 : (desistidos.count ?? 0),
+  }
+}

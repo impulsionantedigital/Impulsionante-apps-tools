@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { lerConfigSmtp } from '@/lib/email/smtp'
+import { lerConfigSmtp, avisoDeTls } from '@/lib/email/smtp'
 
 const COMPLETO = {
   SMTP_HOST: 'smtp.exemplo.com',
@@ -114,5 +114,51 @@ describe('lerConfigSmtp', () => {
     if (!r1.ok || !r65535.ok) throw new Error('inesperado')
     expect(r1.config.porta).toBe(1)
     expect(r65535.config.porta).toBe(65535)
+  })
+})
+
+// ── aviso de porta x SMTP_SECURE ────────────────────────────────────────────────────────────
+//
+// 🔴 Esta é a lacuna que escondeu o defeito real de 13/09/2026: `SMTP_SECURE=true` na porta 587.
+// A configuração é VÁLIDA (`lerConfigSmtp` devolve `ok`), o CRM diz "SMTP configurado", e todo
+// envio falha no handshake com "wrong version number" — que só aparece no `ultimo_erro` de cada
+// linha da fila, onde ninguém olha. O aviso não recusa a configuração: só a denuncia na tela.
+describe('avisoDeTls', () => {
+  const base = { host: 'smtp.exemplo.com', usuario: 'u', senha: 'p', remetente: 'a@b.c' }
+
+  it('denuncia TLS implícito na 587 — o caso que aconteceu de verdade', () => {
+    const aviso = avisoDeTls({ ...base, porta: 587, seguro: true })
+    expect(aviso).not.toBeNull()
+    expect(aviso).toContain('587')
+    expect(aviso).toContain('SMTP_SECURE')
+  })
+
+  it('denuncia texto claro na 465, que espera TLS desde o handshake', () => {
+    const aviso = avisoDeTls({ ...base, porta: 465, seguro: false })
+    expect(aviso).not.toBeNull()
+    expect(aviso).toContain('465')
+  })
+
+  it('denuncia TLS implícito na 25', () => {
+    expect(avisoDeTls({ ...base, porta: 25, seguro: true })).not.toBeNull()
+  })
+
+  it('cala nas combinações corretas', () => {
+    expect(avisoDeTls({ ...base, porta: 587, seguro: false })).toBeNull()
+    expect(avisoDeTls({ ...base, porta: 465, seguro: true })).toBeNull()
+    expect(avisoDeTls({ ...base, porta: 25, seguro: false })).toBeNull()
+    expect(avisoDeTls({ ...base, porta: 2525, seguro: false })).toBeNull()
+  })
+
+  it('cala numa porta que não é convenção conhecida, nos dois modos', () => {
+    // Não inventar regra para porta fora de convenção: avisar ali seria ruído, e ruído
+    // treina o dono do servidor a ignorar o aviso justamente quando ele importa.
+    expect(avisoDeTls({ ...base, porta: 2465, seguro: true })).toBeNull()
+    expect(avisoDeTls({ ...base, porta: 2465, seguro: false })).toBeNull()
+  })
+
+  it('o aviso diz o que fazer, não só que está errado', () => {
+    const aviso = avisoDeTls({ ...base, porta: 587, seguro: true }) ?? ''
+    expect(aviso.toLowerCase()).toMatch(/false|vazi|em branco/)
   })
 })

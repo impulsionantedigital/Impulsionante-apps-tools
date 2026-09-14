@@ -8,8 +8,9 @@ import { TIPOS, CAMPOS, ehTipoConhecido, type TipoModelo } from '@/lib/email/tip
 import { PADROES } from '@/lib/email/padroes'
 import { valoresDeTeste } from '@/lib/email/valores-teste'
 import { lerModelo, gravarModelo } from '@/server/email/modelos'
-import { enfileirar } from '@/server/email/fila'
+import { enfileirar, saudeDaFila, type SaudeDaFila } from '@/server/email/fila'
 import { configAtual } from '@/server/email/enviar'
+import { avisoDeTls } from '@/lib/email/smtp'
 
 export interface ItemModelo {
   tipo: TipoModelo
@@ -22,6 +23,10 @@ export interface ItemModelo {
 export interface VistaModelos {
   smtpConfigurado: boolean
   faltando: string[]
+  /** Porta e SMTP_SECURE não combinam: a configuração é válida, mas o envio tende a falhar. */
+  avisoTls: string | null
+  /** Como andam os envios de verdade — sem isto, erro de SMTP some dentro da fila. */
+  saude: SaudeDaFila
   itens: ItemModelo[]
 }
 
@@ -54,6 +59,8 @@ export async function lerModelosEmail(): Promise<VistaModelos | { erro: string }
   return {
     smtpConfigurado: leitura.ok,
     faltando: leitura.ok ? [] : leitura.faltando,
+    avisoTls: leitura.ok ? avisoDeTls(leitura.config) : null,
+    saude: await saudeDaFila(ws),
     itens,
   }
 }

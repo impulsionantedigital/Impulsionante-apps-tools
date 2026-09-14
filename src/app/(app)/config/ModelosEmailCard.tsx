@@ -43,6 +43,41 @@ export default function ModelosEmailCard({ vista }: { vista: VistaModelos }) {
         </>
       )}
 
+      {/* 🔴 Configuração válida, mas porta e TLS não combinam: é o defeito que já aconteceu
+          (SMTP_SECURE=true na 587) e que a tela antes dizia estar tudo certo. */}
+      {vista.avisoTls && (
+        <p className={estilos.erro} role="alert">
+          <strong>Confira a configuração de SMTP.</strong> {vista.avisoTls}
+        </p>
+      )}
+
+      {/* O erro de envio vivia só na coluna `ultimo_erro` de cada linha da fila: o dono do
+          servidor só descobria quando um comprador reclamava que não recebeu a senha. */}
+      {vista.saude.ultimaFalha && (
+        <p className={estilos.erro} role="alert">
+          <strong>Último envio com erro</strong> — para {vista.saude.ultimaFalha.destinatario}
+          {', '}
+          {new Date(vista.saude.ultimaFalha.quando).toLocaleString('pt-BR')}
+          {vista.saude.ultimaFalha.tentativas > 0 &&
+            ` (${vista.saude.ultimaFalha.tentativas} tentativa${vista.saude.ultimaFalha.tentativas > 1 ? 's' : ''})`}
+          : <code className={estilos.campoTag}>{vista.saude.ultimaFalha.erro}</code>
+        </p>
+      )}
+
+      {(vista.saude.pendentes > 0 || vista.saude.desistidos > 0) && (
+        <p className={estilos.ajuda}>
+          Fila: <strong>{vista.saude.pendentes}</strong> à espera de envio
+          {vista.saude.desistidos > 0 && (
+            <>
+              {' · '}
+              <strong>{vista.saude.desistidos}</strong> que a fila desistiu de enviar e{' '}
+              <strong>não</strong> serão tentados de novo
+            </>
+          )}
+          .
+        </p>
+      )}
+
       <ul className={estilos.lista}>
         {vista.itens.map((item) => (
           <li key={item.tipo} className={estilos.item}>

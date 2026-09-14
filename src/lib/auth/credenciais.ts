@@ -17,8 +17,66 @@ export interface Credencial {
   expiraEm: string
 }
 
+/**
+ * Alfabeto sem par que se confunda: fora `I` (parece `1`), `O` (parece `0`), e os próprios `0`
+ * e `1`. O `L` fica: sem o `1` no alfabeto, não há com o que confundi-lo. Sobram 32 símbolos — exatamente 5 bits cada, o que deixa o sorteio por byte
+ * uniforme sem descarte (256 é múltiplo de 32).
+ */
+const ALFABETO = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+const GRUPOS = 3
+const POR_GRUPO = 4
+
+/**
+ * Doze símbolos em três grupos: `K7RM-92PX-4TLD`.
+ *
+ * 🔴 O formato antigo era base64url (`eQroVvdHehFnLoum`): misturava caixa, continha `l`/`I`/`1` e
+ * `O`/`0`, e era impossível ditar ao telefone. Isto custa entropia — 60 bits contra 96 — e a troca
+ * é deliberada: a credencial vale 7 dias, o login por ela é limitado por conta e origem, e o hash
+ * é scrypt. 2^60 tentativas não acontecem nem online nem offline; uma senha mal digitada acontece
+ * todo dia.
+ *
+ * Separado de `criarCredencial` de propósito: sortear não precisa de scrypt, e o teste que mede o
+ * alfabeto e a variação por posição precisa de centenas de amostras.
+ */
+export function gerarSegredo(): string {
+  const bytes = randomBytes(GRUPOS * POR_GRUPO)
+  const grupos: string[] = []
+  for (let g = 0; g < GRUPOS; g++) {
+    let grupo = ''
+    for (let i = 0; i < POR_GRUPO; i++) {
+      grupo += ALFABETO[bytes[g * POR_GRUPO + i] % ALFABETO.length]
+    }
+    grupos.push(grupo)
+  }
+  return grupos.join('-')
+}
+
+/**
+ * O que a pessoa digitou, na forma canónica: maiúsculas, só os símbolos do alfabeto, hífen a cada
+ * quatro. Assim `k7rm92px4tld`, `K7RM 92PX 4TLD` e `K7RM-92PX-4TLD` são a mesma senha.
+ *
+ * 🔴 Devolve `null` para o que não couber no formato — inclusive para uma senha do formato antigo,
+ * que tem minúsculas e `_`. É esse `null` que impede a normalização de virar porta dos fundos:
+ * ela só entra em cena quando produz uma senha do formato novo.
+ */
+export function normalizarSegredo(digitado: string): string | null {
+  const limpo = digitado.toUpperCase().replace(/[^A-Z0-9]/g, '')
+  if (limpo.length !== GRUPOS * POR_GRUPO) return null
+  if (![...limpo].every((ch) => ALFABETO.includes(ch))) return null
+  const grupos: string[] = []
+  for (let g = 0; g < GRUPOS; g++) grupos.push(limpo.slice(g * POR_GRUPO, (g + 1) * POR_GRUPO))
+  return grupos.join('-')
+}
+
 export async function criarCredencial(agoraMs = Date.now()): Promise<Credencial> {
-  const segredo = randomBytes(12).toString('base64url')
+  return criarCredencialComSegredo(gerarSegredo(), agoraMs)
+}
+
+/** Só para quem já tem o segredo em mãos — testes, e a reemissão de uma senha ditada. */
+export async function criarCredencialComSegredo(
+  segredo: string,
+  agoraMs = Date.now(),
+): Promise<Credencial> {
   const sal = randomBytes(16).toString('hex')
   const chave = await derivar(segredo, sal, 64)
   return {
@@ -38,8 +96,15 @@ export async function verificarCredencial(
   if (!credencialPendente(hash, expiraEm, agoraMs)) return false
   const partes = /^scrypt\$([a-f0-9]{32})\$([a-f0-9]{128})$/.exec(hash as string)
   if (!partes) return false
-  const obtida = await derivar(segredo, partes[1], 64)
-  return timingSafeEqual(obtida, Buffer.from(partes[2], 'hex'))
+  const esperado = Buffer.from(partes[2], 'hex')
+  if (timingSafeEqual(await derivar(segredo, partes[1], 64), esperado)) return true
+
+  // Segunda chance só para o formato novo digitado de outro jeito (sem hífen, em minúscula).
+  // `normalizarSegredo` devolve `null` para tudo o mais, então uma credencial do formato antigo
+  // nunca chega aqui, e nenhuma senha errada ganha uma tentativa extra de graça.
+  const canonico = normalizarSegredo(segredo)
+  if (canonico === null || canonico === segredo) return false
+  return timingSafeEqual(await derivar(canonico, partes[1], 64), esperado)
 }
 
 /** Há uma credencial emitida e ainda dentro da validade. A fronteira é exclusiva. */

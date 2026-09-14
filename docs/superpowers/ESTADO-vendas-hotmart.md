@@ -230,13 +230,21 @@ enviar() { # $1=evento $2=transacao $3=email $4=event_id
    os períodos delas. As 3 ofertas, os 4 modelos de e-mail e o hottok ficam. A conta
    `alexandre.pavon+4@gmail.com` ficou com a senha `TesteLocal2026!`, definida durante a verificação;
    a `+5` ainda tem senha temporária pendente.
-### Melhorias oferecidas e não aprovadas
+### ✅ Feitos em 14/09/2026
 
-2. Mostrar na tela de modelos o último erro de envio, e avisar quando porta e `SMTP_SECURE` não
-   combinam. **Foi exatamente essa lacuna que escondeu o `SMTP_SECURE=true` na 587** e custou um
-   ciclo inteiro de depuração às cegas.
-3. Trocar o formato da senha temporária por um sem ambiguidade e fácil de digitar ao telefone
-   (`K7RM-92PX-4TLD`), no lugar do base64url atual, onde `l`/`I`/`1` e `O`/`0` se confundem.
+2. **Diagnóstico de envio na tela de modelos** — `avisoDeTls` (`src/lib/email/smtp.ts`) denuncia
+   porta e `SMTP_SECURE` incompatíveis sem recusar a configuração, e `saudeDaFila`
+   (`src/server/email/fila.ts`) traz a última falha, os pendentes e os desistidos para o card.
+   Era essa lacuna que escondia o `SMTP_SECURE=true` na 587: a tela dizia "SMTP configurado" e o
+   erro morria dentro da coluna `ultimo_erro` de cada linha.
+3. **Senha temporária em formato legível** — `WHCV-QPE8-B2YP` no lugar de `eQroVvdHehFnLoum`.
+   Alfabeto de 32 símbolos sem `I`, `O`, `0` e `1` (o `L` fica: sem o `1`, não confunde com nada),
+   sorteio uniforme por byte (256 é múltiplo de 32), 60 bits. `normalizarSegredo` aceita a senha
+   digitada sem hífen, em minúscula ou com espaço, **sem** abrir porta dos fundos: ela devolve
+   `null` para o que não couber no formato novo, então credencial antiga em base64url continua
+   valendo pelo caminho normal e senha errada não ganha tentativa extra.
+
+**Próximo:** uma terceira correção que o usuário vai trazer.
 
 ### Dívida menor, sem urgência
 
