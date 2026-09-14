@@ -64,10 +64,8 @@ contra o código real das dependências: `getClaims()` verifica a assinatura ant
 o `amr` sobrevive à renovação do token; `signOut` global revoga também a sessão atual; `after()`
 executa mesmo com `redirect()` depois; sem loop de redirecionamento.
 
-**Falta, nesta ordem:**
-1. **Verificação manual num Supabase real** (roteiro abaixo). Exige a `0064` aplicada — ou seja,
-   publicar. Decidir com o usuário quando, porque o `main` vai direto para produção.
-2. **Pedir ok ao usuário antes do bloco B** (webhook, processamento, gate, tela comercial, docs).
+**Concluído:** publicado no `main` (merge `2145a44`) e verificado em produção — o roteiro manual
+abaixo foi executado de ponta a ponta em 14/09/2026.
 
 **Riscos aceites e anotados:** `x-forwarded-for` só é confiável se o proxy do EasyPanel o
 sobrescreve (os limites por conta não dependem disso); `generateLink` substitui um link mágico
@@ -109,7 +107,7 @@ iam no bundle do layout e chegavam ao comprador por chamada direta; corrigido em
    nenhum workspace perdem o CRM; e as tabelas de CRM seguem legíveis pelo console a qualquer
    membro (sem dado de CRM, não expõe nada).
 
-**🔴 DEFEITO CRÍTICO ACHADO E CORRIGIDO EM 14/09/2026 — FALTA PUBLICAR.**
+**🔴 DEFEITO CRÍTICO ACHADO, CORRIGIDO E PUBLICADO EM 14/09/2026.**
 
 A calculadora devolvia **500** em `/ferramentas/indulto-comutacao/novo` e `/[id]`: a página do
 servidor passava o objeto `motor` (que tem o método `calcular`) como prop para a `Calculadora`,
@@ -123,7 +121,13 @@ gravação e a página `[id]`. Guarda de regressão em `tests/fronteira-rsc.spec
 todas provadas por inversão). **História completa, causa, regra e varredura do resto do código:
 `docs/calculadora-indulto-comutacao/fronteira-rsc.md`.**
 
-⚠️ **Em produção as duas rotas seguem quebradas até o merge no `main`.**
+**Publicado:** merge `08cc47e` no `main` às 09:02 UTC de 14/09/2026. Confirmado no domínio real
+(`app.gpsdapena.com.br`) com a conta `+4`: `/novo` abre e o cálculo ao vivo responde (5 anos →
+remanescente 5 anos, 1/5 = 1 ano, 1/2 = 2 anos 6 meses), zero erros no console.
+
+⚠️ **`origin/vendas-hotmart` continua em `65c4f84`, com o defeito** (`<Calculadora motor={motor} />`).
+Quem retomar dali ressuscita o 500. Apagar (`git push origin --delete vendas-hotmart`) ou sobrescrever
+(`git push origin main:vendas-hotmart --force`).
 
 **Verificado em produção em 2026-09-14 — o circuito inteiro, ponta a ponta:**
 
@@ -212,16 +216,42 @@ enviar() { # $1=evento $2=transacao $3=email $4=event_id
 
 ## Pendências
 
+> Atualizado em 14/09/2026, depois de os dois planos estarem publicados e verificados em produção.
+> **Nada do que foi especificado falta implementar.** O que segue é operação, dívida menor e
+> escolhas suas.
+
+### Bloqueia ir ao ar de verdade
+
 1. **Trocar credenciais** que foram expostas numa conversa: senha do banco, chave de serviço do
    Supabase e senha SMTP. Usar um `TICK_SECRET` aleatório e independente, nunca um pedaço de outra
    chave.
-2. **Opcional:** mostrar na tela de modelos o último erro de envio, e avisar quando porta e
-   `SMTP_SECURE` não combinam. Foi a lacuna que escondeu o problema acima.
-3. **Duas ressalvas sem teste automatizado**, corretas no código: `lerModelo` propagar o erro do
+1b. **`origin/vendas-hotmart` ainda serve o código com o defeito do 500** — apagar ou sobrescrever.
+1c. **Limpar os dados de teste** antes de vender: 3 vendas (`HP0000000003/4/5`), 3 contas de teste e
+   os períodos delas. As 3 ofertas, os 4 modelos de e-mail e o hottok ficam. A conta
+   `alexandre.pavon+4@gmail.com` ficou com a senha `TesteLocal2026!`, definida durante a verificação;
+   a `+5` ainda tem senha temporária pendente.
+### Melhorias oferecidas e não aprovadas
+
+2. Mostrar na tela de modelos o último erro de envio, e avisar quando porta e `SMTP_SECURE` não
+   combinam. **Foi exatamente essa lacuna que escondeu o `SMTP_SECURE=true` na 587** e custou um
+   ciclo inteiro de depuração às cegas.
+3. Trocar o formato da senha temporária por um sem ambiguidade e fácil de digitar ao telefone
+   (`K7RM-92PX-4TLD`), no lugar do base64url atual, onde `l`/`I`/`1` e `O`/`0` se confundem.
+
+### Dívida menor, sem urgência
+
+4. **Duas ressalvas sem teste automatizado**, corretas no código: `lerModelo` propagar o erro do
    banco (`src/server/email/modelos.ts`) e a ressincronização da tela depois de salvar
    (`ModelosEmailCard.tsx`). Nada acusa se alguém as reverter.
+5. **`mesmoResultado(undefined, x)` lança** em vez de devolver booleano
+   (`src/lib/indulto-comutacao/comparar.ts`). Inalcançável hoje, mas é função pública e partilhada.
+6. **`pnpm sync:foundation`, `check:motor`, `gen:manifest` e `audit:entrega` apontam para scripts que
+   não existem** em `scripts/` — herdado do Awave CRM original, quebra na primeira vez que alguém os
+   chamar.
+7. O resto da dívida da calculadora está em
+   `docs/calculadora-indulto-comutacao/pendencias-e-roteiro-de-teste.md`.
 
-## Plano 2 — vendas, ofertas, CPF/CNPJ, webhook Hotmart e gate de acesso: EM ANDAMENTO
+## Plano 2 — vendas, ofertas, CPF/CNPJ, webhook Hotmart e gate de acesso: CONCLUÍDO
 
 Ver **▶ RETOMAR AQUI** acima. O trabalho que o Codex tinha começado foi analisado; ficou só o que
 fazia sentido, e o resto está arquivado fora do repositório.
