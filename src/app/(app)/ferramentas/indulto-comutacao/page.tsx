@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { Scale } from 'lucide-react'
 import CabecalhoPagina from '@/components/ui/CabecalhoPagina'
+import { formatarDataHora } from '@/lib/data-hora'
 import EstadoVazio from '@/components/ui/EstadoVazio'
 import Botao from '@/components/ui/Botao'
 import { tituloDaPagina } from '@/server/marca'
@@ -61,7 +62,8 @@ export default async function ListaPage() {
               </Link>
               <div className={estilos.itemMeta}>
                 {c.decreto_id} · motor {c.motor_versao} ·{' '}
-                {new Date(c.atualizado_em).toLocaleDateString('pt-BR')}
+                {/* Fuso explícito: esta lista é renderizada no servidor, que roda em UTC. */}
+                {formatarDataHora(c.atualizado_em)}
               </div>
             </li>
           ))}
