@@ -752,3 +752,39 @@ acima, **valem estas**.
 5. **`expira_em` é calculado em TypeScript, não pelo banco** (§6.3). Continua a haver uma única
    regra, num único lugar — só que num lugar testável, já que não há Postgres sob teste. Meses de
    calendário com fecho no último dia do mês: 31/01 + 1 mês = 28/02 (ou 29 em ano bissexto).
+
+### 16.1 Melhorias incorporadas da revisão do trabalho do Codex
+
+Adotadas depois de analisar o que outro agente escreveu sobre este tema. O resto foi descartado.
+
+6. **CNPJ alfanumérico.** A normalização mantém letras (em maiúscula) e retira só pontuação; a
+   `check` aceita `^([0-9]{11}|[0-9A-Z]{12}[0-9]{2})$`. Dígito verificador pelo código ASCII menos
+   48, como define a Receita. Validado contra o exemplo oficial `12.ABC.345/01DE-35`.
+7. **O hash da senha temporária fica fora das leituras de `authenticated`.** A policy
+   `membros_sel` deixa qualquer membro ler as linhas dos outros membros do mesmo workspace; sem
+   isto, o hash de todos seria legível pelo console do navegador. A `0064` troca o `select` de
+   tabela por `select` coluna a coluna, deixando de fora `senha_temporaria_hash` e
+   `senha_temporaria_expira_em`. Nenhuma leitura existente do sistema usa essas colunas.
+8. **Período por produto.** Nova tabela `vendas_periodos (venda_id, produto_id, inicia_em,
+   expira_em)`, e `vendas.expira_em` deixa de existir. O empilhamento da §6.3.1 passa a ser
+   calculado **por produto**: com a regra anterior, um combo que trouxesse um produto novo
+   herdaria o vencimento de outro produto e só liberaria o novo no futuro.
+9. **Eventos fora de ordem.** Um encerramento que chega antes da aprovação fica na auditoria; a
+   aprovação posterior grava a venda **já encerrada**, sem liberar acesso nem enviar e-mail.
+10. **Idempotência de entrega.** `webhook_compras_recebidas.event_id` (o `id` do envelope da
+    Hotmart) é único por plataforma, e `emails_fila.chave_evento` é único. A venda grava
+    `produtos_novos` e `notificacao_pendente`, para os e-mails poderem ser reenfileirados sem
+    duplicar se o processamento cair entre gravar a venda e enfileirar.
+11. **Senha temporária não é trocada enquanto houver uma válida pendente.** Substitui a regra da
+    §16.4: a primeira emissão fica, e reenvios da Hotmart não invalidam a senha que já foi por
+    e-mail. **A recuperação de senha força uma credencial nova.**
+12. **`PURCHASE_REFUNDED` também encerra como `reembolsada`**, além de `PURCHASE_PROTEST`.
+13. **URL dos links nos e-mails:** vem da configuração que o produto já tem
+    (`url_publica_do_crm`), sem variável de ambiente nova. Sem ela, a senha temporária não é
+    emitida e o motivo fica registado.
+14. **Senha mínima de 6 caracteres**, como no cadastro do produto (máximo de 72 bytes, limite do
+    Supabase).
+15. **A lógica de venda fica em TypeScript**, não em funções SQL, para ser testável. A
+    idempotência é garantida pela chave única da transação. Risco residual aceite: duas compras
+    do mesmo produto, do mesmo membro, processadas no mesmo instante podem sobrepor dias.
+16. **Cancelamento revoga só a venda indicada**, sem recalcular os períodos de vendas posteriores.

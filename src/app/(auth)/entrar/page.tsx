@@ -87,6 +87,12 @@ export default async function EntrarPage({
           </Botao>
         </form>
 
+        <p className={estilos.rodape}>
+          <Link className={estilos.link} href="/recuperar">
+            Esqueci a senha
+          </Link>
+        </p>
+
         {}
         {podeCriarConta ? (
           <p className={estilos.rodape}>

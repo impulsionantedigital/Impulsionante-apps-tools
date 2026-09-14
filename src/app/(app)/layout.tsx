@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { exigirSessao } from '@/server/auth/sessao'
+import { precisaTrocarSenha } from '@/server/auth/temporaria'
 import { resolverWorkspaceAtivo } from '@/server/auth/workspace-ativo'
 import { motivoDeBloqueioAtual } from '@/server/license/bloqueio'
 import { mostrarAvisoDeAtualizacao } from '@/server/atualizacao/aviso'
@@ -22,6 +23,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   
   
   if (await motivoDeBloqueioAtual()) redirect('/licenca')
+
+  if (await precisaTrocarSenha(user.id)) redirect('/trocar-senha')
 
   const wsAtivo = await resolverWorkspaceAtivo()
   if (wsAtivo === null) redirect('/sem-workspace')

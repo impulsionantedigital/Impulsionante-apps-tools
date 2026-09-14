@@ -33,6 +33,25 @@ select destinatario, tentativas, ultimo_erro, enviado_em
 from emails_fila order by criado_em desc limit 5;
 ```
 
+
+## ▶ RETOMAR AQUI — Plano 2, bloco A (em andamento)
+
+Aprovado pelo usuário em 2026-09-13: manter o spec e o plano do Claude, aproveitar só o que faz
+sentido do trabalho do Codex (arquivado fora do repo, em `scratchpad/codex-arquivo`).
+**Pausado por limite de uso** com o bloco A ESCRITO mas NÃO VERIFICADO (commit "em andamento").
+
+Bloco A = itens 1–4: §16.1 do spec · migration `0064_vendas_e_ofertas.sql` · identidade
+(`src/lib/documento.ts`, `src/lib/auth/credenciais.ts`, `src/server/auth/temporaria.ts`, login com
+segundo caminho em `sessao.ts`, troca obrigatória no `(app)/layout.tsx`, telas `/trocar-senha` e
+`/recuperar`, `/recuperar` pública no `proxy.ts`) · lógica pura de venda (`src/lib/produtos/catalogo.ts`,
+`src/lib/vendas/{duracao,periodos,emails,hotmart}.ts`) com testes.
+
+Próximos passos, nesta ordem:
+1. `pnpm test` e `pnpm exec tsc --noEmit`; corrigir o que falhar (nada foi rodado ainda).
+2. Uma revisão do bloco A inteiro (auth + banco são risco real).
+3. Corrigir achados, atualizar este documento, commitar.
+4. **Parar e pedir ok ao usuário antes do bloco B** (webhook, processamento, gate, tela comercial, docs).
+
 ## Pendências
 
 1. **Trocar credenciais** que foram expostas numa conversa: senha do banco, chave de serviço do

@@ -5,7 +5,7 @@ import { urlSupabase } from '@/server/config-supabase'
 
 
 
-const ROTAS_PUBLICAS = ['/entrar', '/cadastrar', '/convite']
+const ROTAS_PUBLICAS = ['/entrar', '/cadastrar', '/convite', '/recuperar']
 
 function ehPublica(pathname: string): boolean {
   return ROTAS_PUBLICAS.some((p) => pathname === p || pathname.startsWith(p + '/'))

@@ -1,6 +1,7 @@
 import 'server-only'
 import type { User } from '@supabase/supabase-js'
 import { criarClienteServidor } from '@/server/supabase-session'
+import { entrarComSenhaTemporaria, limparSenhaTemporaria } from '@/server/auth/temporaria'
 
 
 
@@ -10,8 +11,12 @@ type ResultadoSair = { ok: true } | { erro: string }
 export async function entrar({ email, senha }: { email: string; senha: string }): Promise<ResultadoEntrar> {
   const sessao = await criarClienteServidor()
   const { data, error } = await sessao.auth.signInWithPassword({ email, password: senha })
-  if (error || !data?.user) return { erro: 'credenciais_invalidas' }
-  return { ok: true }
+  if (!error && data?.user) {
+    await limparSenhaTemporaria(data.user.id)
+    return { ok: true }
+  }
+  if (await entrarComSenhaTemporaria(email, senha)) return { ok: true }
+  return { erro: 'credenciais_invalidas' }
 }
 
 export async function sair(): Promise<ResultadoSair> {
