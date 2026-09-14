@@ -34,7 +34,7 @@ from emails_fila order by criado_em desc limit 5;
 ```
 
 
-## ▶ RETOMAR AQUI — Plano 2: bloco A publicado; bloco B revisto e pronto, aguarda ok para publicar
+## ▶ RETOMAR AQUI — Plano 2 concluído: blocos A e B publicados e verificados em produção
 
 Aprovado pelo usuário em 2026-09-13: manter o spec e o plano do Claude, aproveitar só o que faz
 sentido do trabalho do Codex (arquivado fora do repositório, em `scratchpad/codex-arquivo`).
@@ -109,9 +109,22 @@ iam no bundle do layout e chegavam ao comprador por chamada direta; corrigido em
    nenhum workspace perdem o CRM; e as tabelas de CRM seguem legíveis pelo console a qualquer
    membro (sem dado de CRM, não expõe nada).
 
-**Falta, nesta ordem:**
-1. **Ok do usuário para publicar** (merge no `main` → produção; abre o webhook e aplica a `0065`).
-2. Roteiro de verificação do bloco B no servidor (abaixo).
+**Verificado em produção em 2026-09-14 — o circuito inteiro, ponta a ponta:**
+
+Três compras `PURCHASE_APPROVED` entraram pelo webhook real (`HP0000000003/4/5`, oferta `3kavznaa`).
+Cada uma: conta criada no Auth, membro com nome e CPF, venda `ativa`, período 13/09→13/10 do produto
+`indulto-comutacao-2025`, e os dois e-mails (acesso + entrega) enviados sem erro. O comprador
+`+3` entrou com a senha temporária do e-mail, trocou-a, e o `senha_temporaria_hash` foi apagado —
+a troca obrigatória funciona de verdade. Os outros dois seguem com a temporária pendente e válida
+por sete dias, como esperado de quem ainda não entrou.
+
+**Armadilha que apareceu no teste, e não é defeito:** reenviar o payload trocando só a transação e o
+CPF **não cria nada** e devolve 200. Quem identifica a entrega é o campo `id` do topo do envelope
+(`lerEventoHotmart` → `envelope.id`), com chave única em `webhook_compras_recebidas`. Repetido, o
+código encontra o evento anterior já processado e devolve `ok` sem reprocessar
+(`src/server/vendas/processar.ts`, ramo do erro `23505`). É essa regra que impede venda duplicada
+quando a Hotmart reentrega. **Para testar à mão, troque também o `id`** — a Hotmart gera um novo a
+cada evento, por isso em produção isto nunca prende.
 
 **Riscos residuais anotados:**
 - Tabelas de CRM continuam legíveis pelo console a qualquer membro (RLS `e_membro`). Aceitável só
