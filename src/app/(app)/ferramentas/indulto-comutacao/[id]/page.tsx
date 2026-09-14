@@ -57,8 +57,9 @@ export default async function CalculoPage({ params }: { params: Promise<{ id: st
         </div>
       )}
 
+      {/* `decretoId`, não `motor`: função não cruza a fronteira RSC. Ver Calculadora.tsx. */}
       <Calculadora
-        motor={motor}
+        decretoId={motor.id}
         inicial={calculo.entrada}
         calculoId={calculo.id}
         tituloInicial={calculo.titulo}

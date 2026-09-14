@@ -34,7 +34,8 @@ export default async function NovoPage() {
         quando quiser. Para não guardar o nome do sentenciado, use o nº de execução na
         identificação.
       </p>
-      <Calculadora motor={motor} />
+      {/* `decretoId`, não `motor`: função não cruza a fronteira RSC. Ver Calculadora.tsx. */}
+      <Calculadora decretoId={motor.id} />
     </div>
   )
 }
