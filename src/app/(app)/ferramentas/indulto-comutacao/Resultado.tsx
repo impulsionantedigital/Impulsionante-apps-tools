@@ -11,6 +11,7 @@
 import type { MotorDecreto, Resultado as ResultadoCalculo, Veredito } from '@/lib/indulto-comutacao/tipos'
 import { VEREDITOS } from '@/lib/indulto-comutacao/tipos'
 import { fmtDias } from '@/lib/indulto-comutacao/tempo'
+import { enquadramentosDe } from '@/lib/indulto-comutacao/enquadramentos'
 import estilos from './resultado.module.css'
 
 const TOM: Record<Veredito, string> = {
@@ -44,7 +45,8 @@ export default function Resultado({
   motor: MotorDecreto
   resultado: ResultadoCalculo
 }) {
-  const porId = new Map(resultado.incisos.map((i) => [i.id, i]))
+  const enquadramentosIndulto = enquadramentosDe(motor, resultado, 'indulto')
+  const enquadramentosComutacao = enquadramentosDe(motor, resultado, 'comutacao')
 
   return (
     <div className={estilos.resultado}>
@@ -66,44 +68,36 @@ export default function Resultado({
          `meta.descricao` já dizem, por decreto. */}
       <h2 className={estilos.titulo}>Indulto</h2>
       <div className={estilos.cartoes}>
-        {motor.incisos.indulto.map((meta) => {
-          const r = porId.get(meta.id)
-          if (!r) return null
-          return (
-            <article key={meta.id} className={estilos.cartao}>
-              <h3>{meta.rotulo}</h3>
-              <p>{meta.descricao}</p>
-              <Selo rotulo="Regra geral" veredito={r.geral} />
-              <Selo rotulo="Regra especial" veredito={r.especial} />
-            </article>
-          )
-        })}
+        {enquadramentosIndulto.map((e) => (
+          <article key={e.id} className={estilos.cartao}>
+            <h3>{e.rotulo}</h3>
+            <p>{e.descricao}</p>
+            <Selo rotulo="Regra geral" veredito={e.geral} />
+            <Selo rotulo="Regra especial" veredito={e.especial} />
+          </article>
+        ))}
       </div>
 
       <h2 className={estilos.titulo}>Comutação</h2>
       <div className={estilos.cartoes}>
-        {motor.incisos.comutacao.map((meta) => {
-          const r = porId.get(meta.id)
-          if (!r) return null
-          return (
-            <article key={meta.id} className={estilos.cartao}>
-              <h3>{meta.rotulo}</h3>
-              <p>{meta.descricao}</p>
-              {/* Comutação não tem regra especial: o motor devolve `especial:
-                 'sem_previsao'` nos 5 dispositivos, mas nunca houve selo pra ela
-                 na POC. Só "Situação" (= `r.geral`). */}
-              <Selo rotulo="Situação" veredito={r.geral} />
-              {r.geral === 'preenche' && (
-                <dl className={estilos.quantum}>
-                  <dt>Quantum da comutação</dt>
-                  <dd>{fmtDias(r.quantum ?? null)}</dd>
-                  <dt>Pena total após a comutação</dt>
-                  <dd>{fmtDias(r.penaApos ?? null)}</dd>
-                </dl>
-              )}
-            </article>
-          )
-        })}
+        {enquadramentosComutacao.map((e) => (
+          <article key={e.id} className={estilos.cartao}>
+            <h3>{e.rotulo}</h3>
+            <p>{e.descricao}</p>
+            {/* Comutação não tem regra especial: o motor devolve `especial:
+               'sem_previsao'` nos 5 dispositivos, mas nunca houve selo pra ela
+               na POC. Só "Situação" (= `e.geral`). */}
+            <Selo rotulo="Situação" veredito={e.geral} />
+            {e.geral === 'preenche' && (
+              <dl className={estilos.quantum}>
+                <dt>Quantum da comutação</dt>
+                <dd>{fmtDias(e.quantum ?? null)}</dd>
+                <dt>Pena total após a comutação</dt>
+                <dd>{fmtDias(e.penaApos ?? null)}</dd>
+              </dl>
+            )}
+          </article>
+        ))}
       </div>
 
       {/* Sempre visível, com TODAS as entradas — são interpretações da planilha

@@ -1,4 +1,3 @@
-// tests/indulto-comutacao/anexo-texto.spec.ts
 import { describe, it, expect } from 'vitest'
 import { formatarAnexoTexto } from '@/lib/indulto-comutacao/anexo-texto'
 import type { MotorDecreto, Resultado } from '@/lib/indulto-comutacao/tipos'

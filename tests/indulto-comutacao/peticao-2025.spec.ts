@@ -105,6 +105,19 @@ describe('gerarPeticaoIndulto2025', () => {
     expect(texto).toContain('3. DA EXISTÊNCIA DE CRIME IMPEDITIVO')
     expect(texto).toContain('2/3 da pena: 0 anos 8 meses 0 dias')
   })
+
+  it('calcula o percentual cumprido da pena impeditiva com uma casa decimal', () => {
+    const r = resultado(
+      { fracoes: { doisTercosImpeditivos: 240, umQuinto: 288, umQuarto: 360, umTerco: 480, metade: 720 }, penaCumpridaImpeditivos: 180 },
+      [{ id: 'art9_I', geral: 'preenche', especial: 'sem_previsao' }],
+    )
+    const texto = gerarPeticaoIndulto2025(motorFalso, {
+      entrada: { penaImpeditiva: { anos: 1, meses: 0, dias: 0 } },
+      resultado: r,
+      titulo: 'X',
+    })
+    expect(texto).toContain('50%')
+  })
 })
 
 describe('gerarPeticaoComutacao2025', () => {

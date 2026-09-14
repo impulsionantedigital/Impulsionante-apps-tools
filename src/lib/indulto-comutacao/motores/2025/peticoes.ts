@@ -1,5 +1,3 @@
-// src/lib/indulto-comutacao/motores/2025/peticoes.ts
-//
 // Modelos de petição do Decreto 12.970/2025 — TEXTO JURÍDICO confirmado pelo usuário em
 // 14/09/2026 (indulto: modelo enviado pronto; comutação: Seção 3 revisada nesta sessão para a
 // regra real do decreto — 2/3 para crime impeditivo; 1/5 se primário ou 1/4 se reincidente para
@@ -33,6 +31,12 @@ function dataBaseFormatada(motor: MotorDecreto): string {
 function pct(numerador: number, denominador: number): string {
   if (denominador <= 0) return '0'
   return (Math.round((numerador / denominador) * 1000) / 10).toString()
+}
+
+/** Trata ausência/vazio do campo como 'NÃO' — o padrão real de `padraoDoCampo` para esses
+ *  campos (`opcoes: ['SIM','NÃO']`, sem `padrao` customizado), nunca o fato adverso. */
+function equivaleANao(v: unknown): boolean {
+  return v == null || v === '' || v === 'NÃO'
 }
 
 function anexarAnexo(corpo: string, motor: MotorDecreto, dados: DadosPeticao): string {
@@ -72,7 +76,7 @@ Desse modo, embora exista condenação por crime impeditivo, o requisito especí
 
 O sentenciado não possui condenação por crime impeditivo à concessão do indulto, não havendo, portanto, óbice algum sob esse aspecto.`
 
-  const semFaltaGrave = entrada.faltaGraveAno === 'NÃO' && entrada.faltaGraveExecucao === 'NÃO'
+  const semFaltaGrave = equivaleANao(entrada.faltaGraveAno) && equivaleANao(entrada.faltaGraveExecucao)
   const secao4 = `4. DA AUSÊNCIA DE FALTA GRAVE IMPEDITIVA
 
 Quanto ao requisito relacionado à conduta carcerária, verifica-se que ${
@@ -165,7 +169,7 @@ export function gerarPeticaoComutacao2025(motor: MotorDecreto, dados: DadosPetic
       ? resultado.resumo.fracoes.umQuarto
       : resultado.resumo.fracoes.umQuinto
   const fracaoExigidaRotulo = ehImpeditivo ? '2/3' : reincidente ? '1/4' : '1/5'
-  const basePena = ehImpeditivo ? penaImpeditivaDias : resultado.resumo.totalImposto - penaImpeditivaDias
+  const basePena = ehImpeditivo ? penaImpeditivaDias : resultado.resumo.totalImposto
 
   const secao3 = `3. DO PREENCHIMENTO DO REQUISITO TEMPORAL, CONFORME A NATUREZA DO CRIME E A REINCIDÊNCIA
 
@@ -187,7 +191,7 @@ Considerando a fração exigida, verifica-se que o requisito temporal encontra-s
 
 Assim, estando cumprida a fração exigida para essa categoria de pena, deve ser reconhecido o direito à comutação, desde que igualmente preenchidos os demais requisitos objetivos e subjetivos previstos no Decreto.`
 
-  const semFaltaGrave = entrada.faltaGraveAno === 'NÃO' && entrada.faltaGraveExecucao === 'NÃO'
+  const semFaltaGrave = equivaleANao(entrada.faltaGraveAno) && equivaleANao(entrada.faltaGraveExecucao)
   const secao4 = `4. DA AUSÊNCIA DE FALTA GRAVE IMPEDITIVA
 
 Quanto ao requisito relacionado à conduta carcerária, verifica-se que ${

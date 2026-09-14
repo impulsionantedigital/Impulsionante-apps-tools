@@ -1,4 +1,3 @@
-// src/app/(app)/ferramentas/indulto-comutacao/BotaoPeticao.tsx
 'use client'
 
 import { useState } from 'react'
