@@ -8,6 +8,7 @@ import Questionario from './Questionario'
 import Resultado from './Resultado'
 import BarraSalvar from './BarraSalvar'
 import BotaoImprimir from './BotaoImprimir'
+import BotaoPeticao from './BotaoPeticao'
 import CabecalhoAnexo from './CabecalhoAnexo'
 import estilos from './calculadora.module.css'
 
@@ -101,6 +102,7 @@ export default function Calculadora({
             </div>
             <div className={estilos.barraImprimir}>
               <BotaoImprimir />
+              <BotaoPeticao motor={motor} entrada={entrada} resultado={resultado} titulo={titulo} />
             </div>
           </>
         ) : (
@@ -110,7 +112,12 @@ export default function Calculadora({
             calculoId={calculoId}
             titulo={titulo}
             aoMudarTitulo={setTitulo}
-            acoesExtras={<BotaoImprimir />}
+            acoesExtras={
+              <>
+                <BotaoImprimir />
+                <BotaoPeticao motor={motor} entrada={entrada} resultado={resultado} titulo={titulo} />
+              </>
+            }
           />
         )}
         {/* Só no papel: identifica o caso e lista as premissas. Ver CabecalhoAnexo.tsx. */}
