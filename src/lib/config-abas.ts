@@ -19,7 +19,7 @@ export function abasDisponiveis({
 }: {
   pessoas: boolean
   servidor: boolean
-  /** Ofertas, vendas e eventos da Hotmart: só o owner do espaço de trabalho. */
+  /** Ofertas, vendas e eventos da Hotmart: só o dono do servidor. */
   comercial?: boolean
 }): AbaConfig[] {
   const abas: AbaConfig[] = [ABA_PADRAO]

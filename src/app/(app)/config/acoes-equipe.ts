@@ -64,12 +64,14 @@ export async function lerEquipe(): Promise<VistaEquipe | { erro: string }> {
     cpf_cnpj: string | null
   }>
   const souOwner = linhas.some((m) => m.user_id === userId && m.papel === 'owner')
+  // 🔴 `admin()` não passa por RLS: é aqui que um comprador deixa de ver os outros compradores.
+  const visiveis = souOwner ? linhas : linhas.filter((m) => m.user_id === userId)
 
   
   
   
   const comEmail: MembroItem[] = await Promise.all(
-    linhas.map(async (m) => {
+    visiveis.map(async (m) => {
       const { data } = await db.auth.admin.getUserById(m.user_id)
       return {
         id: m.id,

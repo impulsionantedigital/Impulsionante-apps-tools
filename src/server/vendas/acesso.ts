@@ -3,27 +3,32 @@ import { cache } from 'react'
 import { admin } from '@/server/supabase'
 import { criarClienteServidor } from '@/server/supabase-session'
 import { resolverWorkspaceAtivo } from '@/server/auth/workspace-ativo'
+import { ehDonoDoDeploy } from '@/server/auth/dono-deploy'
 import { estadoDeAcesso, type EstadoAcesso, type PeriodoDoMembro } from '@/lib/vendas/acesso'
 import type { ProdutoId } from '@/lib/produtos/catalogo'
 
 /** Uma leitura por requisição, partilhada por todos os pontos que perguntam (§9.3). */
-const contextoDeAcesso = cache(async (): Promise<{ ehOwner: boolean; periodos: PeriodoDoMembro[] } | null> => {
+const contextoDeAcesso = cache(async (): Promise<{ ehDonoDoServidor: boolean; periodos: PeriodoDoMembro[] } | null> => {
   const cliente = await criarClienteServidor()
   const { data: { user } } = await cliente.auth.getUser()
   if (!user) return null
   const ws = await resolverWorkspaceAtivo({ cliente })
   if (!ws) return null
 
+  // 🔴 Só o DONO DO SERVIDOR passa por cima. "Owner do workspace ativo" não serve: criar workspace
+  // é self-service para qualquer usuário logado, e o comprador viraria owner do seu e usaria tudo
+  // de graça.
+  if (await ehDonoDoDeploy()) return { ehDonoDoServidor: true, periodos: [] }
+
   const db = admin()
   const { data: membro, error } = await db
     .from('membros')
-    .select('id, papel')
+    .select('id')
     .eq('workspace_id', ws)
     .eq('user_id', user.id)
     .maybeSingle()
   if (error) throw error
   if (!membro) return null
-  if (membro.papel === 'owner') return { ehOwner: true, periodos: [] }
 
   const { data: vendas, error: erroVendas } = await db
     .from('vendas')
@@ -32,7 +37,7 @@ const contextoDeAcesso = cache(async (): Promise<{ ehOwner: boolean; periodos: P
     .eq('membro_id', membro.id)
   if (erroVendas) throw erroVendas
   const lista = (vendas ?? []) as Array<{ id: string; status: string }>
-  if (lista.length === 0) return { ehOwner: false, periodos: [] }
+  if (lista.length === 0) return { ehDonoDoServidor: false, periodos: [] }
 
   const ativa = new Map(lista.map((v) => [v.id, v.status === 'ativa']))
   const { data: periodos, error: erroPeriodos } = await db
@@ -42,7 +47,7 @@ const contextoDeAcesso = cache(async (): Promise<{ ehOwner: boolean; periodos: P
   if (erroPeriodos) throw erroPeriodos
 
   return {
-    ehOwner: false,
+    ehDonoDoServidor: false,
     periodos: ((periodos ?? []) as Array<{ venda_id: string; produto_id: string; inicia_em: string; expira_em: string | null }>).map((p) => ({
       produtoId: p.produto_id,
       iniciaEm: new Date(p.inicia_em),
@@ -55,7 +60,7 @@ const contextoDeAcesso = cache(async (): Promise<{ ehOwner: boolean; periodos: P
 export async function estadoDoProduto(produto: ProdutoId): Promise<EstadoAcesso> {
   const ctx = await contextoDeAcesso()
   if (!ctx) return 'nunca'
-  return estadoDeAcesso({ produto, ehOwner: ctx.ehOwner, periodos: ctx.periodos, agora: new Date() })
+  return estadoDeAcesso({ produto, ehDonoDoServidor: ctx.ehDonoDoServidor, periodos: ctx.periodos, agora: new Date() })
 }
 
 /**

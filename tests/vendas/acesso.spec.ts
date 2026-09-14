@@ -5,8 +5,8 @@ const d = (iso: string) => new Date(iso)
 const A = 'indulto-comutacao-2025'
 const AGORA = d('2027-03-15T12:00:00Z')
 
-function estado(periodos: PeriodoDoMembro[], ehOwner = false) {
-  return estadoDeAcesso({ produto: A, ehOwner, periodos, agora: AGORA })
+function estado(periodos: PeriodoDoMembro[], ehDonoDoServidor = false) {
+  return estadoDeAcesso({ produto: A, ehDonoDoServidor, periodos, agora: AGORA })
 }
 
 describe('estadoDeAcesso', () => {
@@ -40,7 +40,7 @@ describe('estadoDeAcesso', () => {
     expect(estado([{ produtoId: A, iniciaEm: d('2027-04-01T00:00:00Z'), expiraEm: d('2027-05-01T00:00:00Z'), vendaAtiva: true }])).toBe('encerrado')
   })
 
-  it('o owner passa por cima', () => {
+  it('o dono do servidor passa por cima', () => {
     expect(estado([], true)).toBe('ativo')
   })
 })

@@ -13,15 +13,16 @@ export interface PeriodoDoMembro {
  * - `ativo`: um período de venda ativa cobre este instante;
  * - `encerrado`: já teve, mas nada cobre agora — vê o que produziu, não cria nem edita.
  *
- * O owner passa por cima de tudo. O vencimento é fronteira exclusiva.
+ * Só o DONO DO SERVIDOR passa por cima — nunca o owner de um workspace, que qualquer usuário
+ * logado pode criar. O vencimento é fronteira exclusiva.
  */
 export function estadoDeAcesso(args: {
   produto: string
-  ehOwner: boolean
+  ehDonoDoServidor: boolean
   periodos: readonly PeriodoDoMembro[]
   agora: Date
 }): EstadoAcesso {
-  if (args.ehOwner) return 'ativo'
+  if (args.ehDonoDoServidor) return 'ativo'
   const doProduto = args.periodos.filter((p) => p.produtoId === args.produto)
   if (doProduto.length === 0) return 'nunca'
   const t = args.agora.getTime()

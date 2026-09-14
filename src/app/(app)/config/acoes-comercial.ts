@@ -10,6 +10,7 @@ import { exigirEngineLiberado } from '@/server/license/exigir'
 import { getSecret, setSecret } from '@/server/secrets'
 import { lerConfig } from '@/server/configuracoes'
 import { encerrarVendaManual, reenviarNotificacoes, reprocessarEvento } from '@/server/vendas/processar'
+import { esquecerTokenHotmart } from '@/server/vendas/token-hotmart'
 import { CHAVE_URL_PUBLICA } from '@/lib/canais/url-publica'
 import { PRODUTOS, ehProdutoConhecido, rotuloDoProduto } from '@/lib/produtos/catalogo'
 import { DURACOES } from '@/lib/vendas/duracao'
@@ -61,7 +62,7 @@ export interface VistaComercial {
   urlPublica: string | null
 }
 
-const NAO_AUTORIZADO = 'Só quem é dono deste espaço de trabalho mexe no comercial.'
+const NAO_AUTORIZADO = 'Só o dono do servidor mexe no comercial.'
 const Uuid = z.string().uuid()
 
 const MENSAGEM_NOTIFICACAO: Record<string, string> = {
@@ -74,8 +75,13 @@ const MENSAGEM_NOTIFICACAO: Record<string, string> = {
   falha_enfileirar: 'Não foi possível pôr o e-mail na fila.',
 }
 
-/** Dado comercial: só o owner do espaço de trabalho. A sessão decide, nunca o cliente. */
+/**
+ * Dado comercial: só o DONO DO SERVIDOR, no workspace de que é owner. A sessão decide, nunca o
+ * cliente. 🔴 Owner de workspace não basta: qualquer usuário logado cria o seu, e poderia cadastrar
+ * primeiro o código de oferta de outra pessoa e capturar os compradores dela.
+ */
 async function workspaceDoOwner(): Promise<string | null> {
+  if (!(await ehDonoDoDeploy())) return null
   const cliente = await criarClienteServidor()
   const ws = await resolverWorkspaceAtivo({ cliente })
   if (!ws || !(await ehOwnerDoWorkspace(ws))) return null
@@ -237,7 +243,9 @@ export async function salvarTokenHotmart(token: string): Promise<Resposta> {
   if (!(await ehDonoDoDeploy())) return { erro: 'Só o dono do servidor configura o token da Hotmart.' }
   const limpo = typeof token === 'string' ? token.trim() : ''
   if (!limpo || limpo.length > 4096) return { erro: 'Cole o token de verificação (hottok) da Hotmart.' }
-  return (await setSecret(CHAVE_HOTTOK_HOTMART, limpo)) ? { ok: true } : { erro: 'Não foi possível guardar o token.' }
+  if (!(await setSecret(CHAVE_HOTTOK_HOTMART, limpo))) return { erro: 'Não foi possível guardar o token.' }
+  esquecerTokenHotmart()
+  return { ok: true }
 }
 
 export async function encerrarVenda(id: string): Promise<Resposta> {

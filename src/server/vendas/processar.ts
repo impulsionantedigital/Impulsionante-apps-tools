@@ -10,7 +10,7 @@ import { PRODUTOS, ehProdutoConhecido, rotuloDoProduto } from '@/lib/produtos/ca
 import { ehDuracao, type Duracao } from '@/lib/vendas/duracao'
 import { decidirEmails } from '@/lib/vendas/emails'
 import { formatarValor, formatarVencimento, vencimentoMaisTardio } from '@/lib/vendas/formatos'
-import { lerEventoHotmart, statusInicialDaVenda, type EventoHotmart } from '@/lib/vendas/hotmart'
+import { lerEventoHotmart, statusInicialDaVenda, type EventoHotmart, type StatusEncerramento } from '@/lib/vendas/hotmart'
 import { calcularPeriodos, type PeriodoExistente, type PeriodoNovo } from '@/lib/vendas/periodos'
 
 type Aprovada = Extract<EventoHotmart, { tipo: 'aprovada' }>
@@ -152,17 +152,7 @@ async function aprovar(auditId: string, evento: Aprovada): Promise<Desfecho> {
   const membro = await resolverMembro(ws, evento.comprador)
 
   // Encerramentos desta transação que chegaram antes da aprovação (§16.1, item 9).
-  const { data: anteriores, error: erroAnteriores } = await cli
-    .from('webhook_compras_recebidas')
-    .select('evento')
-    .eq('plataforma', 'hotmart')
-    .eq('transacao', evento.transacao)
-    .neq('id', auditId)
-    .order('recebido_em', { ascending: true })
-  if (erroAnteriores) throw erroAnteriores
-  const status = statusInicialDaVenda(
-    (anteriores ?? []).map((a) => a.evento as string | null).filter((e): e is string => typeof e === 'string'),
-  )
+  const status = (await encerramentoRegistrado(evento.transacao, auditId)) ?? 'ativa'
 
   // 🔴 O histórico é lido ANTES de gravar a venda, senão ela entra na própria conta.
   const { existentes, jaTidos } = await historicoDoMembro(ws, membro.membroId)
@@ -206,14 +196,44 @@ async function aprovar(auditId: string, evento: Aprovada): Promise<Desfecho> {
     return { resultado: 'venda_criada_encerrada', workspaceId: ws, detalhe: juntar(`nasceu ${status}`, membro.observacao) }
   }
 
+  // Um encerramento pode ter chegado ENTRE a leitura acima e a gravação da venda.
+  const tardio = await encerramentoRegistrado(evento.transacao, auditId)
+  if (tardio) {
+    const { error: erroTardio } = await cli
+      .from('vendas')
+      .update({ status: tardio, encerrada_em: new Date().toISOString(), notificacao_pendente: false, produtos_novos: [] })
+      .eq('id', gravada.id)
+      .eq('status', 'ativa')
+    if (erroTardio) throw erroTardio
+    return { resultado: 'venda_criada_encerrada', workspaceId: ws, detalhe: juntar(`encerrada durante a aprovação: ${tardio}`, membro.observacao) }
+  }
+
   await gravarPeriodos(ws, membro.membroId, gravada.id, calcularPeriodos({
     produtos,
     duracao,
     aprovadaEm: evento.aprovadaEm,
     existentes,
   }))
-  const aviso = await notificarComAviso(gravada.id)
-  return { resultado: 'venda_criada', workspaceId: ws, detalhe: juntar(membro.observacao, aviso) }
+  // 🔴 Falha ao enfileirar os e-mails LANÇA: o evento fica `falhou`, a rota devolve 500 e a Hotmart
+  // reenvia — o reenvio cai em `retomar`, que completa sem duplicar. Devolver só um aviso deixaria
+  // o comprador sem a senha até alguém reparar.
+  await notificarOuFalhar(gravada.id)
+  return { resultado: 'venda_criada', workspaceId: ws, detalhe: membro.observacao }
+}
+
+async function encerramentoRegistrado(transacao: string, excluirAuditId: string): Promise<StatusEncerramento | null> {
+  const { data, error } = await admin()
+    .from('webhook_compras_recebidas')
+    .select('evento')
+    .eq('plataforma', 'hotmart')
+    .eq('transacao', transacao)
+    .neq('id', excluirAuditId)
+    .order('recebido_em', { ascending: true })
+  if (error) throw error
+  const status = statusInicialDaVenda(
+    (data ?? []).map((a) => a.evento as string | null).filter((e): e is string => typeof e === 'string'),
+  )
+  return status === 'ativa' ? null : status
 }
 
 /**
@@ -223,8 +243,8 @@ async function aprovar(auditId: string, evento: Aprovada): Promise<Desfecho> {
  */
 async function retomar(venda: LinhaVenda): Promise<Desfecho> {
   await garantirPeriodos(venda)
-  const aviso = venda.status === 'ativa' && venda.notificacao_pendente ? await notificarComAviso(venda.id) : null
-  return { resultado: 'venda_existente', workspaceId: venda.workspace_id, detalhe: aviso }
+  if (venda.status === 'ativa' && venda.notificacao_pendente) await notificarOuFalhar(venda.id)
+  return { resultado: 'venda_existente', workspaceId: venda.workspace_id }
 }
 
 async function garantirPeriodos(venda: LinhaVenda): Promise<void> {
@@ -329,9 +349,9 @@ export async function encerrarVendaManual(workspaceId: string, vendaId: string):
 
 // ── e-mails ──────────────────────────────────────────────────────────────────────────────────
 
-async function notificarComAviso(vendaId: string): Promise<string | null> {
+async function notificarOuFalhar(vendaId: string): Promise<void> {
   const r = await notificar(vendaId)
-  return 'erro' in r ? `e-mails pendentes: ${r.erro}` : null
+  if ('erro' in r) throw new Error(`e-mails da venda ficaram pendentes: ${r.erro}`)
 }
 
 export async function reenviarNotificacoes(
@@ -340,12 +360,14 @@ export async function reenviarNotificacoes(
 ): Promise<ResultadoNotificacao | { erro: 'venda_inexistente' }> {
   const { data, error } = await admin()
     .from('vendas')
-    .select('id')
+    .select(COLUNAS_VENDA)
     .eq('workspace_id', workspaceId)
     .eq('id', vendaId)
     .maybeSingle()
   if (error) throw error
   if (!data) return { erro: 'venda_inexistente' }
+  // Sem períodos, o e-mail anunciaria "sem data de término": completa-os antes.
+  await garantirPeriodos(data as LinhaVenda)
   return notificar(vendaId, { manual: true })
 }
 

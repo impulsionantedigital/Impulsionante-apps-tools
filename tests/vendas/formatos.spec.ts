@@ -40,3 +40,13 @@ describe('vencimentoMaisTardio', () => {
     expect(vencimentoMaisTardio([new Date('2027-02-01T00:00:00Z'), null])).toBeNull()
   })
 })
+
+describe('formatos — travas de regressão', () => {
+  it('sem período nenhum, não inventa data', () => {
+    expect(vencimentoMaisTardio([])).toBeNull()
+  })
+
+  it('valor que não é número vira traço, e não "NaN"', () => {
+    expect(formatarValor(Number.NaN, 'BRL')).toBe('—')
+  })
+})

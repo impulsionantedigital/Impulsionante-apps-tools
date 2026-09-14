@@ -61,7 +61,7 @@ export default async function ConfigPage({
   
   const souDonoDoDeploy = await ehDonoDoDeploy()
 
-  const abas = abasDisponiveis({ pessoas: equipe != null, servidor: souDonoDoDeploy, comercial: equipe?.souOwner === true })
+  const abas = abasDisponiveis({ pessoas: equipe != null, servidor: souDonoDoDeploy, comercial: souDonoDoDeploy })
   const aba = resolverAba((await searchParams).aba, abas)
 
   const rComercial = aba === 'comercial' ? await lerComercial() : null

@@ -12,6 +12,18 @@ function ehPublica(pathname: string): boolean {
 }
 
 
+/** Onde quem não é dono de nenhum espaço de trabalho — o comprador — pode entrar. */
+const ROTAS_DO_COMPRADOR = [
+  '/ferramentas', '/trocar-senha', '/recuperar', '/entrar', '/cadastrar', '/convite',
+  '/licenca', '/sem-workspace', '/diagnostico',
+]
+
+export function deveRestringirAoComprador(pathname: string): boolean {
+  if (pathname.startsWith('/api')) return false
+  return !ROTAS_DO_COMPRADOR.some((p) => pathname === p || pathname.startsWith(p + '/'))
+}
+
+
 export function deveRedirecionar(pathname: string, temSessao: boolean): boolean {
   if (temSessao) return false
   if (pathname.startsWith('/api')) return false
@@ -96,6 +108,28 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
     
     for (const [k, v] of resposta.headers) redirecionamento.headers.set(k, v)
     return redirecionamento
+  }
+
+  // 🔴 Esta instalação é só de ferramentas: quem não é dono de nenhum espaço de trabalho é
+  // comprador e só entra nas rotas dele. É o servidor que recusa — esconder o menu não protege
+  // nada, e as server actions das telas de CRM também chegam por aqui. Em dúvida (erro ao
+  // consultar), fecha.
+  if (user && deveRestringirAoComprador(request.nextUrl.pathname)) {
+    const { data: dono, error: erroDono } = await supabase
+      .from('membros')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('papel', 'owner')
+      .limit(1)
+    if (erroDono || !dono?.length) {
+      const destino = request.nextUrl.clone()
+      destino.pathname = '/ferramentas'
+      destino.search = ''
+      const redirecionamento = NextResponse.redirect(destino)
+      for (const cookie of resposta.cookies.getAll()) redirecionamento.cookies.set(cookie)
+      for (const [k, v] of resposta.headers) redirecionamento.headers.set(k, v)
+      return redirecionamento
+    }
   }
 
   

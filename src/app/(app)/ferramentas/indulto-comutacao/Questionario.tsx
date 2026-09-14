@@ -25,15 +25,18 @@ export default function Questionario({
   secoes,
   entrada,
   aoMudar,
+  desabilitado = false,
 }: {
   secoes: Secao[]
   entrada: EntradaDados
   aoMudar: (chave: string, valor: EntradaDados[string]) => void
+  /** Acesso encerrado: o `disabled` do fieldset desliga todos os controles de dentro. */
+  desabilitado?: boolean
 }) {
   return (
     <div className={estilos.questionario}>
       {secoes.map((secao) => (
-        <fieldset key={secao.id} className={estilos.secao}>
+        <fieldset key={secao.id} className={estilos.secao} disabled={desabilitado}>
           <legend className={estilos.tituloSecao}>{secao.titulo}</legend>
           {secao.aviso && <p className={estilos.aviso}>{secao.aviso}</p>}
           {secao.descricao && <p className={estilos.descricao}>{secao.descricao}</p>}

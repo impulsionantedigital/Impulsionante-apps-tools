@@ -48,13 +48,15 @@ export default function Calculadora({
   // Nada sai daqui até o membro salvar.
   const resultado = useMemo(() => motor.calcular(entrada), [motor, entrada])
 
-  const aoMudar = (chave: string, valor: Entrada[string]) =>
+  const aoMudar = (chave: string, valor: Entrada[string]) => {
+    if (somenteLeitura) return
     setEntrada((atual) => ({ ...atual, [chave]: valor }))
+  }
 
   return (
     <div className={estilos.layout}>
       <div className={estilos.coluna}>
-        <Questionario secoes={motor.questionario} entrada={entrada} aoMudar={aoMudar} />
+        <Questionario secoes={motor.questionario} entrada={entrada} aoMudar={aoMudar} desabilitado={somenteLeitura} />
       </div>
       <div className={estilos.coluna}>
         {somenteLeitura ? (

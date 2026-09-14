@@ -9,21 +9,24 @@ vi.mock('@/server/secrets', () => ({ getSecret: mocks.getSecret }))
 vi.mock('@/server/vendas/processar', () => ({ receberCompra: mocks.receberCompra }))
 
 import { POST } from '@/app/api/webhook/[plataforma]/route'
+import { esquecerTokenHotmart } from '@/server/vendas/token-hotmart'
 
 const TOKEN = 'token-da-hotmart'
+const CORPO = JSON.stringify({ id: 'evt-1', event: 'PURCHASE_APPROVED' })
 
-function chamar(opcoes: { plataforma?: string; corpo?: string; token?: string | null } = {}) {
+function chamar(opcoes: { plataforma?: string; corpo?: string; token?: string | null; url?: string } = {}) {
   const headers: Record<string, string> = { 'content-type': 'application/json' }
   if (opcoes.token !== null) headers['x-hotmart-hottok'] = opcoes.token ?? TOKEN
-  const req = new Request('http://localhost/api/webhook/hotmart', {
+  const req = new Request(opcoes.url ?? 'http://localhost/api/webhook/hotmart', {
     method: 'POST',
     headers,
-    body: opcoes.corpo ?? JSON.stringify({ id: 'evt-1', event: 'PURCHASE_APPROVED' }),
+    body: opcoes.corpo ?? CORPO,
   })
   return POST(req, { params: Promise.resolve({ plataforma: opcoes.plataforma ?? 'hotmart' }) })
 }
 
 beforeEach(() => {
+  esquecerTokenHotmart()
   mocks.getSecret.mockReset()
   mocks.receberCompra.mockReset()
   mocks.getSecret.mockResolvedValue(TOKEN)
@@ -44,9 +47,21 @@ describe('POST /api/webhook/[plataforma]', () => {
     expect(mocks.receberCompra).not.toHaveBeenCalled()
   })
 
+  it('token configurado em branco conta como não configurado', async () => {
+    mocks.getSecret.mockResolvedValue('')
+    expect((await chamar({ token: '' })).status).toBe(503)
+    expect(mocks.receberCompra).not.toHaveBeenCalled()
+  })
+
   it('token errado ou ausente: 401, sem processar', async () => {
     expect((await chamar({ token: 'errado' })).status).toBe(401)
     expect((await chamar({ token: null })).status).toBe(401)
+    expect(mocks.receberCompra).not.toHaveBeenCalled()
+  })
+
+  it('token na URL não autentica', async () => {
+    const r = await chamar({ token: null, url: `http://localhost/api/webhook/hotmart?hottok=${TOKEN}` })
+    expect(r.status).toBe(401)
     expect(mocks.receberCompra).not.toHaveBeenCalled()
   })
 
@@ -58,11 +73,7 @@ describe('POST /api/webhook/[plataforma]', () => {
   it('compra válida: processa o payload lido e devolve 200', async () => {
     const r = await chamar()
     expect(r.status).toBe(200)
-    expect(mocks.receberCompra).toHaveBeenCalledWith(
-      'hotmart',
-      { id: 'evt-1', event: 'PURCHASE_APPROVED' },
-      JSON.stringify({ id: 'evt-1', event: 'PURCHASE_APPROVED' }),
-    )
+    expect(mocks.receberCompra).toHaveBeenCalledWith('hotmart', { id: 'evt-1', event: 'PURCHASE_APPROVED' }, CORPO)
   })
 
   it('JSON inválido ainda é auditado: processa com payload nulo e o corpo bruto', async () => {
@@ -81,5 +92,18 @@ describe('POST /api/webhook/[plataforma]', () => {
     const r = await chamar()
     expect(r.status).toBe(500)
     expect(await r.text()).toBe('')
+  })
+
+  it('o token é lido do cofre no máximo uma vez por minuto', async () => {
+    await chamar()
+    await chamar({ token: 'errado' })
+    await chamar()
+    expect(mocks.getSecret).toHaveBeenCalledTimes(1)
+  })
+
+  // Por último: gasta o balde do limitador, que é do módulo.
+  it('chamadas sem token não gastam o limitador das legítimas', async () => {
+    for (let i = 0; i < 130; i++) expect((await chamar({ token: 'errado' })).status).toBe(401)
+    expect((await chamar()).status).toBe(200)
   })
 })

@@ -788,3 +788,24 @@ Adotadas depois de analisar o que outro agente escreveu sobre este tema. O resto
     idempotência é garantida pela chave única da transação. Risco residual aceite: duas compras
     do mesmo produto, do mesmo membro, processadas no mesmo instante podem sobrepor dias.
 16. **Cancelamento revoga só a venda indicada**, sem recalcular os períodos de vendas posteriores.
+
+### 16.2 Correções da revisão do bloco B
+
+17. **Só o dono do servidor passa por cima do controle de acesso** — nunca o owner de um espaço de
+    trabalho. Criar espaço de trabalho era self-service, e um comprador viraria owner do seu.
+18. **Esta instalação é só de ferramentas** (decisão do usuário em 2026-09-13). Quem não é dono de
+    nenhum espaço de trabalho é comprador:
+    - o `proxy.ts` o manda para `/ferramentas` em qualquer rota fora das dele, e o menu mostra só
+      Ferramentas;
+    - `membros_sel` passa a mostrar só a própria linha (o owner vê o workspace) — migration `0065`;
+    - `criar_workspace` deixa de estar liberado a `authenticated` (`0065`), e a ação de
+      `/sem-workspace` recusa quem já tem espaço de trabalho.
+19. **A aba Comercial é só do dono do servidor.** Fecha a captura de um código de oferta por outro
+    espaço de trabalho.
+20. **O documento só associa a compra a um membro se o e-mail da conta também bater** (§4.6). Senão,
+    segue-se pelo e-mail, sem gravar o documento, com observação para o owner.
+21. **Falha ao enfileirar os e-mails é erro** (500): a Hotmart reenvia e o reenvio completa, em vez
+    de a venda ficar com e-mails pendentes em silêncio.
+22. **Com acesso encerrado, o questionário fica desativado**, e não só o botão de salvar. O motor
+    ainda corre no navegador: só a gravação é barrada de verdade.
+23. **O webhook confere o token antes de ler o corpo**, e o lê do cofre no máximo uma vez por minuto.
