@@ -16,8 +16,9 @@ export type CalculoSalvo = {
   atualizado_em: string
 }
 
-/** A vista de lista: sem `entrada`/`resultado` — a lista não usa nenhum dos dois,
- * e cada um pode chegar a ~1 MB de jsonb. */
+/** A vista de lista: sem o `entrada`/`resultado` INTEIROS — cada um pode chegar a ~1 MB de
+ * jsonb. `sentenciado` e `execucao` são as duas únicas chaves extraídas de `entrada`, via `->>`
+ * do PostgREST: isso lê só esses dois campos de texto, sem trazer o jsonb completo. */
 export type CalculoResumo = {
   id: string
   decreto_id: string
@@ -25,10 +26,13 @@ export type CalculoResumo = {
   titulo: string
   criado_em: string
   atualizado_em: string
+  sentenciado: string | null
+  execucao: string | null
 }
 
 const COLUNAS = 'id, decreto_id, motor_versao, titulo, entrada, resultado, criado_em, atualizado_em'
-const COLUNAS_RESUMO = 'id, decreto_id, motor_versao, titulo, criado_em, atualizado_em'
+const COLUNAS_RESUMO =
+  'id, decreto_id, motor_versao, titulo, criado_em, atualizado_em, sentenciado:entrada->>sentenciado, execucao:entrada->>execucao'
 
 const ERRO_LEITURA = 'Não consegui carregar os seus cálculos agora. Tente de novo em alguns instantes.'
 
