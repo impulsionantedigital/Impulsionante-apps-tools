@@ -34,7 +34,7 @@ from emails_fila order by criado_em desc limit 5;
 ```
 
 
-## ▶ RETOMAR AQUI — Plano 2, bloco A (escrito, revisto e corrigido)
+## ▶ RETOMAR AQUI — Plano 2, bloco A PRONTO; bloco B aguarda ok do usuário
 
 Aprovado pelo usuário em 2026-09-13: manter o spec e o plano do Claude, aproveitar só o que faz
 sentido do trabalho do Codex (arquivado fora do repositório, em `scratchpad/codex-arquivo`).
@@ -59,11 +59,15 @@ Também corrigidos: o desfazer da emissão restaura a senha anterior; limite do 
 busca por e-mail determinística; a fila apaga o HTML também quando desiste; e uma guarda em teste
 impede que uma migration futura volte a expor o hash de `membros` ao navegador.
 
+**Re-revisão concluída em 2026-09-13:** todos os achados endereçados, nenhuma quebra nova. Conferido
+contra o código real das dependências: `getClaims()` verifica a assinatura antes de devolver o `amr`;
+o `amr` sobrevive à renovação do token; `signOut` global revoga também a sessão atual; `after()`
+executa mesmo com `redirect()` depois; sem loop de redirecionamento.
+
 **Falta, nesta ordem:**
-1. Re-revisão escopada destas correções.
-2. **Verificação manual num Supabase real** (roteiro abaixo). Exige a `0064` aplicada — ou seja,
+1. **Verificação manual num Supabase real** (roteiro abaixo). Exige a `0064` aplicada — ou seja,
    publicar. Decidir com o usuário quando, porque o `main` vai direto para produção.
-3. **Pedir ok ao usuário antes do bloco B** (webhook, processamento, gate, tela comercial, docs).
+2. **Pedir ok ao usuário antes do bloco B** (webhook, processamento, gate, tela comercial, docs).
 
 **Riscos aceites e anotados:** `x-forwarded-for` só é confiável se o proxy do EasyPanel o
 sobrescreve (os limites por conta não dependem disso); `generateLink` substitui um link mágico
