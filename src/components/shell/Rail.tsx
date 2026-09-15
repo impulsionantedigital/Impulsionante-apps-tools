@@ -74,6 +74,25 @@ export default async function Rail({ user, wsAtivo, workspaces, avisoAtualizacao
     await Promise.all(PRODUTOS.map(async (produto) => ({ produto, estado: await estadoDoProduto(produto.id) })))
   ).filter((p) => p.estado !== 'nunca')
 
+  // Group products by familia in the specified order
+  const familiaOrder = ['indulto-comutacao', 'detracao'] as const
+  const familiaLabels: Record<string, string> = {
+    'indulto-comutacao': 'Indulto e Comutação',
+    'detracao': 'Detração',
+  }
+
+  const produtosPorFamilia = new Map<string, typeof produtosNoMenu>()
+  for (const item of produtosNoMenu) {
+    const familia = item.produto.familia
+    const lista = produtosPorFamilia.get(familia) ?? []
+    lista.push(item)
+    produtosPorFamilia.set(familia, lista)
+  }
+
+  const produtosAgrupados = familiaOrder
+    .filter((familia) => produtosPorFamilia.has(familia))
+    .map((familia) => [familia, produtosPorFamilia.get(familia)!] as const)
+
   return (
     <aside className={estilos.rail}>
       <div className={estilos.marca}>
@@ -124,20 +143,24 @@ export default async function Rail({ user, wsAtivo, workspaces, avisoAtualizacao
 
         {produtosNoMenu.length > 0 && (
         <>
-        <div className={estilos.sec}>Ferramentas</div>
+        <div className={estilos.sec}>Calculadoras</div>
         {}
-        <div className={estilos.navGrupo}>
-          <Scale size={16} strokeWidth={2} />
-          <span>Indulto e Comutação</span>
-        </div>
-        {produtosNoMenu.map(({ produto }) => (
-          <ItemNav
-            key={produto.id}
-            href={caminhoDoProduto(produto.slug)}
-            rotulo={produto.menuTitulo}
-            descricao={produto.menuDescricao}
-            indentado
-          />
+        {produtosAgrupados.map(([familia, produtos]) => (
+          <Fragment key={familia}>
+            <div className={estilos.navGrupo}>
+              <Scale size={16} strokeWidth={2} />
+              <span>{familiaLabels[familia]}</span>
+            </div>
+            {produtos.map(({ produto }) => (
+              <ItemNav
+                key={produto.id}
+                href={caminhoDoProduto(produto.slug)}
+                rotulo={produto.menuTitulo}
+                descricao={produto.menuDescricao}
+                indentado
+              />
+            ))}
+          </Fragment>
         ))}
         </>
         )}
