@@ -1,5 +1,6 @@
 'use client'
 import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import {
   DndContext, PointerSensor, KeyboardSensor, useSensor, useSensors,
   closestCenter, type DragEndEvent,
@@ -32,7 +33,12 @@ function traduz(e: string) { return ERRO_PT[e] ?? 'Não foi possível concluir. 
 type Resposta = { ok: true } | { ok: true; id: string } | { erro: string }
 
 export default function GestorCursos({ cursos: cursosIniciais }: { cursos: CursoResumo[] }) {
+  const router = useRouter()
   const [cursos, setCursos] = useState(cursosIniciais)
+  // Sincroniza com o servidor sempre que a página pai reexecuta (router.refresh() depois de
+  // toda mutação) — mesma técnica de `EditorEtapas.tsx` (comparação de referência da prop).
+  const [cursosDoServidor, setCursosDoServidor] = useState(cursosIniciais)
+  if (cursosDoServidor !== cursosIniciais) { setCursosDoServidor(cursosIniciais); setCursos(cursosIniciais) }
   const [novoTitulo, setNovoTitulo] = useState('')
   const [novaCategoria, setNovaCategoria] = useState<CategoriaCurso>('curso')
   const [novoProduto, setNovoProduto] = useState('')
@@ -44,7 +50,7 @@ export default function GestorCursos({ cursos: cursosIniciais }: { cursos: Curso
     iniciar(async () => {
       const r = await fn()
       if ('erro' in r) setErro(traduz(r.erro))
-      else aoSucesso?.()
+      else { aoSucesso?.(); router.refresh() }
     })
   }
 
@@ -64,19 +70,18 @@ export default function GestorCursos({ cursos: cursosIniciais }: { cursos: Curso
     setCursos(reordenado)
     const r = await reordenarCursos({ ordemIds: reordenado.map((c) => c.id) })
     if ('erro' in r) { setCursos(antigo); setErro(traduz(r.erro)) }
+    else router.refresh()
   }
 
   function adicionar() {
     if (!novoTitulo.trim() || !novoProduto.trim()) return
+    // 🔴 Sem inserção otimista com id fabricado: o id real só existe depois da resposta do
+    // servidor. `router.refresh()` (dentro de `roda`) traz a lista com o id de verdade — um id
+    // de `crypto.randomUUID()` aqui não bateria com nenhuma linha do banco, e arrastar/publicar/
+    // excluir esse item antes do refresh terminar viraria um no-op silencioso no servidor.
     roda(
       () => criarCurso({ titulo: novoTitulo, categoria: novaCategoria, produtoId: novoProduto }),
-      () => {
-        setCursos((c) => [...c, {
-          id: crypto.randomUUID(), produto_id: novoProduto, categoria: novaCategoria,
-          titulo: novoTitulo, publicado: false, ordem: c.length,
-        }])
-        setNovoTitulo(''); setNovoProduto('')
-      },
+      () => { setNovoTitulo(''); setNovoProduto('') },
     )
   }
 

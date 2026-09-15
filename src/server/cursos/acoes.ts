@@ -21,18 +21,30 @@ export type CursoDetalhe = CursoResumo & { descricao: string | null; capa_url: s
  * action passa por cima de layouts (mesmo problema documentado em `src/server/crm/acoes.ts`).
  * Por isso toda ação aqui resolve o workspace ATIVO e confere que quem chama é dono DELE — não
  * "dono de algum workspace", que deixaria o owner de um workspace mexer no de outro.
+ *
+ * 🔴 Devolve só `ws`, nunca o `cliente` da sessão: a RLS de `cursos`/`modulos`/`aulas` (migration
+ * 0066) só libera `authenticated` para conteúdo PUBLICADO com compra ativa — o dono gerenciando
+ * rascunhos não se enxerga por essa policy. Toda leitura/escrita de conteúdo aqui é por
+ * `admin()`, no mesmo padrão de `lerComercial()` em `acoes-comercial.ts` para `ofertas`/`vendas`
+ * (mesma forma de RLS: só `service_role`). Não reintroduza `cliente` para consultar estas
+ * tabelas — é exatamente o bug que a Task 3 corrigiu na revisão.
  */
-async function sessaoAdminCursos() {
+async function sessaoAdminCursos(): Promise<{ ws: string | null }> {
   const cliente = await criarClienteServidor()
   const ws = await resolverWorkspaceAtivo({ cliente })
-  if (!ws || !(await ehOwnerDoWorkspace(ws))) return { cliente, ws: null as string | null }
-  return { cliente, ws }
+  if (!ws || !(await ehOwnerDoWorkspace(ws))) return { ws: null }
+  return { ws }
 }
 
 export async function listarCursos(): Promise<CursoResumo[]> {
-  const { cliente, ws } = await sessaoAdminCursos()
+  const { ws } = await sessaoAdminCursos()
   if (!ws) return []
-  const { data, error } = await cliente
+  // 🔴 admin(), não `cliente`: a RLS de `cursos` só libera `authenticated` para conteúdo
+  // publicado com compra ativa (política `cursos_membro_select`, migration 0066) — não existe
+  // policy de leitura ampla para o dono gerenciar rascunhos. Mesmo padrão de `lerComercial()`
+  // em `src/app/(app)/config/acoes-comercial.ts` para `ofertas`/`vendas`, que têm a mesma forma
+  // de RLS (só service_role).
+  const { data, error } = await admin()
     .from('cursos')
     .select('id, produto_id, categoria, titulo, publicado, ordem')
     .eq('workspace_id', ws)
@@ -50,10 +62,12 @@ export async function criarCurso({ titulo, categoria, produtoId }: {
   if (!tituloLimpo) return { erro: 'titulo_vazio' }
   if (!produtoLimpo) return { erro: 'produto_vazio' }
   if (!ehCategoriaConhecida(categoria)) return { erro: 'categoria_invalida' }
-  const { cliente, ws } = await sessaoAdminCursos()
+  const { ws } = await sessaoAdminCursos()
   if (!ws) return { erro: 'sem_workspace' }
   try {
-    const { data: existentes } = await cliente.from('cursos').select('ordem').eq('workspace_id', ws)
+    // admin(), pelo mesmo motivo de listarCursos(): `cliente` não enxerga rascunhos.
+    const { data: existentes, error: erroOrdem } = await admin().from('cursos').select('ordem').eq('workspace_id', ws)
+    if (erroOrdem) throw erroOrdem
     const ordem = ((existentes as { ordem: number }[] | null) ?? []).reduce((m, l) => Math.max(m, l.ordem), -1) + 1
     const { data, error } = await admin()
       .from('cursos')
@@ -112,10 +126,12 @@ export async function alternarPublicadoCurso({ id, publicado }: { id: string; pu
 
 export async function excluirCurso({ id }: { id: string }): Promise<Res> {
   await exigirEngineLiberado()
-  const { cliente, ws } = await sessaoAdminCursos()
+  const { ws } = await sessaoAdminCursos()
   if (!ws) return { erro: 'sem_workspace' }
   try {
-    const { count } = await cliente
+    // admin(), pelo mesmo motivo de listarCursos(): `cliente` sob RLS não vê módulos de
+    // cursos não publicados, e esta contagem decide se a exclusão é bloqueada.
+    const { count } = await admin()
       .from('modulos')
       .select('id', { count: 'exact', head: true })
       .eq('workspace_id', ws)
