@@ -560,7 +560,7 @@ EOF
   - `alternarPublicadoCurso(input: { id: string; publicado: boolean }): Promise<Res>` — mutação estreita (só a coluna `publicado`), para a lista poder alternar sem carregar `descricao`/`capa_url` e sem risco de zerá-los por engano.
   - `excluirCurso(input: { id: string }): Promise<Res>`
   - `reordenarCursos(input: { ordemIds: string[] }): Promise<Res>`
-  - An internal (not exported) `sessaoAdminCursos()` helper, called directly (same file, no import needed) by the módulo actions Task 4 appends and the aula actions Task 5 appends. Task 6 touches a different file (`acoes-comercial.ts`) and uses its own existing `workspaceDoOwner()` instead.
+  - An internal (not exported) `sessaoAdminCursos(): Promise<{ ws: string | null }>` helper, called directly (same file, no import needed) by the módulo actions Task 4 appends and the aula actions Task 5 appends. It returns only `ws` — every content query in this file goes through `admin()`, never the request-scoped `cliente`, because `cursos`/`modulos`/`aulas` have no broad owner-facing `authenticated` read policy (see the comment on the function itself). Task 6 touches a different file (`acoes-comercial.ts`) and uses its own existing `workspaceDoOwner()` instead.
 
 - [ ] **Step 1: Write `src/server/cursos/acoes.ts`**
 
@@ -588,18 +588,30 @@ export type CursoDetalhe = CursoResumo & { descricao: string | null; capa_url: s
  * action passa por cima de layouts (mesmo problema documentado em `src/server/crm/acoes.ts`).
  * Por isso toda ação aqui resolve o workspace ATIVO e confere que quem chama é dono DELE — não
  * "dono de algum workspace", que deixaria o owner de um workspace mexer no de outro.
+ *
+ * 🔴 Devolve só `ws`, nunca o `cliente` da sessão: a RLS de `cursos`/`modulos`/`aulas` (migration
+ * 0066) só libera `authenticated` para conteúdo PUBLICADO com compra ativa — o dono gerenciando
+ * rascunhos não se enxerga por essa policy. Toda leitura/escrita de conteúdo aqui é por
+ * `admin()`, no mesmo padrão de `lerComercial()` em `acoes-comercial.ts` para `ofertas`/`vendas`
+ * (mesma forma de RLS: só `service_role`). Não reintroduza `cliente` para consultar estas
+ * tabelas — é exatamente o bug que a Task 3 corrigiu na revisão.
  */
-async function sessaoAdminCursos() {
+async function sessaoAdminCursos(): Promise<{ ws: string | null }> {
   const cliente = await criarClienteServidor()
   const ws = await resolverWorkspaceAtivo({ cliente })
-  if (!ws || !(await ehOwnerDoWorkspace(ws))) return { cliente, ws: null as string | null }
-  return { cliente, ws }
+  if (!ws || !(await ehOwnerDoWorkspace(ws))) return { ws: null }
+  return { ws }
 }
 
 export async function listarCursos(): Promise<CursoResumo[]> {
-  const { cliente, ws } = await sessaoAdminCursos()
+  const { ws } = await sessaoAdminCursos()
   if (!ws) return []
-  const { data, error } = await cliente
+  // 🔴 admin(), não `cliente`: a RLS de `cursos` só libera `authenticated` para conteúdo
+  // publicado com compra ativa (política `cursos_membro_select`, migration 0066) — não existe
+  // policy de leitura ampla para o dono gerenciar rascunhos. Mesmo padrão de `lerComercial()`
+  // em `src/app/(app)/config/acoes-comercial.ts` para `ofertas`/`vendas`, que têm a mesma forma
+  // de RLS (só service_role).
+  const { data, error } = await admin()
     .from('cursos')
     .select('id, produto_id, categoria, titulo, publicado, ordem')
     .eq('workspace_id', ws)
@@ -617,10 +629,12 @@ export async function criarCurso({ titulo, categoria, produtoId }: {
   if (!tituloLimpo) return { erro: 'titulo_vazio' }
   if (!produtoLimpo) return { erro: 'produto_vazio' }
   if (!ehCategoriaConhecida(categoria)) return { erro: 'categoria_invalida' }
-  const { cliente, ws } = await sessaoAdminCursos()
+  const { ws } = await sessaoAdminCursos()
   if (!ws) return { erro: 'sem_workspace' }
   try {
-    const { data: existentes } = await cliente.from('cursos').select('ordem').eq('workspace_id', ws)
+    // admin(), pelo mesmo motivo de listarCursos(): `cliente` não enxerga rascunhos.
+    const { data: existentes, error: erroOrdem } = await admin().from('cursos').select('ordem').eq('workspace_id', ws)
+    if (erroOrdem) throw erroOrdem
     const ordem = ((existentes as { ordem: number }[] | null) ?? []).reduce((m, l) => Math.max(m, l.ordem), -1) + 1
     const { data, error } = await admin()
       .from('cursos')
@@ -679,10 +693,12 @@ export async function alternarPublicadoCurso({ id, publicado }: { id: string; pu
 
 export async function excluirCurso({ id }: { id: string }): Promise<Res> {
   await exigirEngineLiberado()
-  const { cliente, ws } = await sessaoAdminCursos()
+  const { ws } = await sessaoAdminCursos()
   if (!ws) return { erro: 'sem_workspace' }
   try {
-    const { count } = await cliente
+    // admin(), pelo mesmo motivo de listarCursos(): `cliente` sob RLS não vê módulos de
+    // cursos não publicados, e esta contagem decide se a exclusão é bloqueada.
+    const { count } = await admin()
       .from('modulos')
       .select('id', { count: 'exact', head: true })
       .eq('workspace_id', ws)
@@ -897,6 +913,7 @@ export default async function CursosPage() {
 ```tsx
 'use client'
 import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import {
   DndContext, PointerSensor, KeyboardSensor, useSensor, useSensors,
   closestCenter, type DragEndEvent,
@@ -929,7 +946,12 @@ function traduz(e: string) { return ERRO_PT[e] ?? 'Não foi possível concluir. 
 type Resposta = { ok: true } | { ok: true; id: string } | { erro: string }
 
 export default function GestorCursos({ cursos: cursosIniciais }: { cursos: CursoResumo[] }) {
+  const router = useRouter()
   const [cursos, setCursos] = useState(cursosIniciais)
+  // Sincroniza com o servidor sempre que a página pai reexecuta (router.refresh() depois de
+  // toda mutação) — mesma técnica de `EditorEtapas.tsx` (comparação de referência da prop).
+  const [cursosDoServidor, setCursosDoServidor] = useState(cursosIniciais)
+  if (cursosDoServidor !== cursosIniciais) { setCursosDoServidor(cursosIniciais); setCursos(cursosIniciais) }
   const [novoTitulo, setNovoTitulo] = useState('')
   const [novaCategoria, setNovaCategoria] = useState<CategoriaCurso>('curso')
   const [novoProduto, setNovoProduto] = useState('')
@@ -941,7 +963,7 @@ export default function GestorCursos({ cursos: cursosIniciais }: { cursos: Curso
     iniciar(async () => {
       const r = await fn()
       if ('erro' in r) setErro(traduz(r.erro))
-      else aoSucesso?.()
+      else { aoSucesso?.(); router.refresh() }
     })
   }
 
@@ -961,19 +983,18 @@ export default function GestorCursos({ cursos: cursosIniciais }: { cursos: Curso
     setCursos(reordenado)
     const r = await reordenarCursos({ ordemIds: reordenado.map((c) => c.id) })
     if ('erro' in r) { setCursos(antigo); setErro(traduz(r.erro)) }
+    else router.refresh()
   }
 
   function adicionar() {
     if (!novoTitulo.trim() || !novoProduto.trim()) return
+    // 🔴 Sem inserção otimista com id fabricado: o id real só existe depois da resposta do
+    // servidor. `router.refresh()` (dentro de `roda`) traz a lista com o id de verdade — um id
+    // de `crypto.randomUUID()` aqui não bateria com nenhuma linha do banco, e arrastar/publicar/
+    // excluir esse item antes do refresh terminar viraria um no-op silencioso no servidor.
     roda(
       () => criarCurso({ titulo: novoTitulo, categoria: novaCategoria, produtoId: novoProduto }),
-      () => {
-        setCursos((c) => [...c, {
-          id: crypto.randomUUID(), produto_id: novoProduto, categoria: novaCategoria,
-          titulo: novoTitulo, publicado: false, ordem: c.length,
-        }])
-        setNovoTitulo(''); setNovoProduto('')
-      },
+      () => { setNovoTitulo(''); setNovoProduto('') },
     )
   }
 
@@ -1165,9 +1186,10 @@ Add these exports at the end of the file (after `reordenarCursos`):
 export type ModuloResumo = { id: string; titulo: string; ordem: number; total_aulas: number }
 
 export async function carregarCursoComModulos(cursoId: string): Promise<(CursoDetalhe & { modulos: ModuloResumo[] }) | null> {
-  const { cliente, ws } = await sessaoAdminCursos()
+  const { ws } = await sessaoAdminCursos()
   if (!ws) return null
-  const { data: c, error } = await cliente
+  // admin() em toda leitura de conteúdo: ver o comentário de sessaoAdminCursos().
+  const { data: c, error } = await admin()
     .from('cursos')
     .select('id, produto_id, categoria, titulo, publicado, ordem, descricao, capa_url')
     .eq('workspace_id', ws)
@@ -1176,7 +1198,7 @@ export async function carregarCursoComModulos(cursoId: string): Promise<(CursoDe
   if (error) throw error
   if (!c) return null
 
-  const { data: mods } = await cliente
+  const { data: mods } = await admin()
     .from('modulos')
     .select('id, titulo, ordem')
     .eq('workspace_id', ws)
@@ -1187,7 +1209,7 @@ export async function carregarCursoComModulos(cursoId: string): Promise<(CursoDe
   const idsModulo = modulos.map((m) => m.id)
   const cont = new Map<string, number>()
   if (idsModulo.length > 0) {
-    const { data: aulas } = await cliente.from('aulas').select('modulo_id').eq('workspace_id', ws).in('modulo_id', idsModulo)
+    const { data: aulas } = await admin().from('aulas').select('modulo_id').eq('workspace_id', ws).in('modulo_id', idsModulo)
     for (const a of (aulas as { modulo_id: string }[] | null) ?? []) cont.set(a.modulo_id, (cont.get(a.modulo_id) ?? 0) + 1)
   }
 
@@ -1198,12 +1220,13 @@ export async function criarModulo({ cursoId, titulo }: { cursoId: string; titulo
   await exigirEngineLiberado()
   const limpo = titulo.trim()
   if (!limpo) return { erro: 'titulo_vazio' }
-  const { cliente, ws } = await sessaoAdminCursos()
+  const { ws } = await sessaoAdminCursos()
   if (!ws) return { erro: 'sem_workspace' }
   try {
-    const { data: curso } = await cliente.from('cursos').select('id').eq('workspace_id', ws).eq('id', cursoId).maybeSingle()
+    const { data: curso } = await admin().from('cursos').select('id').eq('workspace_id', ws).eq('id', cursoId).maybeSingle()
     if (!curso) return { erro: 'curso_nao_encontrado' }
-    const { data: existentes } = await cliente.from('modulos').select('ordem').eq('workspace_id', ws).eq('curso_id', cursoId)
+    const { data: existentes, error: erroOrdem } = await admin().from('modulos').select('ordem').eq('workspace_id', ws).eq('curso_id', cursoId)
+    if (erroOrdem) throw erroOrdem
     const ordem = ((existentes as { ordem: number }[] | null) ?? []).reduce((m, l) => Math.max(m, l.ordem), -1) + 1
     const { data, error } = await admin()
       .from('modulos')
@@ -1236,10 +1259,10 @@ export async function renomearModulo({ id, titulo }: { id: string; titulo: strin
 
 export async function excluirModulo({ id }: { id: string }): Promise<Res> {
   await exigirEngineLiberado()
-  const { cliente, ws } = await sessaoAdminCursos()
+  const { ws } = await sessaoAdminCursos()
   if (!ws) return { erro: 'sem_workspace' }
   try {
-    const { count } = await cliente.from('aulas').select('id', { count: 'exact', head: true }).eq('workspace_id', ws).eq('modulo_id', id)
+    const { count } = await admin().from('aulas').select('id', { count: 'exact', head: true }).eq('workspace_id', ws).eq('modulo_id', id)
     if ((count ?? 0) > 0) return { erro: 'em_uso' }
     const { error } = await admin().from('modulos').delete().eq('workspace_id', ws).eq('id', id)
     if (error) throw error
@@ -1312,6 +1335,7 @@ export default async function CursoPage({ params }: { params: Promise<{ cursoId:
 ```tsx
 'use client'
 import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import { salvarCurso, type CursoDetalhe } from '@/server/cursos/acoes'
 import { CATEGORIAS_CURSO, type CategoriaCurso } from '@/lib/cursos/categorias'
 import Botao from '@/components/ui/Botao'
@@ -1328,6 +1352,7 @@ const ERRO_PT: Record<string, string> = {
 function traduz(e: string) { return ERRO_PT[e] ?? 'Não foi possível concluir. Tente novamente.' }
 
 export default function EditorCurso({ curso }: { curso: CursoDetalhe }) {
+  const router = useRouter()
   const [titulo, setTitulo] = useState(curso.titulo)
   const [categoria, setCategoria] = useState<CategoriaCurso>(curso.categoria as CategoriaCurso)
   const [produtoId, setProdutoId] = useState(curso.produto_id)
@@ -1346,7 +1371,7 @@ export default function EditorCurso({ curso }: { curso: CursoDetalhe }) {
         descricao: descricao.trim() || null, capaUrl: capaUrl.trim() || null, publicado: curso.publicado,
       })
       if ('erro' in r) setErro(traduz(r.erro))
-      else setSucesso(true)
+      else { setSucesso(true); router.refresh() }
     })
   }
 
@@ -1399,6 +1424,7 @@ export default function EditorCurso({ curso }: { curso: CursoDetalhe }) {
 ```tsx
 'use client'
 import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import {
   DndContext, PointerSensor, KeyboardSensor, useSensor, useSensors,
   closestCenter, type DragEndEvent,
@@ -1430,7 +1456,10 @@ type Resposta = { ok: true } | { ok: true; id: string } | { erro: string }
 type CursoComModulos = CursoDetalhe & { modulos: ModuloResumo[] }
 
 export default function EditorModulos({ curso }: { curso: CursoComModulos }) {
+  const router = useRouter()
   const [modulos, setModulos] = useState(curso.modulos)
+  const [modulosDoServidor, setModulosDoServidor] = useState(curso.modulos)
+  if (modulosDoServidor !== curso.modulos) { setModulosDoServidor(curso.modulos); setModulos(curso.modulos) }
   const [novo, setNovo] = useState('')
   const [erro, setErro] = useState<string | null>(null)
   const [pendente, iniciar] = useTransition()
@@ -1442,7 +1471,7 @@ export default function EditorModulos({ curso }: { curso: CursoComModulos }) {
     iniciar(async () => {
       const r = await fn()
       if ('erro' in r) setErro(traduz(r.erro))
-      else aoSucesso?.()
+      else { aoSucesso?.(); router.refresh() }
     })
   }
 
@@ -1462,14 +1491,14 @@ export default function EditorModulos({ curso }: { curso: CursoComModulos }) {
     setModulos(reordenado)
     const r = await reordenarModulos({ cursoId: curso.id, ordemIds: reordenado.map((m) => m.id) })
     if ('erro' in r) { setModulos(antigo); setErro(traduz(r.erro)) }
+    else router.refresh()
   }
 
   function adicionar() {
     if (!novo.trim()) return
-    roda(
-      () => criarModulo({ cursoId: curso.id, titulo: novo }),
-      () => { setModulos((ms) => [...ms, { id: crypto.randomUUID(), titulo: novo, ordem: ms.length, total_aulas: 0 }]); setNovo('') },
-    )
+    // Sem id fabricado (mesmo motivo do GestorCursos.tsx da Task 3): router.refresh() dentro de
+    // roda() traz a lista com o id real assim que o servidor responde.
+    roda(() => criarModulo({ cursoId: curso.id, titulo: novo }), () => setNovo(''))
   }
 
   function salvarNome(id: string) {
@@ -1637,9 +1666,10 @@ export type AulaItem = {
 export type ModuloComAulas = { id: string; curso_id: string; curso_titulo: string; titulo: string; aulas: AulaItem[] }
 
 export async function carregarModuloComAulas(moduloId: string): Promise<ModuloComAulas | null> {
-  const { cliente, ws } = await sessaoAdminCursos()
+  const { ws } = await sessaoAdminCursos()
   if (!ws) return null
-  const { data: mo, error } = await cliente
+  // admin() em toda leitura de conteúdo: ver o comentário de sessaoAdminCursos().
+  const { data: mo, error } = await admin()
     .from('modulos')
     .select('id, curso_id, titulo, cursos(titulo)')
     .eq('workspace_id', ws)
@@ -1651,7 +1681,7 @@ export async function carregarModuloComAulas(moduloId: string): Promise<ModuloCo
   const linha = mo as { id: string; curso_id: string; titulo: string; cursos: { titulo: string } | { titulo: string }[] | null }
   const cursoTitulo = Array.isArray(linha.cursos) ? (linha.cursos[0]?.titulo ?? '') : (linha.cursos?.titulo ?? '')
 
-  const { data: aulas } = await cliente
+  const { data: aulas } = await admin()
     .from('aulas')
     .select('id, titulo, descricao, video_youtube_id, publicado, ordem')
     .eq('workspace_id', ws)
@@ -1668,12 +1698,13 @@ export async function criarAula({ moduloId, titulo }: { moduloId: string; titulo
   await exigirEngineLiberado()
   const limpo = titulo.trim()
   if (!limpo) return { erro: 'titulo_vazio' }
-  const { cliente, ws } = await sessaoAdminCursos()
+  const { ws } = await sessaoAdminCursos()
   if (!ws) return { erro: 'sem_workspace' }
   try {
-    const { data: modulo } = await cliente.from('modulos').select('id').eq('workspace_id', ws).eq('id', moduloId).maybeSingle()
+    const { data: modulo } = await admin().from('modulos').select('id').eq('workspace_id', ws).eq('id', moduloId).maybeSingle()
     if (!modulo) return { erro: 'modulo_nao_encontrado' }
-    const { data: existentes } = await cliente.from('aulas').select('ordem').eq('workspace_id', ws).eq('modulo_id', moduloId)
+    const { data: existentes, error: erroOrdem } = await admin().from('aulas').select('ordem').eq('workspace_id', ws).eq('modulo_id', moduloId)
+    if (erroOrdem) throw erroOrdem
     const ordem = ((existentes as { ordem: number }[] | null) ?? []).reduce((m, l) => Math.max(m, l.ordem), -1) + 1
     const { data, error } = await admin()
       .from('aulas')
@@ -1783,6 +1814,7 @@ export default async function ModuloPage({ params }: { params: Promise<{ cursoId
 ```tsx
 'use client'
 import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import {
   DndContext, PointerSensor, KeyboardSensor, useSensor, useSensors,
   closestCenter, type DragEndEvent,
@@ -1811,7 +1843,10 @@ function traduz(e: string) { return ERRO_PT[e] ?? 'Não foi possível concluir. 
 type Resposta = { ok: true } | { ok: true; id: string } | { erro: string }
 
 export default function EditorAulas({ modulo }: { modulo: ModuloComAulas }) {
+  const router = useRouter()
   const [aulas, setAulas] = useState(modulo.aulas)
+  const [aulasDoServidor, setAulasDoServidor] = useState(modulo.aulas)
+  if (aulasDoServidor !== modulo.aulas) { setAulasDoServidor(modulo.aulas); setAulas(modulo.aulas) }
   const [novo, setNovo] = useState('')
   const [erro, setErro] = useState<string | null>(null)
   const [pendente, iniciar] = useTransition()
@@ -1822,7 +1857,7 @@ export default function EditorAulas({ modulo }: { modulo: ModuloComAulas }) {
     iniciar(async () => {
       const r = await fn()
       if ('erro' in r) setErro(traduz(r.erro))
-      else aoSucesso?.()
+      else { aoSucesso?.(); router.refresh() }
     })
   }
 
@@ -1842,20 +1877,14 @@ export default function EditorAulas({ modulo }: { modulo: ModuloComAulas }) {
     setAulas(reordenado)
     const r = await reordenarAulas({ moduloId: modulo.id, ordemIds: reordenado.map((a) => a.id) })
     if ('erro' in r) { setAulas(antigo); setErro(traduz(r.erro)) }
+    else router.refresh()
   }
 
   function adicionar() {
     if (!novo.trim()) return
-    roda(
-      () => criarAula({ moduloId: modulo.id, titulo: novo }),
-      () => {
-        setAulas((as) => [...as, {
-          id: crypto.randomUUID(), titulo: novo, descricao: null, video_youtube_id: null,
-          publicado: false, ordem: as.length,
-        }])
-        setNovo('')
-      },
-    )
+    // Sem id fabricado (mesmo motivo do GestorCursos.tsx da Task 3): router.refresh() dentro de
+    // roda() traz a lista com o id real assim que o servidor responde.
+    roda(() => criarAula({ moduloId: modulo.id, titulo: novo }), () => setNovo(''))
   }
 
   function excluir(id: string) {
