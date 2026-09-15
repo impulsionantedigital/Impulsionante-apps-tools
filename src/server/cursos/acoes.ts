@@ -268,3 +268,115 @@ export async function reordenarModulos({ cursoId, ordemIds }: { cursoId: string;
     return { erro: 'falha_reordenar' }
   }
 }
+
+export type AulaItem = {
+  id: string; titulo: string; descricao: string | null; video_youtube_id: string | null; publicado: boolean; ordem: number
+}
+export type ModuloComAulas = { id: string; curso_id: string; curso_titulo: string; titulo: string; aulas: AulaItem[] }
+
+export async function carregarModuloComAulas(moduloId: string): Promise<ModuloComAulas | null> {
+  const { ws } = await sessaoAdminCursos()
+  if (!ws) return null
+  // admin() em toda leitura de conteúdo: ver o comentário de sessaoAdminCursos().
+  const { data: mo, error } = await admin()
+    .from('modulos')
+    .select('id, curso_id, titulo, cursos(titulo)')
+    .eq('workspace_id', ws)
+    .eq('id', moduloId)
+    .maybeSingle()
+  if (error) throw error
+  if (!mo) return null
+
+  const linha = mo as { id: string; curso_id: string; titulo: string; cursos: { titulo: string } | { titulo: string }[] | null }
+  const cursoTitulo = Array.isArray(linha.cursos) ? (linha.cursos[0]?.titulo ?? '') : (linha.cursos?.titulo ?? '')
+
+  const { data: aulas } = await admin()
+    .from('aulas')
+    .select('id, titulo, descricao, video_youtube_id, publicado, ordem')
+    .eq('workspace_id', ws)
+    .eq('modulo_id', moduloId)
+    .order('ordem')
+
+  return {
+    id: linha.id, curso_id: linha.curso_id, curso_titulo: cursoTitulo, titulo: linha.titulo,
+    aulas: (aulas as AulaItem[] | null) ?? [],
+  }
+}
+
+export async function criarAula({ moduloId, titulo }: { moduloId: string; titulo: string }): Promise<ResId> {
+  await exigirEngineLiberado()
+  const limpo = titulo.trim()
+  if (!limpo) return { erro: 'titulo_vazio' }
+  const { ws } = await sessaoAdminCursos()
+  if (!ws) return { erro: 'sem_workspace' }
+  try {
+    const { data: modulo } = await admin().from('modulos').select('id').eq('workspace_id', ws).eq('id', moduloId).maybeSingle()
+    if (!modulo) return { erro: 'modulo_nao_encontrado' }
+    const { data: existentes, error: erroOrdem } = await admin().from('aulas').select('ordem').eq('workspace_id', ws).eq('modulo_id', moduloId)
+    if (erroOrdem) throw erroOrdem
+    const ordem = ((existentes as { ordem: number }[] | null) ?? []).reduce((m, l) => Math.max(m, l.ordem), -1) + 1
+    const { data, error } = await admin()
+      .from('aulas')
+      .insert({ workspace_id: ws, modulo_id: moduloId, titulo: limpo, ordem })
+      .select('id')
+      .single()
+    if (error) throw error
+    return { ok: true, id: (data as { id: string }).id }
+  } catch (err) {
+    console.error('[cursos] criarAula', detalheSeguro(err))
+    return { erro: 'falha_criar' }
+  }
+}
+
+export async function salvarAula({ id, titulo, descricao, videoYoutubeId, publicado }: {
+  id: string; titulo: string; descricao: string | null; videoYoutubeId: string | null; publicado: boolean
+}): Promise<Res> {
+  await exigirEngineLiberado()
+  const limpo = titulo.trim()
+  if (!limpo) return { erro: 'titulo_vazio' }
+  const { ws } = await sessaoAdminCursos()
+  if (!ws) return { erro: 'sem_workspace' }
+  try {
+    const { error } = await admin()
+      .from('aulas')
+      .update({ titulo: limpo, descricao, video_youtube_id: videoYoutubeId, publicado })
+      .eq('workspace_id', ws)
+      .eq('id', id)
+    if (error) throw error
+    return { ok: true }
+  } catch (err) {
+    console.error('[cursos] salvarAula', detalheSeguro(err))
+    return { erro: 'falha_salvar' }
+  }
+}
+
+export async function excluirAula({ id }: { id: string }): Promise<Res> {
+  await exigirEngineLiberado()
+  const { ws } = await sessaoAdminCursos()
+  if (!ws) return { erro: 'sem_workspace' }
+  try {
+    const { error } = await admin().from('aulas').delete().eq('workspace_id', ws).eq('id', id)
+    if (error) throw error
+    return { ok: true }
+  } catch (err) {
+    console.error('[cursos] excluirAula', detalheSeguro(err))
+    return { erro: 'falha_excluir' }
+  }
+}
+
+export async function reordenarAulas({ moduloId, ordemIds }: { moduloId: string; ordemIds: string[] }): Promise<Res> {
+  await exigirEngineLiberado()
+  const { ws } = await sessaoAdminCursos()
+  if (!ws) return { erro: 'sem_workspace' }
+  try {
+    for (let i = 0; i < ordemIds.length; i++) {
+      const { error } = await admin().from('aulas').update({ ordem: i })
+        .eq('workspace_id', ws).eq('modulo_id', moduloId).eq('id', ordemIds[i])
+      if (error) throw error
+    }
+    return { ok: true }
+  } catch (err) {
+    console.error('[cursos] reordenarAulas', detalheSeguro(err))
+    return { erro: 'falha_reordenar' }
+  }
+}
