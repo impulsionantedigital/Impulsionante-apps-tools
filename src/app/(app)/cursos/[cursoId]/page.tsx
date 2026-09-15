@@ -9,10 +9,12 @@ import estilos from '../cursos.module.css'
 import CabecalhoPagina from '@/components/ui/CabecalhoPagina'
 import { tituloDaPagina } from '@/server/marca'
 
-export async function generateMetadata({ params }: { params: Promise<{ cursoId: string }> }) {
-  const { cursoId } = await params
-  const curso = await carregarCursoComModulos(cursoId)
-  return { title: await tituloDaPagina(curso?.titulo ?? 'Curso') }
+// 🔴 Título estático, sem chamar carregarCursoComModulos aqui: a mesma função já roda no corpo
+// da página (abaixo), e não é cacheada — chamá-la duas vezes dobraria as idas ao banco por
+// carregamento. Mesmo padrão de `src/app/(app)/contatos/[id]/page.tsx` e `empresas/[id]/page.tsx`
+// (título genérico, sem buscar a entidade em generateMetadata).
+export async function generateMetadata() {
+  return { title: await tituloDaPagina('Curso') }
 }
 
 export default async function CursoPage({ params }: { params: Promise<{ cursoId: string }> }) {
