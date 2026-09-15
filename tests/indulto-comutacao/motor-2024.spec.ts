@@ -93,3 +93,51 @@ describe('resumo × planilha', () => {
     expect(r.resumo.fracoes.metade, 'H7+H8').toBeCloseTo((vio + sem) / 2, 6)
   })
 })
+
+const PREENCHE = VEREDITOS.preenche
+const NAO_PREENCHE = VEREDITOS.nao_preenche
+const SEM_PREVISAO = VEREDITOS.sem_previsao
+const A_ANALISAR = VEREDITOS.a_analisar
+
+/** Os sufixos que este teste sabe comparar. Um sufixo fora desta lista seria
+ *  ignorado EM SILÊNCIO pelo laço — por isso há um teste que reprova se aparecer. */
+const SUFIXOS_COMPARADOS = new Set(['geral', 'especial', 'comutacaoTxt'])
+
+describe('o congelado não traz sufixo que este teste ignoraria', () => {
+  it('só usa geral, especial e comutacaoTxt', () => {
+    const sufixos = new Set(
+      Object.keys(esperado.cenarios[0].planilha).map((k) => k.split('.')[1]),
+    )
+    expect([...sufixos].filter((s) => !SUFIXOS_COMPARADOS.has(s))).toEqual([])
+  })
+})
+
+describe('vereditos de indulto × planilha', () => {
+  const INDULTO = [
+    'art9_I', 'art9_II', 'art9_III', 'art9_IV', 'art9_V', 'art9_VI',
+    'art9_VII', 'art9_VIII', 'art9_IX', 'art9_X', 'art9_XI', 'art9_XII',
+    'art9_XIII', 'art9_XIV', 'art9_XV', 'art9_XVI', 'art10', 'art12',
+  ] as const
+
+  it.each(esperado.cenarios.map((c) => [c._nome, c] as const))('%s', (_nome, cenario) => {
+    const r = calcular2024(cenario.entrada)
+    const porId = new Map(r.incisos.map((i) => [i.id, i]))
+
+    for (const id of INDULTO) {
+      const obtido = porId.get(id)
+      expect(obtido, `o motor não devolveu ${id}`).toBeDefined()
+
+      const geralPlanilha = String(cenario.planilha[`${id}.geral`])
+      expect(VEREDITOS[obtido!.geral], `${id}.geral`).toBe(geralPlanilha)
+
+      const especialPlanilha = cenario.planilha[`${id}.especial`]
+      if (especialPlanilha === undefined) {
+        // A aba Resultado escreve "Sem previsão no Decreto" direto na célula para
+        // os dispositivos sem §2º; o OUT_MAP nem mapeia a coluna nesses casos.
+        expect(VEREDITOS[obtido!.especial], `${id}.especial`).toBe(SEM_PREVISAO)
+      } else {
+        expect(VEREDITOS[obtido!.especial], `${id}.especial`).toBe(String(especialPlanilha))
+      }
+    }
+  })
+})
