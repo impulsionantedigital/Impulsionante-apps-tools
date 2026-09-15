@@ -1305,10 +1305,12 @@ import estilos from '../cursos.module.css'
 import CabecalhoPagina from '@/components/ui/CabecalhoPagina'
 import { tituloDaPagina } from '@/server/marca'
 
-export async function generateMetadata({ params }: { params: Promise<{ cursoId: string }> }) {
-  const { cursoId } = await params
-  const curso = await carregarCursoComModulos(cursoId)
-  return { title: await tituloDaPagina(curso?.titulo ?? 'Curso') }
+// 🔴 Título estático, sem chamar carregarCursoComModulos aqui: a mesma função já roda no corpo
+// da página (abaixo), e não é cacheada — chamá-la duas vezes dobraria as idas ao banco por
+// carregamento. Mesmo padrão de `src/app/(app)/contatos/[id]/page.tsx` e `empresas/[id]/page.tsx`
+// (título genérico, sem buscar a entidade em generateMetadata).
+export async function generateMetadata() {
+  return { title: await tituloDaPagina('Curso') }
 }
 
 export default async function CursoPage({ params }: { params: Promise<{ cursoId: string }> }) {
@@ -1785,10 +1787,10 @@ import estilos from '../../cursos.module.css'
 import CabecalhoPagina from '@/components/ui/CabecalhoPagina'
 import { tituloDaPagina } from '@/server/marca'
 
-export async function generateMetadata({ params }: { params: Promise<{ cursoId: string; moduloId: string }> }) {
-  const { moduloId } = await params
-  const modulo = await carregarModuloComAulas(moduloId)
-  return { title: await tituloDaPagina(modulo?.titulo ?? 'Módulo') }
+// 🔴 Título estático, mesmo motivo do page.tsx de Task 4: carregarModuloComAulas não é cacheada,
+// e o corpo da página já a chama uma vez — chamar de novo aqui dobraria as idas ao banco.
+export async function generateMetadata() {
+  return { title: await tituloDaPagina('Módulo') }
 }
 
 export default async function ModuloPage({ params }: { params: Promise<{ cursoId: string; moduloId: string }> }) {
