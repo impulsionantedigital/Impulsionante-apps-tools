@@ -1,0 +1,99 @@
+[
+  {
+    "_nome": "baseline — planilha limpa, tudo NÃO",
+    "penaCumpridaSEEU": { "anos": 5, "meses": 6, "dias": 0 },
+    "dataNascimento": "1983-01-01",
+    "dataUltimaPrisao": "2022-12-25",
+    "reincidente": "NÃO",
+    "regime": "FECHADO"
+  },
+  {
+    "_nome": "Inciso I positivo (sem violência 6a, cumprido 2a, não reinc)",
+    "penaSemViolencia": { "anos": 6, "meses": 0, "dias": 0 },
+    "penaCumpridaSEEU": { "anos": 2, "meses": 0, "dias": 0 },
+    "dataNascimento": "1990-01-01",
+    "reincidente": "NÃO"
+  },
+  {
+    "_nome": "Inciso III positivo (com violência 3a, cumprido 1a6m, não reinc)",
+    "penaViolencia": { "anos": 3, "meses": 0, "dias": 0 },
+    "penaCumpridaSEEU": { "anos": 1, "meses": 6, "dias": 0 },
+    "dataNascimento": "1990-01-01",
+    "reincidente": "NÃO"
+  },
+  {
+    "_nome": "Inciso IV positivo (16a ininterruptos, cumprido 16a, não reinc)",
+    "penaSemViolencia": { "anos": 30, "meses": 0, "dias": 0 },
+    "penaCumpridaSEEU": { "anos": 16, "meses": 0, "dias": 0 },
+    "dataNascimento": "1970-01-01",
+    "dataUltimaPrisao": "2008-01-01",
+    "reincidente": "NÃO"
+  },
+  {
+    "_nome": "§2º pela IDADE — 60 anos exatos em 25/12/2024 (fronteira; 2024 usa 60, não 70)",
+    "penaSemViolencia": { "anos": 6, "meses": 0, "dias": 0 },
+    "penaCumpridaSEEU": { "anos": 0, "meses": 8, "dias": 0 },
+    "dataNascimento": "1964-12-25",
+    "reincidente": "NÃO"
+  },
+  {
+    "_nome": "controle do anterior — um dia mais novo que 60 anos, §2º não incide",
+    "penaSemViolencia": { "anos": 6, "meses": 0, "dias": 0 },
+    "penaCumpridaSEEU": { "anos": 0, "meses": 8, "dias": 0 },
+    "dataNascimento": "1964-12-26",
+    "reincidente": "NÃO"
+  },
+  {
+    "_nome": "§2º só por justiça restaurativa (marcador I39, isolado)",
+    "penaSemViolencia": { "anos": 6, "meses": 0, "dias": 0 },
+    "penaCumpridaSEEU": { "anos": 0, "meses": 8, "dias": 0 },
+    "dataNascimento": "1990-01-01",
+    "justicaRestaurativa": "SIM",
+    "reincidente": "NÃO"
+  },
+  {
+    "_nome": "§2º só por gestanteOuFilho14 (marcador I32, que 2025 desmembrou)",
+    "penaSemViolencia": { "anos": 6, "meses": 0, "dias": 0 },
+    "penaCumpridaSEEU": { "anos": 0, "meses": 8, "dias": 0 },
+    "dataNascimento": "1990-01-01",
+    "sexo": "FEMININO",
+    "gestanteOuFilho14": "SIM",
+    "reincidente": "NÃO"
+  },
+  {
+    "_nome": "Inciso XII na fração 1/5 de 2024 (não reinc; em 2025 seria 1/6)",
+    "penaSemViolencia": { "anos": 10, "meses": 0, "dias": 0 },
+    "penaCumpridaSEEU": { "anos": 2, "meses": 0, "dias": 0 },
+    "dataNascimento": "1990-01-01",
+    "estudo": "MAIS DE 12 MESES NOS ÚLTIMOS 3 ANOS",
+    "reincidente": "NÃO"
+  },
+  {
+    "_nome": "Inciso VIII — remanescente 5a com impeditivo presente, base não impeditiva (M17)",
+    "penaImpeditiva": { "anos": 4, "meses": 0, "dias": 0 },
+    "penaSemViolencia": { "anos": 6, "meses": 0, "dias": 0 },
+    "penaCumpridaSEEU": { "anos": 5, "meses": 0, "dias": 0 },
+    "dataNascimento": "1990-01-01",
+    "regime": "ABERTO",
+    "livramentoCondicional": "SIM",
+    "reincidente": "NÃO"
+  },
+  {
+    "_nome": "Crime impeditivo presente e 2/3 não cumpridos pela data do fato (bloqueia tudo)",
+    "penaImpeditiva": { "anos": 10, "meses": 0, "dias": 0 },
+    "penaSemViolencia": { "anos": 5, "meses": 0, "dias": 0 },
+    "penaCumpridaSEEU": { "anos": 3, "meses": 0, "dias": 0 },
+    "dataNascimento": "1990-01-01",
+    "cumpriu23ImpeditivoDataFato": "NÃO",
+    "reincidente": "NÃO"
+  },
+  {
+    "_nome": "Comutação Art. 11 mulher não reincidente com filho <16 (mulherFilho16)",
+    "penaSemViolencia": { "anos": 6, "meses": 0, "dias": 0 },
+    "penaCumpridaSEEU": { "anos": 2, "meses": 0, "dias": 0 },
+    "dataNascimento": "1990-01-01",
+    "sexo": "FEMININO",
+    "mulherFilho16": "SIM",
+    "reincidente": "NÃO"
+  }
+]
