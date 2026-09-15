@@ -242,7 +242,16 @@ export async function salvarOferta(entrada: unknown): Promise<Resposta> {
   if (!r.success) return { erro: 'Confira o código, o nome, os produtos e a duração da oferta.' }
 
   const { id, ...campos } = r.data
-  const validos = await idsDeProdutoValidos(ws)
+  // 🔴 idsDeProdutoValidos() pode lançar (erro do Supabase) — diferente de lerComercial(), esta
+  // função não tem try/catch em volta do corpo inteiro, e toda outra falha aqui devolve um
+  // { erro } amigável em vez de deixar a exceção subir. Sem este try/catch, uma falha passageira
+  // no banco durante esta checagem nova quebraria a action sem mensagem nenhuma.
+  let validos: Set<string>
+  try {
+    validos = await idsDeProdutoValidos(ws)
+  } catch {
+    return { erro: 'Não foi possível salvar a oferta.' }
+  }
   if (!campos.produtos.every((p) => validos.has(p))) return { erro: 'Um dos produtos escolhidos não existe.' }
   const dados = { ...campos, produtos: [...new Set(campos.produtos)], plataforma: 'hotmart' }
   const db = admin()
