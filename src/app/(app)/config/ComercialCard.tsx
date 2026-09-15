@@ -162,7 +162,8 @@ function OfertasBloco({ vista, executar, pendente }: PropsBloco) {
   const [form, setForm] = useState<Formulario | null>(null)
 
   function editar(o: OfertaItem) {
-    setForm({ id: o.id, codigo: o.codigo, nome: o.nome, produtos: o.produtos, duracao: o.duracao, ativa: o.ativa })
+    const idsConhecidos = new Set(vista.produtos.map((p) => p.id))
+    setForm({ id: o.id, codigo: o.codigo, nome: o.nome, produtos: o.produtos.filter((p) => idsConhecidos.has(p)), duracao: o.duracao, ativa: o.ativa })
   }
 
   function alternarProduto(id: string) {

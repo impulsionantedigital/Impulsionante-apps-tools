@@ -131,11 +131,12 @@ export async function excluirCurso({ id }: { id: string }): Promise<Res> {
   try {
     // admin(), pelo mesmo motivo de listarCursos(): `cliente` sob RLS não vê módulos de
     // cursos não publicados, e esta contagem decide se a exclusão é bloqueada.
-    const { count } = await admin()
+    const { count, error: erroContagem } = await admin()
       .from('modulos')
       .select('id', { count: 'exact', head: true })
       .eq('workspace_id', ws)
       .eq('curso_id', id)
+    if (erroContagem) throw erroContagem
     if ((count ?? 0) > 0) return { erro: 'em_uso' }
     const { error } = await admin().from('cursos').delete().eq('workspace_id', ws).eq('id', id)
     if (error) throw error
@@ -241,7 +242,8 @@ export async function excluirModulo({ id }: { id: string }): Promise<Res> {
   const { ws } = await sessaoAdminCursos()
   if (!ws) return { erro: 'sem_workspace' }
   try {
-    const { count } = await admin().from('aulas').select('id', { count: 'exact', head: true }).eq('workspace_id', ws).eq('modulo_id', id)
+    const { count, error: erroContagem } = await admin().from('aulas').select('id', { count: 'exact', head: true }).eq('workspace_id', ws).eq('modulo_id', id)
+    if (erroContagem) throw erroContagem
     if ((count ?? 0) > 0) return { erro: 'em_uso' }
     const { error } = await admin().from('modulos').delete().eq('workspace_id', ws).eq('id', id)
     if (error) throw error

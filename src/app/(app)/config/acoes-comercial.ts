@@ -12,7 +12,7 @@ import { lerConfig } from '@/server/configuracoes'
 import { encerrarVendaManual, reenviarNotificacoes, reprocessarEvento } from '@/server/vendas/processar'
 import { esquecerTokenHotmart } from '@/server/vendas/token-hotmart'
 import { CHAVE_URL_PUBLICA } from '@/lib/canais/url-publica'
-import { PRODUTOS, ehProdutoConhecido, rotuloDoProduto } from '@/lib/produtos/catalogo'
+import { produtosVendaveis, idsDeProdutoValidos, rotuloDeProdutoVendavel } from '@/server/produtos/vendaveis'
 import { DURACOES } from '@/lib/vendas/duracao'
 import { CHAVE_HOTTOK_HOTMART } from '@/lib/vendas/hotmart'
 import { formatarValor, formatarVencimento, vencimentoMaisTardio } from '@/lib/vendas/formatos'
@@ -88,13 +88,6 @@ async function workspaceDoOwner(): Promise<string | null> {
   return ws
 }
 
-async function idsDeProdutoValidos(ws: string): Promise<Set<string>> {
-  const { data, error } = await admin().from('cursos').select('produto_id').eq('workspace_id', ws)
-  if (error) throw error
-  const idsCursos = ((data ?? []) as { produto_id: string }[]).map((c) => c.produto_id)
-  return new Set([...PRODUTOS.map((p) => p.id), ...idsCursos])
-}
-
 type LinhaVenda = {
   id: string
   membro_id: string
@@ -142,11 +135,7 @@ export async function lerComercial(): Promise<VistaComercial | { erro: string }>
       .limit(50)
     if (erroEventos) throw erroEventos
 
-    const { data: cursosDoWorkspace, error: erroCursos } = await db
-      .from('cursos')
-      .select('produto_id, titulo')
-      .eq('workspace_id', ws)
-    if (erroCursos) throw erroCursos
+    const vendaveis = await produtosVendaveis(ws)
 
     const listaVendas = (vendas ?? []) as LinhaVenda[]
     const idsVenda = listaVendas.map((v) => v.id)
@@ -181,13 +170,12 @@ export async function lerComercial(): Promise<VistaComercial | { erro: string }>
         const vencimentos = periodos
           .filter((p) => p.venda_id === v.id)
           .map((p) => (p.expira_em ? new Date(p.expira_em) : null))
-        const conhecidos = v.produtos.filter(ehProdutoConhecido)
         return {
           id: v.id,
           membro: nomes.get(v.membro_id) ?? 'membro removido',
           transacao: v.transacao,
           status: v.status,
-          produtos: conhecidos.length > 0 ? conhecidos.map(rotuloDoProduto).join(', ') : v.produtos.join(', '),
+          produtos: v.produtos.map((p) => rotuloDeProdutoVendavel(vendaveis, p)).join(', '),
           aprovadaEm: v.aprovada_em,
           vencimento: vencimentos.length > 0 ? formatarVencimento(vencimentoMaisTardio(vencimentos)) : '—',
           valor: formatarValor(v.valor === null ? null : Number(v.valor), v.moeda),
@@ -210,10 +198,7 @@ export async function lerComercial(): Promise<VistaComercial | { erro: string }>
         resultado: e.resultado,
         detalhe: e.detalhe,
       })),
-      produtos: [
-        ...PRODUTOS.map((p) => ({ id: p.id, rotulo: p.rotulo })),
-        ...((cursosDoWorkspace ?? []) as { produto_id: string; titulo: string }[]).map((c) => ({ id: c.produto_id, rotulo: c.titulo })),
-      ],
+      produtos: vendaveis,
       duracoes: [...DURACOES],
       souDonoDoDeploy,
       temToken: souDonoDoDeploy ? Boolean(await getSecret(CHAVE_HOTTOK_HOTMART)) : false,

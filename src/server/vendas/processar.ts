@@ -6,7 +6,8 @@ import { emitirSenhaTemporaria, urlDeEntrada } from '@/server/auth/temporaria'
 import { resolverMembro } from '@/server/vendas/identidade'
 import { CHAVE_URL_PUBLICA } from '@/lib/canais/url-publica'
 import { detalheSeguro } from '@/lib/sanitizar-erro'
-import { PRODUTOS, ehProdutoConhecido, rotuloDoProduto } from '@/lib/produtos/catalogo'
+import { PRODUTOS } from '@/lib/produtos/catalogo'
+import { produtosVendaveis, idsDeProdutoValidos, rotuloDeProdutoVendavel } from '@/server/produtos/vendaveis'
 import { ehDuracao, type Duracao } from '@/lib/vendas/duracao'
 import { decidirEmails } from '@/lib/vendas/emails'
 import { formatarValor, formatarVencimento, vencimentoMaisTardio } from '@/lib/vendas/formatos'
@@ -133,7 +134,8 @@ async function aprovar(auditId: string, evento: Aprovada): Promise<Desfecho> {
   const ws = oferta.workspace_id as string
   if (!oferta.ativa) return { resultado: 'oferta_desconhecida', detalhe: 'oferta inativa', workspaceId: ws }
 
-  const produtos = (oferta.produtos as string[]).filter(ehProdutoConhecido)
+  const idsValidos = await idsDeProdutoValidos(ws)
+  const produtos = (oferta.produtos as string[]).filter((p) => idsValidos.has(p))
   const duracao = oferta.duracao as string
   if (produtos.length === 0 || !ehDuracao(duracao)) {
     return { resultado: 'oferta_invalida', detalhe: 'sem produto conhecido, ou duração inválida', workspaceId: ws }
@@ -257,8 +259,9 @@ async function garantirPeriodos(venda: LinhaVenda): Promise<void> {
   if (error) throw error
   if ((count ?? 0) > 0) return
   const { existentes } = await historicoDoMembro(venda.workspace_id, venda.membro_id, venda.id)
+  const idsValidos = await idsDeProdutoValidos(venda.workspace_id)
   await gravarPeriodos(venda.workspace_id, venda.membro_id, venda.id, calcularPeriodos({
-    produtos: venda.produtos.filter(ehProdutoConhecido),
+    produtos: venda.produtos.filter((p) => idsValidos.has(p)),
     duracao: duracao as Duracao,
     aprovadaEm: new Date(venda.aprovada_em),
     existentes,
@@ -405,8 +408,10 @@ export async function notificar(vendaId: string, opcoes: { manual?: boolean } = 
   const login = await urlDeEntrada()
   if (!origem || !login) return { erro: 'sem_url_publica' }
 
-  const produtos = (venda.produtos as string[]).filter(ehProdutoConhecido)
-  const novos = ((venda.produtos_novos ?? []) as string[]).filter(ehProdutoConhecido)
+  const vendaveis = await produtosVendaveis(venda.workspace_id as string)
+  const idsValidos = new Set(vendaveis.map((p) => p.id))
+  const produtos = (venda.produtos as string[]).filter((p) => idsValidos.has(p))
+  const novos = ((venda.produtos_novos ?? []) as string[]).filter((p) => idsValidos.has(p))
   const decisao = decidirEmails({
     vendaAtiva: true,
     nuncaEntrou: !usuario.last_sign_in_at,
@@ -433,7 +438,7 @@ export async function notificar(vendaId: string, opcoes: { manual?: boolean } = 
   }
 
   if (decisao.entrega.length > 0) {
-    const ids = decisao.entrega.filter(ehProdutoConhecido)
+    const ids = decisao.entrega.filter((p) => idsValidos.has(p))
     const ferramenta = PRODUTOS.find((p) => p.id === ids[0])
     const r = await enfileirar({
       workspaceId: venda.workspace_id,
@@ -442,7 +447,7 @@ export async function notificar(vendaId: string, opcoes: { manual?: boolean } = 
       chave: `venda:${venda.id}:entrega${sufixo}`,
       valores: {
         ...base,
-        PRODUCT_NAME: ids.map(rotuloDoProduto).join(', '),
+        PRODUCT_NAME: ids.map((p) => rotuloDeProdutoVendavel(vendaveis, p)).join(', '),
         EXPIRES_AT: vencimentoDe(ids),
         TOOL_URL: ferramenta ? new URL(ferramenta.href, origem).href : login,
       },
@@ -458,7 +463,7 @@ export async function notificar(vendaId: string, opcoes: { manual?: boolean } = 
       chave: `venda:${venda.id}:pagamento${sufixo}`,
       valores: {
         ...base,
-        PRODUCT_NAME: produtos.map(rotuloDoProduto).join(', '),
+        PRODUCT_NAME: produtos.map((p) => rotuloDeProdutoVendavel(vendaveis, p)).join(', '),
         EXPIRES_AT: vencimentoDe(produtos),
         VALUE: formatarValor(venda.valor === null ? null : Number(venda.valor), venda.moeda as string | null),
         TRANSACTION: venda.transacao as string,

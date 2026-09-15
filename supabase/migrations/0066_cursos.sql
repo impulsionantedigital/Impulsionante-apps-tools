@@ -162,6 +162,28 @@ begin
   end if;
 end $$;
 
+-- 🔴 SECURITY DEFINER: uma policy que faz join com vendas/vendas_periodos sem isto nunca bate,
+-- porque authenticated não tem policy de leitura ampla nessas duas tabelas (só service_role,
+-- migration 0064) — a subquery dentro da policy também roda sob a RLS de quem chama. Mesmo padrão
+-- de e_membro()/e_owner() em 0005_rls_rpcs.sql.
+create or replace function public.tem_acesso_ao_produto(ws uuid, produto text)
+returns boolean language sql security definer set search_path = '' stable as $$
+  select exists (
+    select 1
+    from public.membros m
+    join public.vendas_periodos vp on vp.workspace_id = m.workspace_id and vp.membro_id = m.id
+    join public.vendas v on v.id = vp.venda_id
+    where m.user_id = auth.uid()
+      and vp.workspace_id = ws
+      and vp.produto_id = produto
+      and v.status = 'ativa'
+      and vp.inicia_em <= now()
+      and (vp.expira_em is null or vp.expira_em > now())
+  );
+$$;
+revoke all on function public.tem_acesso_ao_produto(uuid, text) from public, anon;
+grant execute on function public.tem_acesso_ao_produto(uuid, text) to authenticated, service_role;
+
 -- Leitura por authenticated: só o que o membro tem direito de ver — curso/aula publicados, com
 -- período de acesso ativo para aquele produto_id. Mesma régua de estadoDeAcesso()
 -- (src/lib/vendas/acesso.ts), só que como policy SQL — é o que o app do membro (Sub-projeto B/C)
@@ -170,19 +192,7 @@ do $$
 begin
   if not exists (select 1 from pg_policies where schemaname = 'public' and tablename = 'cursos' and policyname = 'cursos_membro_select') then
     create policy cursos_membro_select on public.cursos for select to authenticated using (
-      publicado = true
-      and exists (
-        select 1
-        from public.membros m
-        join public.vendas_periodos vp on vp.workspace_id = m.workspace_id and vp.membro_id = m.id
-        join public.vendas v on v.id = vp.venda_id
-        where m.user_id = auth.uid()
-          and vp.workspace_id = cursos.workspace_id
-          and vp.produto_id = cursos.produto_id
-          and v.status = 'ativa'
-          and vp.inicia_em <= now()
-          and (vp.expira_em is null or vp.expira_em > now())
-      )
+      publicado = true and public.tem_acesso_ao_produto(workspace_id, produto_id)
     );
   end if;
 end $$;
@@ -192,18 +202,11 @@ begin
   if not exists (select 1 from pg_policies where schemaname = 'public' and tablename = 'modulos' and policyname = 'modulos_membro_select') then
     create policy modulos_membro_select on public.modulos for select to authenticated using (
       exists (
-        select 1
-        from public.cursos c
-        join public.membros m on m.workspace_id = c.workspace_id
-        join public.vendas_periodos vp on vp.workspace_id = m.workspace_id and vp.membro_id = m.id and vp.produto_id = c.produto_id
-        join public.vendas v on v.id = vp.venda_id
+        select 1 from public.cursos c
         where c.id = modulos.curso_id
           and c.workspace_id = modulos.workspace_id
           and c.publicado = true
-          and m.user_id = auth.uid()
-          and v.status = 'ativa'
-          and vp.inicia_em <= now()
-          and (vp.expira_em is null or vp.expira_em > now())
+          and public.tem_acesso_ao_produto(c.workspace_id, c.produto_id)
       )
     );
   end if;
@@ -215,19 +218,12 @@ begin
     create policy aulas_membro_select on public.aulas for select to authenticated using (
       publicado = true
       and exists (
-        select 1
-        from public.modulos mo
+        select 1 from public.modulos mo
         join public.cursos c on c.id = mo.curso_id and c.workspace_id = mo.workspace_id
-        join public.membros m on m.workspace_id = c.workspace_id
-        join public.vendas_periodos vp on vp.workspace_id = m.workspace_id and vp.membro_id = m.id and vp.produto_id = c.produto_id
-        join public.vendas v on v.id = vp.venda_id
         where mo.id = aulas.modulo_id
           and mo.workspace_id = aulas.workspace_id
           and c.publicado = true
-          and m.user_id = auth.uid()
-          and v.status = 'ativa'
-          and vp.inicia_em <= now()
-          and (vp.expira_em is null or vp.expira_em > now())
+          and public.tem_acesso_ao_produto(c.workspace_id, c.produto_id)
       )
     );
   end if;
