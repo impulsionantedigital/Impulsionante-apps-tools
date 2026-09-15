@@ -5,6 +5,7 @@ import Formulario from './Formulario'
 import Resultado from './Resultado'
 import BarraSalvar from './BarraSalvar'
 import BotaoImprimir from './BotaoImprimir'
+import BotaoPeticao from './BotaoPeticao'
 import { calcular } from '@/lib/detracao/recolhimento-noturno/motor'
 import { paraInstante } from '@/lib/detracao/recolhimento-noturno/intervalos'
 import { entradaFormularioParaCalculo, segmentoFormularioEmBranco } from '@/lib/detracao/recolhimento-noturno/formulario'
@@ -88,6 +89,7 @@ export default function Calculadora({
         {somenteLeitura ? (
           <div className={estilos.barraImprimir}>
             <BotaoImprimir />
+            {resultado.ok && <BotaoPeticao resultado={resultado.valor} />}
           </div>
         ) : (
           <BarraSalvar
@@ -95,7 +97,12 @@ export default function Calculadora({
             calculoId={calculoId}
             titulo={titulo}
             aoMudarTitulo={setTitulo}
-            acoesExtras={<BotaoImprimir />}
+            acoesExtras={
+              <>
+                <BotaoImprimir />
+                {resultado.ok && <BotaoPeticao resultado={resultado.valor} />}
+              </>
+            }
           />
         )}
         {resultado.ok ? (
