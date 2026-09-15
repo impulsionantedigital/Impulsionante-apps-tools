@@ -1,0 +1,171 @@
+/* calculadora.module.css — formulário e resultado do Recolhimento Noturno, no mesmo vocabulário
+ * de token do resto do produto (ver calculadora.module.css do CIC, mesma receita).
+ *
+ * 🔴 Sem cor em hexadecimal e sem `--borda` (não existe no kit): só token. */
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--s-6);
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 1fr; }
+}
+.coluna { min-width: 0; }
+
+.pagina { display: grid; gap: var(--s-6); }
+
+.fieldsetSemBorda { border: 0; padding: 0; margin: 0; min-width: 0; }
+
+.questionario { display: grid; gap: var(--s-5); }
+
+.secao {
+  display: grid;
+  gap: var(--s-4);
+  padding: var(--s-5);
+  background: var(--superficie);
+  border: 1px solid var(--linha);
+  border-radius: var(--r-painel);
+  box-shadow: var(--elev-1);
+}
+
+.tituloSecao {
+  padding: 0 var(--s-2);
+  font-size: var(--fs-title);
+  font-weight: 600;
+  color: var(--tinta);
+}
+
+.campos { display: grid; gap: var(--s-4); }
+.campoTempo { display: grid; gap: var(--s-2); }
+.rotuloGrupo { font-size: var(--fs-body); font-weight: 500; color: var(--tinta-2); }
+.ajudaGrupo { margin: 0; font-size: var(--fs-body); color: var(--tinta-3); }
+
+.alternadorModo {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  font-size: var(--fs-body);
+  font-weight: 500;
+  color: var(--tinta);
+}
+
+.diasSemana { display: flex; flex-wrap: wrap; gap: var(--s-3); }
+.diaSemanaItem {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  font-size: var(--fs-body);
+  color: var(--tinta-2);
+}
+
+.editorLista { display: grid; gap: var(--s-3); }
+.editorCabecalho {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+}
+.linhaIntervalo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--s-3);
+  padding: var(--s-3);
+  border: 1px solid var(--linha);
+  border-radius: var(--r-controle);
+}
+.linhaIntervalo > * { min-width: 160px; }
+
+/* ── Resultado ── */
+.painel {
+  display: grid;
+  gap: var(--s-5);
+  padding: var(--s-5);
+  background: var(--superficie);
+  border: 1px solid var(--linha);
+  border-radius: var(--r-painel);
+  box-shadow: var(--elev-1);
+}
+.destaque { display: flex; align-items: baseline; gap: var(--s-3); }
+.numero { font-size: 2.5rem; font-weight: 700; color: var(--tinta); line-height: 1; }
+.rotuloNumero { font-size: var(--fs-body); color: var(--tinta-2); }
+
+.metricas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--s-4);
+  margin: 0;
+}
+.metricas dt { font-size: var(--fs-micro); color: var(--tinta-3); }
+.metricas dd { margin: 0; font-size: var(--fs-body); font-weight: 600; color: var(--tinta); }
+
+.memoria { font-size: var(--fs-body); color: var(--tinta-2); }
+.memoria summary { cursor: pointer; font-weight: 500; color: var(--tinta); }
+.listaMemoria {
+  display: grid;
+  gap: var(--s-1);
+  margin: var(--s-2) 0 var(--s-4);
+  padding: 0;
+  list-style: none;
+  font-size: var(--fs-micro);
+  color: var(--tinta-3);
+}
+
+/* ── Barra de salvar, exclusão, lista — mesma receita do CIC ── */
+.barra { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--s-3); margin-bottom: var(--s-5); }
+.campoTitulo { flex: 1; min-width: 240px; }
+.voltar {
+  display: inline-flex; align-items: center; gap: var(--s-2);
+  font-size: var(--fs-body); color: var(--tinta-3); text-decoration: none;
+  transition: color var(--t-rapido) var(--suave);
+}
+.voltar:hover { color: var(--tinta); }
+.voltar:focus-visible { outline: 2px solid var(--acento); outline-offset: 2px; border-radius: var(--r-pequeno); }
+
+.linhaTitulo { display: flex; flex-wrap: wrap; gap: var(--s-3); }
+.linhaTitulo > :first-child { flex: 1; min-width: 200px; }
+
+.mensagem {
+  flex-basis: 100%; margin: 0; padding: var(--s-2) var(--s-4);
+  border-radius: var(--r-controle); font-size: var(--fs-body); font-weight: 500;
+}
+.mensagem[data-tom='erro'] { background: var(--erro-wash); color: var(--erro); }
+.mensagem[data-tom='ok'] { background: var(--ok-wash); color: var(--ok); }
+
+.excluirWrap { display: flex; flex-direction: column; gap: var(--s-3); }
+.confirmaExcluir {
+  display: flex; flex-direction: column; gap: var(--s-3); padding: var(--s-4);
+  border: 1px solid var(--erro); border-radius: var(--r-controle); background: var(--erro-wash);
+}
+.confirmaTexto { margin: 0; font-size: var(--fs-body); color: var(--tinta); }
+.confirmaAcoes { display: flex; align-items: center; gap: var(--s-3); flex-wrap: wrap; }
+
+.notaPrivacidade { max-width: 68ch; margin: 0; font-size: var(--fs-body); color: var(--tinta-2); }
+
+.lista { display: grid; gap: var(--s-3); list-style: none; margin: 0; padding: 0; }
+.item {
+  display: block; padding: var(--s-4) var(--s-5); background: var(--superficie);
+  border: 1px solid var(--linha); border-radius: var(--r-painel); box-shadow: var(--elev-1);
+  color: inherit; text-decoration: none; transition: border-color var(--t-rapido) var(--suave);
+}
+.item:hover { border-color: var(--linha-forte); }
+.item:focus-visible { outline: 2px solid var(--acento); outline-offset: 2px; border-radius: var(--r-pequeno); }
+.itemTitulo { margin: 0 0 var(--s-1); font-size: var(--fs-body); font-weight: 600; color: var(--tinta); }
+.itemMeta { font-size: var(--fs-micro); color: var(--tinta-3); }
+
+.listaWrap { display: grid; gap: var(--s-4); }
+.busca { max-width: 480px; }
+.buscaVazia { margin: 0; padding: var(--s-4) var(--s-5); color: var(--tinta-3); font-size: var(--fs-body); }
+
+.avisoVersao {
+  padding: var(--s-4) var(--s-5); background: var(--aviso-wash); border: 1px solid var(--aviso);
+  border-radius: var(--r-painel); color: var(--tinta); font-size: var(--fs-body);
+}
+
+@media print {
+  .layout { grid-template-columns: 1fr; }
+  .coluna:first-child { display: none; }
+  .barra, .excluirWrap, .voltar { display: none; }
+}
