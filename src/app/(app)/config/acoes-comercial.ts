@@ -88,6 +88,13 @@ async function workspaceDoOwner(): Promise<string | null> {
   return ws
 }
 
+async function idsDeProdutoValidos(ws: string): Promise<Set<string>> {
+  const { data, error } = await admin().from('cursos').select('produto_id').eq('workspace_id', ws)
+  if (error) throw error
+  const idsCursos = ((data ?? []) as { produto_id: string }[]).map((c) => c.produto_id)
+  return new Set([...PRODUTOS.map((p) => p.id), ...idsCursos])
+}
+
 type LinhaVenda = {
   id: string
   membro_id: string
@@ -134,6 +141,12 @@ export async function lerComercial(): Promise<VistaComercial | { erro: string }>
       .order('recebido_em', { ascending: false })
       .limit(50)
     if (erroEventos) throw erroEventos
+
+    const { data: cursosDoWorkspace, error: erroCursos } = await db
+      .from('cursos')
+      .select('produto_id, titulo')
+      .eq('workspace_id', ws)
+    if (erroCursos) throw erroCursos
 
     const listaVendas = (vendas ?? []) as LinhaVenda[]
     const idsVenda = listaVendas.map((v) => v.id)
@@ -197,7 +210,10 @@ export async function lerComercial(): Promise<VistaComercial | { erro: string }>
         resultado: e.resultado,
         detalhe: e.detalhe,
       })),
-      produtos: PRODUTOS.map((p) => ({ id: p.id, rotulo: p.rotulo })),
+      produtos: [
+        ...PRODUTOS.map((p) => ({ id: p.id, rotulo: p.rotulo })),
+        ...((cursosDoWorkspace ?? []) as { produto_id: string; titulo: string }[]).map((c) => ({ id: c.produto_id, rotulo: c.titulo })),
+      ],
       duracoes: [...DURACOES],
       souDonoDoDeploy,
       temToken: souDonoDoDeploy ? Boolean(await getSecret(CHAVE_HOTTOK_HOTMART)) : false,
@@ -213,7 +229,7 @@ const OfertaSchema = z.object({
   id: Uuid.optional(),
   codigo: z.string().trim().min(1).max(200),
   nome: z.string().trim().min(1).max(200),
-  produtos: z.array(z.string().refine(ehProdutoConhecido)).min(1).max(50),
+  produtos: z.array(z.string().min(1)).min(1).max(50),
   duracao: z.enum(DURACOES),
   ativa: z.boolean(),
 })
@@ -226,6 +242,8 @@ export async function salvarOferta(entrada: unknown): Promise<Resposta> {
   if (!r.success) return { erro: 'Confira o código, o nome, os produtos e a duração da oferta.' }
 
   const { id, ...campos } = r.data
+  const validos = await idsDeProdutoValidos(ws)
+  if (!campos.produtos.every((p) => validos.has(p))) return { erro: 'Um dos produtos escolhidos não existe.' }
   const dados = { ...campos, produtos: [...new Set(campos.produtos)], plataforma: 'hotmart' }
   const db = admin()
   const { data, error } = id
