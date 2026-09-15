@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation'
 import Botao from '@/components/ui/Botao'
 import { Campo as CampoUI, Entrada as EntradaControle } from '@/components/ui/Campo'
 import { caminhoDoProduto } from '@/lib/produtos/catalogo'
-import type { EntradaCalculo } from '@/lib/detracao/recolhimento-noturno/tipos'
+import { entradaFormularioParaCalculo } from '@/lib/detracao/recolhimento-noturno/formulario'
+import type { EntradaFormulario } from '@/lib/detracao/recolhimento-noturno/formulario'
 import { atualizarCalculo, salvarCalculo } from './acoes'
 import estilos from './calculadora.module.css'
 
@@ -19,7 +20,7 @@ export default function BarraSalvar({
   titulo,
   aoMudarTitulo,
 }: {
-  entrada: EntradaCalculo
+  entrada: EntradaFormulario
   calculoId?: string
   titulo: string
   aoMudarTitulo: (valor: string) => void
@@ -34,15 +35,22 @@ export default function BarraSalvar({
   }
 
   function salvar() {
+    let entradaCalculo
+    try {
+      entradaCalculo = entradaFormularioParaCalculo(entrada)
+    } catch (err) {
+      avisar('erro', err instanceof Error ? err.message : 'Confira os dados do cálculo antes de salvar.')
+      return
+    }
     iniciar(async () => {
       if (calculoId) {
-        const r = await atualizarCalculo({ id: calculoId, titulo, entrada })
+        const r = await atualizarCalculo({ id: calculoId, titulo, entrada: entradaCalculo })
         if ('erro' in r) return avisar('erro', r.erro)
         avisar('ok', 'Alterações salvas.')
         router.refresh()
         return
       }
-      const r = await salvarCalculo({ titulo, entrada })
+      const r = await salvarCalculo({ titulo, entrada: entradaCalculo })
       if ('erro' in r) return avisar('erro', r.erro)
       router.push(`${caminhoDoProduto(SLUG)}/${r.id}`)
     })

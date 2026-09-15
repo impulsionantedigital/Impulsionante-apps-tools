@@ -81,7 +81,7 @@ export default function Calculadora({
       <div className={estilos.coluna}>
         {!somenteLeitura && (
           <BarraSalvar
-            entrada={entradaFormularioParaCalculo(entrada)}
+            entrada={entrada}
             calculoId={calculoId}
             titulo={titulo}
             aoMudarTitulo={setTitulo}

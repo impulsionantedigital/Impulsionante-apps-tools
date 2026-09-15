@@ -16,10 +16,11 @@ export async function generateMetadata() {
 }
 
 export default async function NovoCalculo({
-  params: { calculadora },
+  params,
 }: {
-  params: { calculadora: string }
+  params: Promise<{ calculadora: string }>
 }): Promise<React.ReactNode> {
+  await params
   const base = caminhoDoProduto(SLUG)
   if ((await estadoDoProduto(PRODUTO_ID)) !== 'ativo') redirect(base)
 

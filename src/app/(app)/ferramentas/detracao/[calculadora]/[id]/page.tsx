@@ -21,10 +21,11 @@ export async function generateMetadata() {
 }
 
 export default async function EditarCalculo({
-  params: { id, calculadora },
+  params,
 }: {
-  params: { id: string; calculadora: string }
+  params: Promise<{ id: string; calculadora: string }>
 }): Promise<React.ReactNode> {
+  const { id } = await params
   // `lerCalculo` usa o cliente de sessão: a RLS devolve `null` para id inexistente, malformado
   // ou de outro membro/workspace — os três viram 404 do mesmo jeito, sem diferenciar qual foi.
   const calculo = await lerCalculo(id)

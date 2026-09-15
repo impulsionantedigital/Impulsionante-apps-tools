@@ -15,8 +15,9 @@ export async function generateMetadata() {
 export default async function ListaCalculos({
   params,
 }: {
-  params: { calculadora: string }
+  params: Promise<{ calculadora: string }>
 }): Promise<React.ReactNode> {
+  await params
   const calculos = await listarCalculos('recolhimento-noturno')
 
   const novo = (
