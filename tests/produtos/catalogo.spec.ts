@@ -42,11 +42,7 @@ describe('catálogo de produtos', () => {
     }
   })
 
-  // 🔴 `it.fails` é TEMPORÁRIO, só entre a Task 11 e a Task 14. O motor de 2024 entra
-  // no REGISTRO antes de virar produto, de propósito: assim ele é validado contra a
-  // planilha sem que a rota /ferramentas/cic-2024 responda a ninguém. A Task 14
-  // acrescenta o produto e devolve este teste para `it`.
-  it.fails('todo motor do registro tem produto no catálogo (volta a `it` na Task 14)', () => {
+  it('todo motor do registro tem produto no catálogo', () => {
     for (const m of REGISTRO) {
       expect(produtoDoMotor(m.id), `motor ${m.id} sem produto`).toBe(m.id)
     }

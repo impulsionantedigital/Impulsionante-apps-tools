@@ -18,6 +18,13 @@ export const PRODUTOS = [
     menuTitulo: 'GPS CIC - Calculadora 2025',
     menuDescricao: 'Decreto 12.970/2025',
   },
+  {
+    id: 'indulto-comutacao-2024',
+    slug: 'cic-2024',
+    rotulo: 'Calculadora de Indulto e Comutação — Decreto 12.338/2024',
+    menuTitulo: 'GPS CIC - Calculadora 2024',
+    menuDescricao: 'Decreto 12.338/2024',
+  },
 ] as const
 
 export type Produto = (typeof PRODUTOS)[number]
