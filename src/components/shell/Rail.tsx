@@ -9,7 +9,7 @@ import { lerMenuCustom } from '@/server/custom/menu'
 import { ICONE_PADRAO, type IconePermitido } from '@/lib/menu-custom'
 import estilos from './Rail.module.css'
 import ItemNav from './ItemNav'
-import SeletorWorkspace, { type WorkspaceOpcao } from './SeletorWorkspace'
+import type { WorkspaceOpcao } from './SeletorWorkspace'
 import MenuUsuario, { type UsuarioResumo } from './MenuUsuario'
 import MarcaLockup from '@/components/MarcaLockup'
 import { lerMarca } from '@/server/marca'
@@ -106,11 +106,6 @@ export default async function Rail({ user, wsAtivo, workspaces, avisoAtualizacao
         <div className={estilos.marcaTexto}>
           <b>{marca.nome}</b>
         </div>
-      </div>
-
-      {}
-      <div className={estilos.topo}>
-        <SeletorWorkspace workspaces={workspaces} wsAtivo={wsAtivo} />
       </div>
 
       {}

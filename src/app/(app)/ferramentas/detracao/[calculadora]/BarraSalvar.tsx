@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import Botao from '@/components/ui/Botao'
 import { Campo as CampoUI, Entrada as EntradaControle } from '@/components/ui/Campo'
@@ -19,11 +19,14 @@ export default function BarraSalvar({
   calculoId,
   titulo,
   aoMudarTitulo,
+  acoesExtras,
 }: {
   entrada: EntradaFormulario
   calculoId?: string
   titulo: string
   aoMudarTitulo: (valor: string) => void
+  /** Botões que entram na mesma linha do "Salvar cálculo" — hoje o Imprimir. */
+  acoesExtras?: ReactNode
 }) {
   const router = useRouter()
   const [aviso, setAviso] = useState<Aviso | null>(null)
@@ -73,6 +76,7 @@ export default function BarraSalvar({
           <Botao variante="primario" onClick={salvar} carregando={pendente} desabilitado={pendente}>
             {calculoId ? 'Salvar alterações' : 'Salvar cálculo'}
           </Botao>
+          {acoesExtras}
         </div>
       </CampoUI>
       {aviso && (

@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import Formulario from './Formulario'
 import Resultado from './Resultado'
 import BarraSalvar from './BarraSalvar'
+import BotaoImprimir from './BotaoImprimir'
 import { calcular } from '@/lib/detracao/recolhimento-noturno/motor'
 import { paraInstante } from '@/lib/detracao/recolhimento-noturno/intervalos'
 import { entradaFormularioParaCalculo, segmentoFormularioEmBranco } from '@/lib/detracao/recolhimento-noturno/formulario'
@@ -79,19 +80,24 @@ export default function Calculadora({
   return (
     <div className={estilos.layout}>
       <div className={estilos.coluna}>
-        {!somenteLeitura && (
-          <BarraSalvar
-            entrada={entrada}
-            calculoId={calculoId}
-            titulo={titulo}
-            aoMudarTitulo={setTitulo}
-          />
-        )}
         <fieldset disabled={somenteLeitura} className={estilos.fieldsetSemBorda}>
           <Formulario entrada={entrada} aoMudar={setEntrada} avancado={avancado} aoMudarAvancado={mudarAvancado} />
         </fieldset>
       </div>
       <div className={estilos.coluna}>
+        {somenteLeitura ? (
+          <div className={estilos.barraImprimir}>
+            <BotaoImprimir />
+          </div>
+        ) : (
+          <BarraSalvar
+            entrada={entrada}
+            calculoId={calculoId}
+            titulo={titulo}
+            aoMudarTitulo={setTitulo}
+            acoesExtras={<BotaoImprimir />}
+          />
+        )}
         {resultado.ok ? (
           <Resultado resultado={resultado.valor} />
         ) : (

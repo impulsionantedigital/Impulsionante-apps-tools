@@ -115,6 +115,10 @@
 
 /* ── Barra de salvar, exclusão, lista — mesma receita do CIC ── */
 .barra { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--s-3); margin-bottom: var(--s-5); }
+
+/* Acesso encerrado: só o botão de imprimir, sem a barra de salvar. Some na impressão — o anexo
+ * é só o `Resultado`. */
+.barraImprimir { display: flex; justify-content: flex-end; gap: var(--s-3); margin-bottom: var(--s-5); }
 .campoTitulo { flex: 1; min-width: 240px; }
 .voltar {
   display: inline-flex; align-items: center; gap: var(--s-2);
@@ -167,5 +171,5 @@
 @media print {
   .layout { grid-template-columns: 1fr; }
   .coluna:first-child { display: none; }
-  .barra, .excluirWrap, .voltar { display: none; }
+  .barra, .barraImprimir, .excluirWrap, .voltar { display: none; }
 }
