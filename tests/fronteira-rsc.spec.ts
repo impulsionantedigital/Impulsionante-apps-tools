@@ -130,16 +130,31 @@ describe('fronteira servidor→cliente', () => {
   })
 
   it('a Calculadora resolve o motor pelo registro, e as páginas passam só o id', () => {
-    const calc = readFileSync(resolve(RAIZ, 'app/(app)/ferramentas/cic-2025/Calculadora.tsx'), 'utf8')
+    const calc = readFileSync(resolve(RAIZ, 'app/(app)/ferramentas/[calculadora]/Calculadora.tsx'), 'utf8')
     expect(calc).toMatch(/^\s*['"]use client['"]/m)
     expect(calc).toContain("from '@/lib/indulto-comutacao/registro'")
     expect(calc).toMatch(/decretoId: string/)
     expect(calc).not.toMatch(/^\s*motor: MotorDecreto/m)
 
     for (const pagina of ['novo/page.tsx', '[id]/page.tsx']) {
-      const txt = readFileSync(resolve(RAIZ, 'app/(app)/ferramentas/cic-2025', pagina), 'utf8')
+      const txt = readFileSync(resolve(RAIZ, 'app/(app)/ferramentas/[calculadora]', pagina), 'utf8')
       expect(txt, pagina).toMatch(/<Calculadora[\s\S]{0,120}decretoId=\{motor\.id\}/)
       expect(txt, pagina).not.toMatch(/<Calculadora[\s\S]{0,120}motor=\{motor\}/)
     }
+  })
+
+  it('a rota de calculadora não tem caminho de decreto fixo no código', () => {
+    const base = resolve(RAIZ, 'app/(app)/ferramentas/[calculadora]')
+    const arquivos = [
+      'page.tsx', 'novo/page.tsx', '[id]/page.tsx', 'acoes.ts',
+      'BarraSalvar.tsx', 'ExcluirCalculo.tsx', 'ListaCalculos.tsx',
+    ]
+    const culpados: string[] = []
+    for (const nome of arquivos) {
+      const txt = readFileSync(resolve(base, nome), 'utf8')
+      // Um literal '/ferramentas/cic-' amarra a rota parametrizada a um decreto só.
+      if (/['"`]\/ferramentas\/cic-/.test(txt)) culpados.push(nome)
+    }
+    expect(culpados).toEqual([])
   })
 })

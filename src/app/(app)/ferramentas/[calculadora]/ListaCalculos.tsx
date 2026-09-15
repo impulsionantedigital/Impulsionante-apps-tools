@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { Campo, Entrada as EntradaControle } from '@/components/ui/Campo'
 import { formatarDataHora } from '@/lib/data-hora'
-import { PRODUTOS } from '@/lib/produtos/catalogo'
+import { PRODUTOS, caminhoDoProduto } from '@/lib/produtos/catalogo'
 import { filtrarCalculos } from './filtro-calculos'
 import type { CalculoResumo } from './calculos'
 import estilos from './calculadora.module.css'
@@ -19,7 +19,13 @@ function rotuloDecreto(decretoId: string): string {
  * A lista inteira do membro, sem paginação — nunca há tantos cálculos por membro que isso vire
  * problema (ver investigação: `listarCalculos()` já não pagina).
  */
-export default function ListaCalculos({ calculos }: { calculos: CalculoResumo[] }) {
+export default function ListaCalculos({
+  calculos,
+  slug,
+}: {
+  calculos: CalculoResumo[]
+  slug: string
+}) {
   const [termo, setTermo] = useState('')
   const filtrados = useMemo(() => filtrarCalculos(calculos, termo), [calculos, termo])
 
@@ -42,7 +48,7 @@ export default function ListaCalculos({ calculos }: { calculos: CalculoResumo[] 
             <li key={c.id}>
               {/* O card INTEIRO é o link — antes só o título navegava, e a área de metadados
                   (decreto/motor/data), que ocupa a largura toda, parecia clicável e não era. */}
-              <Link href={`/ferramentas/cic-2025/${c.id}`} className={estilos.item}>
+              <Link href={`${caminhoDoProduto(slug)}/${c.id}`} className={estilos.item}>
                 <b className={estilos.itemTitulo}>{c.titulo}</b>
                 {(c.sentenciado || c.execucao) && (
                   <div className={estilos.itemSub}>

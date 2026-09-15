@@ -24,7 +24,7 @@ vi.mock('@/server/auth/workspace-ativo', () => ({
   resolverWorkspaceAtivo: async () => 'ws-1',
 }))
 
-const { listarCalculos } = await import('@/app/(app)/ferramentas/cic-2025/calculos')
+const { listarCalculos } = await import('@/app/(app)/ferramentas/[calculadora]/calculos')
 
 describe('listarCalculos', () => {
   beforeEach(() => {

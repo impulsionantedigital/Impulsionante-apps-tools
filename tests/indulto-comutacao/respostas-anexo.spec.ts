@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { todasAsRespostas } from '@/lib/indulto-comutacao/respostas-anexo'
 import { motor2025 } from '@/lib/indulto-comutacao/motores/2025'
-import { entradaInicial } from '../../src/app/(app)/ferramentas/cic-2025/Calculadora'
+import { entradaInicial } from '../../src/app/(app)/ferramentas/[calculadora]/Calculadora'
 import type { Entrada, MotorDecreto, Secao } from '@/lib/indulto-comutacao/tipos'
 
 const motorFalso = (secoes: Secao[]): MotorDecreto => ({
