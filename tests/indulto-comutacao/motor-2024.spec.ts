@@ -141,3 +141,63 @@ describe('vereditos de indulto × planilha', () => {
     }
   })
 })
+
+/**
+ * ⚖️ TOLERÂNCIA DE 1 DIA nas durações — deliberada, a mesma de motor-2025.spec.ts.
+ *
+ * A planilha não devolve número no quantum: devolve TEXTO ("X anos Y meses Z
+ * dias"), montado com ROUNDDOWN nos anos e meses e ROUND nos dias
+ * (Cálculo!H139:H143). Esse arredondamento desloca até 1 dia. O motor devolve o
+ * número cru, então a comparação é EM DIAS e aceita |Δ| ≤ 1.
+ *
+ * Não aumente este valor para um teste passar: 2 dias já não é arredondamento,
+ * é regra diferente.
+ */
+const TOLERANCIA_DIAS = 1
+
+/** O texto que a aba Resultado mostra (via IFERROR da coluna H) quando não há comutação. */
+const SEM_COMUTACAO = 'Sem Comutação'
+
+/** "X anos Y meses Z dias" → dias (base 30/360). `null` se o texto não for duração. */
+function durDias(txt: Celula): number | null {
+  const m = String(txt).trim().match(/^-?\s*(\d+)\s+anos?\s+(\d+)\s+meses?\s+(\d+)\s+dias?$/)
+  if (!m) return null
+  return Number(m[1]) * 360 + Number(m[2]) * 30 + Number(m[3])
+}
+
+describe('comutação × planilha', () => {
+  const COMUTACOES = ['art11_I', 'art11_II', 'art11_III', 'art13', 'art13_4'] as const
+
+  it.each(esperado.cenarios.map((c) => [c._nome, c] as const))('%s', (_nome, cenario) => {
+    const r = calcular2024(cenario.entrada)
+    const porId = new Map(r.incisos.map((i) => [i.id, i]))
+
+    for (const id of COMUTACOES) {
+      const obtido = porId.get(id)
+      expect(obtido, `o motor não devolveu ${id}`).toBeDefined()
+      expect(VEREDITOS[obtido!.geral], `${id}.geral`).toBe(String(cenario.planilha[`${id}.geral`]))
+      expect(VEREDITOS[obtido!.especial], `${id}.especial`).toBe(SEM_PREVISAO)
+
+      // 🔴 2024 não tem "pena após a comutação": a planilha não a calcula.
+      expect(obtido!.penaApos, `${id}.penaApos`).toBeNull()
+
+      const txt = cenario.planilha[`${id}.comutacaoTxt`]
+      if (String(txt).trim() === SEM_COMUTACAO) {
+        expect(obtido!.quantum, `${id}.quantum sem comutação`).toBeNull()
+        continue
+      }
+      const esperadoDias = durDias(txt)
+      expect(esperadoDias, `${id}.comutacaoTxt não é duração: ${txt}`).not.toBeNull()
+      expect(obtido!.quantum, `${id}.quantum`).not.toBeNull()
+      expect(Math.abs(obtido!.quantum! - esperadoDias!), `${id}.quantum em dias`).toBeLessThanOrEqual(
+        TOLERANCIA_DIAS,
+      )
+    }
+  })
+
+  it('devolve os 23 dispositivos, indulto antes de comutação', () => {
+    const ids = calcular2024({}).incisos.map((i) => i.id)
+    expect(ids).toHaveLength(23)
+    expect(ids.slice(18)).toEqual([...COMUTACOES])
+  })
+})

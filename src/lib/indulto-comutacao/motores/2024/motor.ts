@@ -549,6 +549,120 @@ export function calcular2024(entrada: Entrada): Resultado {
     incisos.push({ id: 'art12', geral, especial: 'sem_previsao' })
   }
 
+  // ---- Cálculo!M14 — pena cumprida descontando os 2/3 do impeditivo
+  const M14 = M13 - D6 >= M7 + M8 ? M7 + M8 : M13 - D6
+
+  /** Cálculo!G142/G143 — a base da comutação do Art. 13 e do §4º.
+   *  ⚖️ AMBIGUIDADE PRESERVADA: é o MAIOR entre pena cumprida e remanescente,
+   *  quando a comutação legalmente incide sobre a remanescente. Fiel à planilha. */
+  const baseComut = M6 === 0 ? Math.max(M13, M16) : Math.max(M14, M17)
+
+  // ===== Cálculo!123 — Art. 11, I: mulher reincidente, pena ≤ 8 anos, sem violência → 1/4
+  {
+    const E = travaOk
+    const F = dataFatoImpeditivoOk
+    const G = doisTercosOk
+    const H = M8 !== 0
+    const I = M9 <= 8 * 360
+    // ⚖️ AMBIGUIDADE PRESERVADA: a fórmula testa `I20 <> 2`, não `I20 = 1`. Logo
+    // "NÃO SE APLICA" (3) satisfaz TANTO este requisito de reincidente obrigatório
+    // quanto o de não reincidente do inciso II.
+    const J = I20 !== 2
+    const K = I31 !== 2 // mulher
+    const L = D6 + F8 + F7 <= M13
+    const preenche = E && F && G && H && I && J && K && L
+    incisos.push({
+      id: 'art11_I',
+      geral: V(preenche),
+      especial: 'sem_previsao',
+      quantum: preenche ? M8 / 4 : null,
+      penaApos: null,
+    })
+  }
+
+  // ===== Cálculo!126 — Art. 11, II: mulher NÃO reincidente, com filho, sem violência → 2/3
+  {
+    const E = travaOk
+    const F = dataFatoImpeditivoOk
+    const G = doisTercosOk
+    const H = M8 !== 0
+    // 🔴 I126 é `IF(I34=2,"NÃO","OK")`: o marcador ÚNICO de 2024 para "mulher com filho
+    // menor de 16 anos, ou com deficiência/doença crônica grave que necessite de cuidados".
+    // Em 2025 este requisito virou um OR de três combinações — não copie de lá.
+    const I = I34 !== 2
+    // ⚖️ Mesma ambiguidade do inciso I: testa a diferença, não a igualdade.
+    const J = I20 !== 1
+    const K = I31 !== 2 // mulher
+    const L = D6 + G8 + G7 <= M13
+    const preenche = E && F && G && H && I && J && K && L
+    incisos.push({
+      id: 'art11_II',
+      geral: V(preenche),
+      especial: 'sem_previsao',
+      quantum: preenche ? (M8 * 2) / 3 : null,
+      penaApos: null,
+    })
+  }
+
+  // ===== Cálculo!129 — Art. 11, III: mulher REINCIDENTE, com filho, sem violência → 1/2
+  {
+    const E = travaOk
+    const F = dataFatoImpeditivoOk
+    const G = doisTercosOk
+    const H = M8 !== 0
+    const I = I34 !== 2
+    const J = I20 !== 2
+    const K = I31 !== 2 // mulher
+    const L = D6 + G8 + G7 <= M13
+    const preenche = E && F && G && H && I && J && K && L
+    incisos.push({
+      id: 'art11_III',
+      geral: V(preenche),
+      especial: 'sem_previsao',
+      quantum: preenche ? M8 / 2 : null,
+      penaApos: null,
+    })
+  }
+
+  // ===== Cálculo!132 — Art. 13: comutação de 1/5 da remanescente
+  {
+    const E = travaComut
+    const F = dataFatoImpeditivoOk
+    const G = doisTercosOk
+    // ⚖️ AMBIGUIDADE PRESERVADA: `<` ESTRITO. Todo outro dispositivo, inclusive o
+    // §4º logo abaixo, usa `<=`. Quem cumpriu EXATAMENTE a fração tem a comutação
+    // do Art. 13 negada. Provável erro da planilha, mantido por fidelidade.
+    const H = I20 === 2 ? D6 + G7 + G8 < M13 : D6 + E7 + E8 < M13
+    const I = !(M8 === 0 && M7 === 0)
+    const preenche = E && F && G && H && I
+    incisos.push({
+      id: 'art13',
+      geral: V(preenche),
+      especial: 'sem_previsao',
+      quantum: preenche ? baseComut / 5 : null,
+      // 🔴 `null` sempre: a planilha de 2024 não calcula a pena após a comutação.
+      penaApos: null,
+    })
+  }
+
+  // ===== Cálculo!135 — Art. 13, §4º: 2/3 para o perfil do Art. 9º, §2º
+  {
+    const E = travaComut
+    const F = dataFatoImpeditivoOk
+    const G = doisTercosOk
+    const H = I20 === 2 ? D6 + G7 + G8 <= M13 : D6 + E7 + E8 <= M13
+    const I = perfilP
+    const J = !(M8 === 0 && M7 === 0)
+    const preenche = E && F && G && H && I && J
+    incisos.push({
+      id: 'art13_4',
+      geral: V(preenche),
+      especial: 'sem_previsao',
+      quantum: preenche ? (baseComut * 2) / 3 : null,
+      penaApos: null,
+    })
+  }
+
   return {
     incisos,
     resumo: {
