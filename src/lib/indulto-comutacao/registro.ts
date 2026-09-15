@@ -9,8 +9,9 @@
 
 import type { MotorDecreto } from './tipos'
 import { motor2025 } from './motores/2025'
+import { motor2024 } from './motores/2024'
 
-export const REGISTRO: readonly MotorDecreto[] = [motor2025]
+export const REGISTRO: readonly MotorDecreto[] = [motor2025, motor2024]
 
 export function motorPorId(id: string): MotorDecreto | null {
   return REGISTRO.find((m) => m.id === id) ?? null
