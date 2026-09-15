@@ -35,9 +35,9 @@ describe('catálogo de produtos', () => {
     expect(slugDoMotor('indulto-comutacao-1988')).toBeNull()
   })
 
-  it('todo produto do catálogo tem motor no registro', () => {
+  it('todo produto de indulto-comutacao tem motor no registro', () => {
     const idsMotor = REGISTRO.map((m) => m.id)
-    for (const p of PRODUTOS) {
+    for (const p of PRODUTOS.filter((p) => p.familia === 'indulto-comutacao')) {
       expect(idsMotor, `produto ${p.id} sem motor`).toContain(p.id)
     }
   })
@@ -46,5 +46,14 @@ describe('catálogo de produtos', () => {
     for (const m of REGISTRO) {
       expect(produtoDoMotor(m.id), `motor ${m.id} sem produto`).toBe(m.id)
     }
+  })
+
+  it('monta o caminho de produto de detração com o prefixo da família', () => {
+    expect(caminhoDoProduto('recolhimento-noturno')).toBe('/ferramentas/detracao/recolhimento-noturno')
+  })
+
+  it('não muda o caminho de produtos de indulto-comutacao já publicados', () => {
+    expect(caminhoDoProduto('cic-2025')).toBe('/ferramentas/cic-2025')
+    expect(caminhoDoProduto('cic-2024')).toBe('/ferramentas/cic-2024')
   })
 })
