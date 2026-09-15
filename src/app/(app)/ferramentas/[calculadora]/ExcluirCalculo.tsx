@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Trash2 } from 'lucide-react'
 import Botao from '@/components/ui/Botao'
+import { caminhoDoProduto } from '@/lib/produtos/catalogo'
 import { excluirCalculo } from './acoes'
 import estilos from './calculadora.module.css'
 
@@ -23,7 +24,7 @@ import estilos from './calculadora.module.css'
  * tem de funcionar, e a confirmação tem de deixar claro que não dá para
  * desfazer.
  */
-export default function ExcluirCalculo({ id }: { id: string }) {
+export default function ExcluirCalculo({ id, slug }: { id: string; slug: string }) {
   const router = useRouter()
   const [confirmando, setConfirmando] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
@@ -37,7 +38,7 @@ export default function ExcluirCalculo({ id }: { id: string }) {
         setErro(r.erro)
         return
       }
-      router.push('/ferramentas/cic-2025')
+      router.push(caminhoDoProduto(slug))
       router.refresh()
     })
   }

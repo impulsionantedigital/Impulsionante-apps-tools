@@ -17,7 +17,8 @@ describe('catálogo de produtos', () => {
 
   it('reconhece só ids do catálogo', () => {
     expect(ehProdutoConhecido('indulto-comutacao-2025')).toBe(true)
-    expect(ehProdutoConhecido('indulto-comutacao-2024')).toBe(false)
+    expect(ehProdutoConhecido('indulto-comutacao-2024')).toBe(true)
+    expect(ehProdutoConhecido('indulto-comutacao-1988')).toBe(false)
     expect(ehProdutoConhecido(42)).toBe(false)
   })
 

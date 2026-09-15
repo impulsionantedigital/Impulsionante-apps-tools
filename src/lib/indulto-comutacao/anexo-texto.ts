@@ -38,9 +38,13 @@ export function formatarAnexoTexto(
 
   linhas.push('COMUTAÇÃO')
   for (const e of enquadramentosDe(motor, resultado, 'comutacao')) {
+    // 🔴 `penaApos` é opcional por decreto — 2024 não o calcula (sempre `null`, ver
+    // `motores/2024/motor.ts`), e o anexo não deve inventar um número que o motor não tem.
     const quantum =
       e.geral === 'preenche'
-        ? ` (quantum: ${fmtDias(e.quantum ?? null)}; pena após: ${fmtDias(e.penaApos ?? null)})`
+        ? ` (quantum: ${fmtDias(e.quantum ?? null)}${
+            e.penaApos != null ? `; pena após: ${fmtDias(e.penaApos)}` : ''
+          })`
         : ''
     linhas.push(`- ${e.rotulo} (${e.descricao}) — Situação: ${VEREDITOS[e.geral]}${quantum}`)
   }

@@ -10,10 +10,9 @@ import { fraseDeBanco } from '@/lib/erro-de-banco'
 import { detalheSeguro } from '@/lib/sanitizar-erro'
 import { preparar } from './preparar'
 import { exigirEscrita } from '@/server/vendas/acesso'
-import { produtoDoMotor } from '@/lib/produtos/catalogo'
+import { produtoDoMotor, slugDoMotor, caminhoDoProduto } from '@/lib/produtos/catalogo'
 import type { Entrada } from '@/lib/indulto-comutacao/tipos'
 
-const BASE = '/ferramentas/cic-2025'
 const TABELA = 'indulto_comutacao_calculos'
 
 const Id = z.string().uuid()
@@ -37,6 +36,16 @@ async function contexto(): Promise<{ userId: string; ws: string } | { erro: stri
   const ws = await resolverWorkspaceAtivo()
   if (!ws) return { erro: 'Escolha um espaço de trabalho antes de salvar.' }
   return { userId: user.id, ws }
+}
+
+/** O caminho a revalidar para um decreto. Vazio quando o decreto não é vendido —
+ *  nesse caso não há rota para invalidar, e `revalidarDecreto` não faz nada. */
+function revalidarDecreto(decretoId: string, calculoId?: string) {
+  const slug = slugDoMotor(decretoId)
+  if (!slug) return
+  const base = caminhoDoProduto(slug)
+  revalidatePath(base)
+  if (calculoId) revalidatePath(`${base}/${calculoId}`)
 }
 
 export async function salvarCalculo(input: {
@@ -73,7 +82,7 @@ export async function salvarCalculo(input: {
       .single()
     if (error) throw error
 
-    revalidatePath(BASE)
+    revalidarDecreto(p.motor.id)
     return { ok: true, id: (data as { id: string }).id }
   } catch (err) {
     console.error('[indulto-comutacao] salvarCalculo', detalheSeguro(err))
@@ -121,8 +130,7 @@ export async function atualizarCalculo(input: {
     if (error) throw error
     if (!data?.length) return { erro: NAO_ACHOU }
 
-    revalidatePath(BASE)
-    revalidatePath(`${BASE}/${id.data}`)
+    revalidarDecreto(p.motor.id, id.data)
     return { ok: true }
   } catch (err) {
     console.error('[indulto-comutacao] atualizarCalculo', detalheSeguro(err))
@@ -149,11 +157,14 @@ export async function excluirCalculo(idBruto: string): Promise<{ ok: true } | { 
       .eq('id', id.data)
       .eq('workspace_id', ctx.ws)
       .eq('user_id', ctx.userId)
-      .select('id')
+      // 🔴 `decreto_id` volta do próprio DELETE, e não de um parâmetro do cliente: é o
+      // banco que diz qual rota invalidar. Um slug vindo do navegador permitiria mandar
+      // revalidar a rota de outro decreto.
+      .select('id, decreto_id')
     if (error) throw error
     if (!data?.length) return { erro: NAO_ACHOU }
 
-    revalidatePath(BASE)
+    revalidarDecreto((data[0] as { decreto_id: string }).decreto_id)
     return { ok: true }
   } catch (err) {
     console.error('[indulto-comutacao] excluirCalculo', detalheSeguro(err))

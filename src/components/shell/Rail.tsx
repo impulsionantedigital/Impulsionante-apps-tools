@@ -15,7 +15,7 @@ import MarcaLockup from '@/components/MarcaLockup'
 import { lerMarca } from '@/server/marca'
 import { temaDaRequisicao } from '@/server/tema'
 import { souDonoDeAlgumWorkspace } from '@/server/auth/comprador'
-import { PRODUTOS } from '@/lib/produtos/catalogo'
+import { PRODUTOS, caminhoDoProduto } from '@/lib/produtos/catalogo'
 import { estadoDoProduto } from '@/server/vendas/acesso'
 
 
@@ -133,7 +133,7 @@ export default async function Rail({ user, wsAtivo, workspaces, avisoAtualizacao
         {produtosNoMenu.map(({ produto }) => (
           <ItemNav
             key={produto.id}
-            href={produto.href}
+            href={caminhoDoProduto(produto.slug)}
             rotulo={produto.menuTitulo}
             descricao={produto.menuDescricao}
             indentado

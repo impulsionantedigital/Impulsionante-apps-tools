@@ -8,12 +8,18 @@ do motor vão para petições judiciais.
 validacao/
 ├── oraculo.py            avalia a planilha e congela o resultado (este harness)
 ├── requirements.txt      formulas[excel]==1.3.4
-└── 2025/
-    ├── planilha.xlsx     a planilha original do Decreto 12.970/2025 — NÃO EDITAR
-    ├── cenarios.json     as entradas: 15 da POC + 6 posicionados
+├── 2025/
+│   ├── planilha.xlsx     a planilha original do Decreto 12.970/2025 — NÃO EDITAR
+│   ├── cenarios.json     as entradas: 15 da POC + 6 posicionados
+│   ├── esperado.json     GERADO pelo oraculo.py — NÃO EDITAR À MÃO
+│   ├── engine.js         a POC em JS de onde o motor foi portado
+│   ├── validate-original.py, run_engine.js, ui.js   o harness e a tela da POC, como vieram
+└── 2024/
+    ├── planilha.xlsx           a planilha COMERCIAL do Decreto 12.338/2024 — NÃO EDITAR
+    ├── planilha-rascunho.xlsx  só para os rótulos em português (coluna C de Cálculo) — NÃO
+    │                           transcrever fórmula dela: diverge da comercial em três pontos
+    ├── cenarios.json     as 12 entradas do oráculo
     ├── esperado.json     GERADO pelo oraculo.py — NÃO EDITAR À MÃO
-    ├── engine.js         a POC em JS de onde o motor foi portado
-    ├── validate-original.py, run_engine.js, ui.js   o harness e a tela da POC, como vieram
 ```
 
 ## Por que existe
@@ -36,6 +42,21 @@ O `oraculo.py` **não compara nada**. Ele avalia a planilha para cada cenário e
 `2025/esperado.json`. Quem compara é o `motor-2025.spec.ts`, que lê esse congelado e roda em
 Vitest **sem Python e sem planilha**, dentro do `pnpm test` normal.
 
+### 2024 tem uma camada de prova só, e é a mais forte
+
+Não existe `engine.js` para o Decreto 12.338/2024 — o motor foi transcrito direto da planilha, sem
+POC no meio. Logo não há `paridade-*.spec.ts` de 2024: só `motor-2024.spec.ts`, contra a planilha.
+Não é perda grave. Como esta seção já explica, a paridade sozinha nunca bastou: ela não pega erro
+que o próprio `engine.js` tivesse. Quem pega erro de transcrição é a planilha, e essa camada 2024
+tem.
+
+A pasta guarda **duas** planilhas. `planilha.xlsx` é a comercial, a publicada, e é a fonte de
+verdade — é ela que o oráculo avalia. `planilha-rascunho.xlsx` é uma cópia de trabalho anterior,
+preservada só porque a coluna `C` da aba `Cálculo` dela descreve cada requisito em português, o
+que a comercial apagou. **As fórmulas do rascunho divergem em três pontos** (idade do §2º, base do
+inciso VIII e um ramo morto) — nunca transcreva fórmula dele. Ver
+`docs/superpowers/specs/2026-09-14-calculadora-cic-2024-design.md` §0.
+
 ## Como rodar
 
 Da raiz do repositório, com Python 3.9 (verificado em 3.9.6):
@@ -44,6 +65,7 @@ Da raiz do repositório, com Python 3.9 (verificado em 3.9.6):
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r validacao/requirements.txt
 python validacao/oraculo.py 2025      # ~25 s; ~16 s são para montar o modelo
+python validacao/oraculo.py 2024      # idem, para o Decreto 12.338/2024
 pnpm exec vitest run tests/indulto-comutacao/motor-2025.spec.ts
 ```
 

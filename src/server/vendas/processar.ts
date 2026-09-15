@@ -6,7 +6,7 @@ import { emitirSenhaTemporaria, urlDeEntrada } from '@/server/auth/temporaria'
 import { resolverMembro } from '@/server/vendas/identidade'
 import { CHAVE_URL_PUBLICA } from '@/lib/canais/url-publica'
 import { detalheSeguro } from '@/lib/sanitizar-erro'
-import { PRODUTOS, ehProdutoConhecido, rotuloDoProduto } from '@/lib/produtos/catalogo'
+import { PRODUTOS, ehProdutoConhecido, rotuloDoProduto, caminhoDoProduto } from '@/lib/produtos/catalogo'
 import { ehDuracao, type Duracao } from '@/lib/vendas/duracao'
 import { decidirEmails } from '@/lib/vendas/emails'
 import { formatarValor, formatarVencimento, vencimentoMaisTardio } from '@/lib/vendas/formatos'
@@ -444,7 +444,7 @@ export async function notificar(vendaId: string, opcoes: { manual?: boolean } = 
         ...base,
         PRODUCT_NAME: ids.map(rotuloDoProduto).join(', '),
         EXPIRES_AT: vencimentoDe(ids),
-        TOOL_URL: ferramenta ? new URL(ferramenta.href, origem).href : login,
+        TOOL_URL: ferramenta ? new URL(caminhoDoProduto(ferramenta.slug), origem).href : login,
       },
     })
     if ('erro' in r) return { erro: 'falha_enfileirar' }

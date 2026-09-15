@@ -7,7 +7,7 @@ import { motorPorId } from '@/lib/indulto-comutacao/registro'
 import { mesmoResultado } from '@/lib/indulto-comutacao/comparar'
 import Calculadora from '../Calculadora'
 import { estadoDoProduto } from '@/server/vendas/acesso'
-import { produtoDoMotor } from '@/lib/produtos/catalogo'
+import { produtoPorSlug, caminhoDoProduto } from '@/lib/produtos/catalogo'
 import ExcluirCalculo from '../ExcluirCalculo'
 import { lerCalculo } from '../calculos'
 import estilos from '../calculadora.module.css'
@@ -16,19 +16,29 @@ export async function generateMetadata() {
   return { title: await tituloDaPagina('Cálculo salvo') }
 }
 
-export default async function CalculoPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params
+export default async function CalculoPage({
+  params,
+}: {
+  params: Promise<{ calculadora: string; id: string }>
+}) {
+  const { calculadora, id } = await params
+  const produto = produtoPorSlug(calculadora)
+  if (!produto) notFound()
+
   // `lerCalculo` usa o cliente de sessão: a RLS devolve `null` para id
   // inexistente, malformado ou de outro membro/workspace — os três viram 404
   // do mesmo jeito, sem diferenciar qual foi, para não vazar qual caso é.
   const calculo = await lerCalculo(id)
   if (!calculo) notFound()
 
+  // 🔴 O cálculo tem de ser DESTA rota. Sem esta guarda, /ferramentas/cic-2024/<id-de-2025>
+  // abriria um cálculo de 2025 sob o cabeçalho de 2024, com o gate do produto errado.
+  if (calculo.decreto_id !== produto.id) notFound()
+
   const motor = motorPorId(calculo.decreto_id)
   if (!motor) notFound()
 
-  const produto = produtoDoMotor(motor.id)
-  const estado = produto ? await estadoDoProduto(produto) : 'nunca'
+  const estado = await estadoDoProduto(produto.id)
   if (estado === 'nunca') notFound()
 
   // O cálculo é refeito a partir da entrada com o motor ATUAL. Se a fórmula
@@ -38,12 +48,8 @@ export default async function CalculoPage({ params }: { params: Promise<{ id: st
   // diferente seria bug, e não é para esconder.
   //
   // 🔴 A comparação NÃO pode ser `JSON.stringify` bruto: `calculo.resultado`
-  // vem de uma coluna `jsonb`, e o Postgres não preserva a ordem das chaves —
-  // ele devolve as chaves na ordem dele, diferente da ordem em que o motor as
-  // escreve. Duas strings diferentes só pela ordem das chaves disparariam o
-  // aviso em falso na primeira vez que a versão subisse, mesmo sem nenhum
-  // número mudar. `mesmoResultado` compara por estrutura (ver
-  // `src/lib/indulto-comutacao/comparar.ts`).
+  // vem de uma coluna `jsonb`, e o Postgres não preserva a ordem das chaves.
+  // `mesmoResultado` compara por estrutura (ver `comparar.ts`).
   const agora = motor.calcular(calculo.entrada)
   const mudou = calculo.motor_versao !== motor.versao && !mesmoResultado(agora, calculo.resultado)
 
@@ -51,9 +57,9 @@ export default async function CalculoPage({ params }: { params: Promise<{ id: st
     <div className={estilos.pagina}>
       <CabecalhoPagina
         acima={
-          <Link href="/ferramentas/cic-2025" className={estilos.voltar}>
+          <Link href={caminhoDoProduto(produto.slug)} className={estilos.voltar}>
             <ArrowLeft size={14} aria-hidden />
-            GPS CIC - Calculadora 2025
+            {produto.menuTitulo}
           </Link>
         }
         titulo={calculo.titulo}
@@ -71,13 +77,14 @@ export default async function CalculoPage({ params }: { params: Promise<{ id: st
       {/* `decretoId`, não `motor`: função não cruza a fronteira RSC. Ver Calculadora.tsx. */}
       <Calculadora
         decretoId={motor.id}
+        slug={produto.slug}
         inicial={calculo.entrada}
         calculoId={calculo.id}
         tituloInicial={calculo.titulo}
         somenteLeitura={estado !== 'ativo'}
       />
 
-      <ExcluirCalculo id={calculo.id} />
+      <ExcluirCalculo id={calculo.id} slug={produto.slug} />
     </div>
   )
 }

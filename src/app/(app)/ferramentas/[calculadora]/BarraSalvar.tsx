@@ -7,6 +7,7 @@ import Botao from '@/components/ui/Botao'
 // os apelidos evitam a colisão com os tipos de domínio `Campo`/`Entrada`.
 import { Campo as CampoUI, Entrada as EntradaControle } from '@/components/ui/Campo'
 import type { Entrada, MotorDecreto } from '@/lib/indulto-comutacao/tipos'
+import { caminhoDoProduto } from '@/lib/produtos/catalogo'
 import { atualizarCalculo, salvarCalculo } from './acoes'
 import estilos from './calculadora.module.css'
 
@@ -21,6 +22,7 @@ type Aviso = { tom: 'ok' | 'erro'; texto: string }
  */
 export default function BarraSalvar({
   motor,
+  slug,
   entrada,
   calculoId,
   titulo,
@@ -28,6 +30,8 @@ export default function BarraSalvar({
   acoesExtras,
 }: {
   motor: MotorDecreto
+  /** Slug da rota atual — para onde navegar depois de criar o cálculo. */
+  slug: string
   entrada: Entrada
   calculoId?: string
   /** 🔴 O título vive na `Calculadora`, não aqui: o cabeçalho do anexo impresso precisa dele, e
@@ -59,7 +63,7 @@ export default function BarraSalvar({
       }
       const r = await salvarCalculo({ titulo, decretoId: motor.id, entrada })
       if ('erro' in r) return avisar('erro', r.erro)
-      router.push(`/ferramentas/cic-2025/${r.id}`)
+      router.push(`${caminhoDoProduto(slug)}/${r.id}`)
     })
   }
 

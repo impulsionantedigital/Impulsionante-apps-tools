@@ -47,6 +47,7 @@ export function entradaInicial(motor: MotorDecreto): Entrada {
 // qualquer forma.
 export default function Calculadora({
   decretoId,
+  slug,
   inicial,
   calculoId,
   tituloInicial,
@@ -54,6 +55,8 @@ export default function Calculadora({
 }: {
   /** Id do decreto no registro (`motor.id`), não o motor. Ver o comentário acima. */
   decretoId: string
+  /** Slug da rota, para a navegação pós-salvamento. Vem da página, nunca do motor. */
+  slug: string
   inicial?: Entrada
   calculoId?: string
   tituloInicial?: string
@@ -108,6 +111,7 @@ export default function Calculadora({
         ) : (
           <BarraSalvar
             motor={motor}
+            slug={slug}
             entrada={entrada}
             calculoId={calculoId}
             titulo={titulo}
