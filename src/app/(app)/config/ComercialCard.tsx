@@ -27,7 +27,7 @@ const ROTULO_DURACAO: Record<string, string> = {
   vitalicio: 'Vitalício',
 }
 
-type Resposta = { ok: true } | { erro: string }
+type Resposta = { ok: true; detalhe?: string } | { erro: string }
 
 type PropsBloco = {
   vista: VistaComercial
@@ -49,7 +49,7 @@ export default function ComercialCard({ inicial }: { inicial: VistaComercial }) 
         setRecado({ tom: 'erro', texto: r.erro })
         return
       }
-      setRecado({ tom: 'ok', texto: sucesso })
+      setRecado({ tom: 'ok', texto: r.detalhe ?? sucesso })
       router.refresh()
     })
   }
@@ -155,14 +155,23 @@ function WebhookBloco({ vista, executar, pendente }: PropsBloco) {
   )
 }
 
-type Formulario = { id?: string; codigo: string; nome: string; produtos: string[]; duracao: string; ativa: boolean }
-const FORMULARIO_VAZIO: Formulario = { codigo: '', nome: '', produtos: [], duracao: 'mensal', ativa: true }
+type Formulario = {
+  id?: string
+  codigo: string
+  nome: string
+  produtos: string[]
+  duracao: string
+  ativa: boolean
+  reprocessarVendas: boolean
+}
+const FORMULARIO_VAZIO: Formulario = { codigo: '', nome: '', produtos: [], duracao: 'mensal', ativa: true, reprocessarVendas: false }
 
 function OfertasBloco({ vista, executar, pendente }: PropsBloco) {
   const [form, setForm] = useState<Formulario | null>(null)
 
   function editar(o: OfertaItem) {
-    setForm({ id: o.id, codigo: o.codigo, nome: o.nome, produtos: o.produtos, duracao: o.duracao, ativa: o.ativa })
+    // Sempre desmarcado: reprocessar é uma ação pontual, não um estado da oferta.
+    setForm({ id: o.id, codigo: o.codigo, nome: o.nome, produtos: o.produtos, duracao: o.duracao, ativa: o.ativa, reprocessarVendas: false })
   }
 
   function alternarProduto(id: string) {
@@ -232,6 +241,17 @@ function OfertasBloco({ vista, executar, pendente }: PropsBloco) {
           <label className={estilos.ajuda}>
             <input type="checkbox" checked={form.ativa} onChange={(e) => setForm({ ...form, ativa: e.target.checked })} /> Oferta ativa
           </label>
+          {form.id ? (
+            <label className={estilos.ajuda}>
+              <input
+                type="checkbox"
+                checked={form.reprocessarVendas}
+                onChange={(e) => setForm({ ...form, reprocessarVendas: e.target.checked })}
+              />{' '}
+              Reprocessar vendas já realizadas com esta oferta (dá de bônus, para quem está com acesso em dia, os produtos que a
+              oferta ganhou — não estende nem renova nada)
+            </label>
+          ) : null}
           <div className={estilos.acoes}>
             <Botao
               variante="primario"

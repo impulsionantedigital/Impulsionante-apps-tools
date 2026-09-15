@@ -9,7 +9,7 @@ import { ehDonoDoDeploy } from '@/server/auth/dono-deploy'
 import { exigirEngineLiberado } from '@/server/license/exigir'
 import { getSecret, setSecret } from '@/server/secrets'
 import { lerConfig } from '@/server/configuracoes'
-import { encerrarVendaManual, reenviarNotificacoes, reprocessarEvento } from '@/server/vendas/processar'
+import { bonificarVendasDaOferta, encerrarVendaManual, reenviarNotificacoes, reprocessarEvento } from '@/server/vendas/processar'
 import { esquecerTokenHotmart } from '@/server/vendas/token-hotmart'
 import { CHAVE_URL_PUBLICA } from '@/lib/canais/url-publica'
 import { PRODUTOS, ehProdutoConhecido, rotuloDoProduto } from '@/lib/produtos/catalogo'
@@ -18,7 +18,7 @@ import { CHAVE_HOTTOK_HOTMART } from '@/lib/vendas/hotmart'
 import { formatarValor, formatarVencimento, vencimentoMaisTardio } from '@/lib/vendas/formatos'
 import { detalheSeguro } from '@/lib/sanitizar-erro'
 
-type Resposta = { ok: true } | { erro: string }
+type Resposta = { ok: true; detalhe?: string } | { erro: string }
 
 export interface OfertaItem {
   id: string
@@ -216,6 +216,9 @@ const OfertaSchema = z.object({
   produtos: z.array(z.string().refine(ehProdutoConhecido)).min(1).max(50),
   duracao: z.enum(DURACOES),
   ativa: z.boolean(),
+  // Não é coluna da oferta — é um gatilho de uma ação (bônus retroativo), só faz sentido ao
+  // editar (por isso não entra em `campos`/`dados` abaixo).
+  reprocessarVendas: z.boolean().optional(),
 })
 
 export async function salvarOferta(entrada: unknown): Promise<Resposta> {
@@ -225,7 +228,7 @@ export async function salvarOferta(entrada: unknown): Promise<Resposta> {
   const r = OfertaSchema.safeParse(entrada)
   if (!r.success) return { erro: 'Confira o código, o nome, os produtos e a duração da oferta.' }
 
-  const { id, ...campos } = r.data
+  const { id, reprocessarVendas, ...campos } = r.data
   const dados = { ...campos, produtos: [...new Set(campos.produtos)], plataforma: 'hotmart' }
   const db = admin()
   const { data, error } = id
@@ -235,6 +238,23 @@ export async function salvarOferta(entrada: unknown): Promise<Resposta> {
     return { erro: error.code === '23505' ? 'Este código de oferta já está cadastrado.' : 'Não foi possível salvar a oferta.' }
   }
   if (!data?.length) return { erro: 'Oferta não encontrada.' }
+
+  if (id && reprocessarVendas) {
+    try {
+      const { vendasAtualizadas, periodosNovos } = await bonificarVendasDaOferta(ws, id)
+      return {
+        ok: true,
+        detalhe:
+          vendasAtualizadas > 0
+            ? `Oferta salva. ${vendasAtualizadas} venda(s) vigente(s) ganharam ${periodosNovos} produto(s) novo(s).`
+            : 'Oferta salva. Nenhuma venda vigente precisava de produto novo.',
+      }
+    } catch (err) {
+      console.error('[comercial] bônus de vendas falhou:', detalheSeguro(err))
+      return { ok: true, detalhe: 'Oferta salva, mas o reprocessamento das vendas falhou. Tente reprocessar de novo.' }
+    }
+  }
+
   return { ok: true }
 }
 

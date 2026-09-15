@@ -11,7 +11,7 @@ import { ehDuracao, type Duracao } from '@/lib/vendas/duracao'
 import { decidirEmails } from '@/lib/vendas/emails'
 import { formatarValor, formatarVencimento, vencimentoMaisTardio } from '@/lib/vendas/formatos'
 import { lerEventoHotmart, statusInicialDaVenda, type EventoHotmart, type StatusEncerramento } from '@/lib/vendas/hotmart'
-import { calcularPeriodos, type PeriodoExistente, type PeriodoNovo } from '@/lib/vendas/periodos'
+import { calcularPeriodos, calcularBonus, vendaVigente, type PeriodoExistente, type PeriodoNovo } from '@/lib/vendas/periodos'
 
 type Aprovada = Extract<EventoHotmart, { tipo: 'aprovada' }>
 type Encerrada = Extract<EventoHotmart, { tipo: 'encerrada' }>
@@ -345,6 +345,104 @@ export async function encerrarVendaManual(workspaceId: string, vendaId: string):
     .select('id')
   if (error) throw error
   return data?.length ? { ok: true } : { erro: 'Venda não encontrada, ou já encerrada.' }
+}
+
+// ── bônus de oferta ──────────────────────────────────────────────────────────────────────────
+
+/**
+ * Quando o dono edita uma oferta e marca "reprocessar vendas já realizadas", cada venda VIGENTE
+ * daquela oferta ganha os produtos que a oferta tem agora e ela ainda não tem — como bônus, não
+ * como renovação (`calcularBonus`/`vendaVigente` em `@/lib/vendas/periodos` documentam o porquê).
+ *
+ * 🔴 Só ADICIONA produto: uma venda nunca perde o que já tinha, mesmo que a oferta tenha perdido
+ * aquele produto depois. Simetria com a cópia da §16.1: alterar uma oferta nunca revoga o que uma
+ * venda passada já concedeu.
+ */
+export async function bonificarVendasDaOferta(ws: string, ofertaId: string): Promise<{ vendasAtualizadas: number; periodosNovos: number }> {
+  const cli = admin()
+  const vazio = { vendasAtualizadas: 0, periodosNovos: 0 }
+
+  const { data: oferta, error: erroOferta } = await cli
+    .from('ofertas')
+    .select('produtos')
+    .eq('workspace_id', ws)
+    .eq('id', ofertaId)
+    .maybeSingle()
+  if (erroOferta) throw erroOferta
+  const produtosDaOferta = ((oferta?.produtos ?? []) as string[]).filter(ehProdutoConhecido)
+  if (produtosDaOferta.length === 0) return vazio
+
+  const { data: vendas, error: erroVendas } = await cli
+    .from('vendas')
+    .select('id, membro_id, produtos, duracao, aprovada_em, status')
+    .eq('workspace_id', ws)
+    .eq('oferta_id', ofertaId)
+  if (erroVendas) throw erroVendas
+  const listaVendas = (vendas ?? []) as Array<{
+    id: string
+    membro_id: string
+    produtos: string[]
+    duracao: string
+    aprovada_em: string
+    status: string
+  }>
+  if (listaVendas.length === 0) return vazio
+
+  const idsVenda = listaVendas.map((v) => v.id)
+  const { data: periodos, error: erroPeriodos } = await cli
+    .from('vendas_periodos')
+    .select('venda_id, expira_em')
+    .in('venda_id', idsVenda)
+  if (erroPeriodos) throw erroPeriodos
+  const periodosPorVenda = new Map<string, { expiraEm: Date | null }[]>()
+  for (const p of (periodos ?? []) as Array<{ venda_id: string; expira_em: string | null }>) {
+    const lista = periodosPorVenda.get(p.venda_id) ?? []
+    lista.push({ expiraEm: p.expira_em ? new Date(p.expira_em) : null })
+    periodosPorVenda.set(p.venda_id, lista)
+  }
+
+  const agora = new Date()
+  let vendasAtualizadas = 0
+  let periodosNovos = 0
+
+  for (const venda of listaVendas) {
+    if (!ehDuracao(venda.duracao)) continue
+    const vigente = vendaVigente({ status: venda.status, periodos: periodosPorVenda.get(venda.id) ?? [], agora })
+    if (!vigente) continue
+
+    const produtosDaVenda = venda.produtos.filter(ehProdutoConhecido)
+    const bonus = calcularBonus({
+      produtosDaOferta,
+      produtosDaVenda,
+      duracao: venda.duracao,
+      aprovadaEm: new Date(venda.aprovada_em),
+    })
+    if (bonus.length === 0) continue
+
+    const { error: erroInsert } = await cli.from('vendas_periodos').insert(
+      bonus.map((p) => ({
+        workspace_id: ws,
+        membro_id: venda.membro_id,
+        venda_id: venda.id,
+        produto_id: p.produtoId,
+        inicia_em: p.iniciaEm.toISOString(),
+        expira_em: p.expiraEm ? p.expiraEm.toISOString() : null,
+      })),
+    )
+    // Chave (venda, produto) repetida: outro reprocessamento já bonificou esta venda primeiro.
+    if (erroInsert && erroInsert.code !== '23505') throw erroInsert
+
+    const { error: erroUpdate } = await cli
+      .from('vendas')
+      .update({ produtos: [...produtosDaVenda, ...bonus.map((p) => p.produtoId)] })
+      .eq('id', venda.id)
+    if (erroUpdate) throw erroUpdate
+
+    vendasAtualizadas += 1
+    periodosNovos += bonus.length
+  }
+
+  return { vendasAtualizadas, periodosNovos }
 }
 
 // ── e-mails ──────────────────────────────────────────────────────────────────────────────────
