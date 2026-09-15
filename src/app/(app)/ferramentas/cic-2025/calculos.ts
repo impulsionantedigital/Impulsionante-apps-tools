@@ -37,15 +37,19 @@ const COLUNAS_RESUMO =
 const ERRO_LEITURA = 'Não consegui carregar os seus cálculos agora. Tente de novo em alguns instantes.'
 
 /**
- * Os cálculos do membro logado, no workspace ATIVO — resumo, sem `entrada`/`resultado`.
+ * Os cálculos do membro logado, no workspace ATIVO e NAQUELE DECRETO — resumo, sem
+ * `entrada`/`resultado`.
  *
  * A RLS aplica `e_membro(workspace_id) and user_id = auth.uid()`, mas isso é
  * verdadeiro em TODOS os workspaces de que o usuário é membro — quem pertence a
  * dois veria, dentro de um, os cálculos feitos no outro. O `.eq('workspace_id',
  * ws)` é o que falta para restringir ao espaço de trabalho ativo; a RLS
  * continua sendo o que restringe ao próprio dono.
+ *
+ * 🔴 `decreto_id` NÃO é refinamento cosmético: cada rota de calculadora é de um
+ * decreto só, e um cálculo de outro decreto abriria com o motor errado no cabeçalho.
  */
-export async function listarCalculos(): Promise<CalculoResumo[]> {
+export async function listarCalculos(decretoId: string): Promise<CalculoResumo[]> {
   const cliente = await criarClienteServidor()
   const ws = await resolverWorkspaceAtivo({ cliente })
   if (!ws) return []
@@ -54,6 +58,7 @@ export async function listarCalculos(): Promise<CalculoResumo[]> {
     .from('indulto_comutacao_calculos')
     .select(COLUNAS_RESUMO)
     .eq('workspace_id', ws)
+    .eq('decreto_id', decretoId)
     .order('atualizado_em', { ascending: false })
 
   if (error) {

@@ -23,7 +23,9 @@ export default async function ListaPage() {
   if (estados.every((e) => e === 'nunca')) redirect('/ferramentas')
   const algumAtivo = estados.some((e) => e === 'ativo')
 
-  const calculos = await listarCalculos()
+  // Temporário: esta rota ainda é só de 2025. A Task 3 troca por `produto.id`,
+  // resolvido pelo slug da rota parametrizada.
+  const calculos = await listarCalculos('indulto-comutacao-2025')
   const novo = algumAtivo ? (
     <Botao href="/ferramentas/cic-2025/novo" variante="primario">
       Novo cálculo
