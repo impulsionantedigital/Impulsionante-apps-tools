@@ -6,12 +6,15 @@ const campos = QUESTIONARIO_2024.flatMap((s) => s.campos)
 const porChave = new Map(campos.map((c) => [c.chave, c]))
 
 describe('QUESTIONARIO_2024', () => {
-  it('traz as 12 seções na ordem da planilha', () => {
+  it('traz as 12 seções na ordem da planilha, com o perfil em segundo', () => {
+    // A ordem é de TELA, não da planilha: o dono do produto pediu o perfil logo
+    // abaixo da identificação (antes das penas). O motor lê por chave e não
+    // depende disto; mudar a ordem aqui não muda nenhum veredito.
     expect(QUESTIONARIO_2024.map((s) => s.id)).toEqual([
       'identificacao',
+      'perfil',
       'penas-impostas',
       'pena-cumprida',
-      'perfil',
       'regime-situacao',
       'educacao-trabalho',
       'pessoais-familiares',

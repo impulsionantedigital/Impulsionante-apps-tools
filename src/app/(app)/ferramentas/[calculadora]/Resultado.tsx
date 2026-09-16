@@ -100,15 +100,18 @@ export default function Resultado({
         ))}
       </div>
 
-      {/* Sempre visível, com TODAS as entradas — são interpretações da planilha
-         que o advogado precisa conhecer antes de assinar a petição. Nada de
-         esconder, resumir ou truncar. */}
-      <section className={estilos.validar} aria-label="Pontos a validar juridicamente">
-        <h2>Pontos a validar juridicamente</h2>
-        <ul>
-          {motor.avisos.validarJuridicamente.map((a) => <li key={a}>{a}</li>)}
-        </ul>
-      </section>
+      {/* 🔴 O bloco "Pontos a validar juridicamente" NÃO é renderizado a pedido do
+         dono do produto (o card com as cinco interpretações da planilha saiu da
+         tela). O conteúdo continua no motor (`motor.avisos.validarJuridicamente`),
+         íntegro e testado — a petição e a auditoria ainda o leem; só a tela não o
+         exibe. Para voltar atrás, basta reativar este bloco:
+
+         <section className={estilos.validar} aria-label="Pontos a validar juridicamente">
+           <h2>Pontos a validar juridicamente</h2>
+           <ul>
+             {motor.avisos.validarJuridicamente.map((a) => <li key={a}>{a}</li>)}
+           </ul>
+         </section> */}
 
       <section className={estilos.notas} aria-label="Notas">
         {/* Só `avisos.fixos` aqui. `resultado.avisos` (as duas ambiguidades

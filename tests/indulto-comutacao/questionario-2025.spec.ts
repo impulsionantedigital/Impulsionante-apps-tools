@@ -8,12 +8,15 @@ const campos = QUESTIONARIO_2025.flatMap((s) => s.campos)
 const porChave = new Map(campos.map((c) => [c.chave, c]))
 
 describe('QUESTIONARIO_2025', () => {
-  it('traz as 12 seções do decreto, na ordem da POC', () => {
+  it('traz as 12 seções do decreto, com o perfil em segundo', () => {
+    // A ordem é de TELA, não da POC: o dono do produto pediu o perfil logo abaixo
+    // da identificação (antes das penas). O motor lê por chave e não depende disto;
+    // mudar a ordem aqui não muda nenhum veredito.
     expect(QUESTIONARIO_2025.map((s) => s.id)).toEqual([
       'identificacao',
+      'perfil',
       'penas-impostas',
       'pena-cumprida',
-      'perfil',
       'regime-situacao',
       'educacao-trabalho',
       'pessoais-familiares',

@@ -26,6 +26,19 @@ export const QUESTIONARIO_2025: Secao[] = [
     ],
   },
   {
+    // 🔴 O perfil vem LOGO ABAIXO da identificação, antes das penas. A ordem das seções
+    // é a ordem em que a tela desenha o questionário — o motor não depende dela (lê cada
+    // campo pela chave, onde quer que esteja), mas a numeração do produto e o relato do
+    // usuário "card 2" dependem.
+    id: 'perfil',
+    titulo: 'Perfil do sentenciado',
+    campos: [
+      { tipo: 'selecao', chave: 'sexo', rotulo: 'Sexo', opcoes: ['MASCULINO', 'FEMININO'] },
+      { tipo: 'data', chave: 'dataNascimento', rotulo: 'Data de nascimento' },
+      { tipo: 'selecao', chave: 'reincidente', rotulo: 'Reincidente em 25/12/2025?', opcoes: SN },
+    ],
+  },
+  {
     id: 'penas-impostas',
     titulo: 'Penas impostas (em 25/12/2025)',
     aviso: 'Some as penas por categoria de crime. Impeditivo = hediondo/equiparado + crimes previstos no Art. 1º.',
@@ -48,21 +61,16 @@ export const QUESTIONARIO_2025: Secao[] = [
     ],
   },
   {
-    id: 'perfil',
-    titulo: 'Perfil do sentenciado',
-    campos: [
-      { tipo: 'selecao', chave: 'sexo', rotulo: 'Sexo', opcoes: ['MASCULINO', 'FEMININO'] },
-      { tipo: 'data', chave: 'dataNascimento', rotulo: 'Data de nascimento' },
-      { tipo: 'selecao', chave: 'reincidente', rotulo: 'Reincidente em 25/12/2025?', opcoes: SN },
-      { tipo: 'selecao', chave: 'regime', rotulo: 'Regime prisional em 25/12/2025', opcoes: ['FECHADO', 'SEMIABERTO', 'ABERTO'] },
-      { tipo: 'selecao', chave: 'livramentoCondicional', rotulo: 'Em livramento condicional em 25/12/2025?', opcoes: SN },
-      { tipo: 'data', chave: 'dataUltimaPrisao', rotulo: 'Data da última prisão' },
-    ],
-  },
-  {
+    // 🔴 `regime`, `livramentoCondicional` e `dataUltimaPrisao` abrem esta seção (o perfil
+    // agora termina na reincidência). Mudaram de SEÇÃO, não de CHAVE nem de ROTULO: o motor
+    // lê as chaves por nome e a tela só desenha a ordem declarada aqui. Nada além da posição
+    // destes três pode mudar sem revisar o `movimentacao` dos campos.
     id: 'regime-situacao',
     titulo: 'Regime, tempo e situação prisional',
     campos: [
+      { tipo: 'selecao', chave: 'regime', rotulo: 'Regime prisional em 25/12/2025', opcoes: ['FECHADO', 'SEMIABERTO', 'ABERTO'] },
+      { tipo: 'selecao', chave: 'livramentoCondicional', rotulo: 'Em livramento condicional em 25/12/2025?', opcoes: SN },
+      { tipo: 'data', chave: 'dataUltimaPrisao', rotulo: 'Data da última prisão' },
       { tipo: 'numero', chave: 'diasRemicao', rotulo: 'Total de dias de remição após a última prisão' },
       {
         tipo: 'tempo',

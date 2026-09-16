@@ -43,6 +43,19 @@ export const QUESTIONARIO_2024: Secao[] = [
     ],
   },
   {
+    // 🔴 O perfil vem LOGO ABAIXO da identificação, antes das penas. A ordem das seções
+    // é a ordem em que a tela desenha o questionário — o motor não depende dela (lê cada
+    // campo pela chave, onde quer que esteja), mas a numeração do produto e o relato do
+    // usuário "card 2" dependem.
+    id: 'perfil',
+    titulo: 'Perfil do sentenciado',
+    campos: [
+      { tipo: 'selecao', chave: 'sexo', rotulo: 'Sexo', opcoes: ['MASCULINO', 'FEMININO'] },
+      { tipo: 'data', chave: 'dataNascimento', rotulo: 'Data de nascimento' },
+      { tipo: 'selecao', chave: 'reincidente', rotulo: 'Reincidente?', opcoes: SN },
+    ],
+  },
+  {
     id: 'penas-impostas',
     titulo: 'Penas impostas (em 25/12/2024)',
     aviso:
@@ -83,12 +96,12 @@ export const QUESTIONARIO_2024: Secao[] = [
     ],
   },
   {
-    id: 'perfil',
-    titulo: 'Perfil do sentenciado',
+    // 🔴 `regime`, `livramentoCondicional` e `dataUltimaPrisao` abrem esta seção (o perfil
+    // agora termina na reincidência). Mudaram de SEÇÃO, não de CHAVE nem de ROTULO: o motor
+    // lê as chaves por nome e a tela só desenha a ordem declarada aqui.
+    id: 'regime-situacao',
+    titulo: 'Regime, tempo e situação prisional',
     campos: [
-      { tipo: 'selecao', chave: 'sexo', rotulo: 'Sexo', opcoes: ['MASCULINO', 'FEMININO'] },
-      { tipo: 'data', chave: 'dataNascimento', rotulo: 'Data de nascimento' },
-      { tipo: 'selecao', chave: 'reincidente', rotulo: 'Reincidente?', opcoes: SN },
       {
         tipo: 'selecao',
         chave: 'regime',
@@ -102,12 +115,6 @@ export const QUESTIONARIO_2024: Secao[] = [
         opcoes: SN,
       },
       { tipo: 'data', chave: 'dataUltimaPrisao', rotulo: 'Data da última prisão' },
-    ],
-  },
-  {
-    id: 'regime-situacao',
-    titulo: 'Regime, tempo e situação prisional',
-    campos: [
       {
         tipo: 'numero',
         chave: 'diasRemicao',
