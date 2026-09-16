@@ -125,9 +125,10 @@ todas provadas por inversão). **História completa, causa, regra e varredura do
 (`app.gpsdapena.com.br`) com a conta `+4`: `/novo` abre e o cálculo ao vivo responde (5 anos →
 remanescente 5 anos, 1/5 = 1 ano, 1/2 = 2 anos 6 meses), zero erros no console.
 
-⚠️ **`origin/vendas-hotmart` continua em `65c4f84`, com o defeito** (`<Calculadora motor={motor} />`).
-Quem retomar dali ressuscita o 500. Apagar (`git push origin --delete vendas-hotmart`) ou sobrescrever
-(`git push origin main:vendas-hotmart --force`).
+✅ **Resolvido em 16/09/2026: a branch não existe mais**, nem local nem remota — conferido com
+`git ls-remote --heads origin`. Este aviso fica registrado só como história: enquanto existiu, ela
+apontava para `65c4f84` com o defeito (`<Calculadora motor={motor} />`), e quem retomasse dali
+ressuscitaria o 500.
 
 **Verificado em produção em 2026-09-14 — o circuito inteiro, ponta a ponta:**
 
@@ -225,7 +226,10 @@ enviar() { # $1=evento $2=transacao $3=email $4=event_id
 1. **Trocar credenciais** que foram expostas numa conversa: senha do banco, chave de serviço do
    Supabase e senha SMTP. Usar um `TICK_SECRET` aleatório e independente, nunca um pedaço de outra
    chave.
-1b. **`origin/vendas-hotmart` ainda serve o código com o defeito do 500** — apagar ou sobrescrever.
+1b. ✅ **RESOLVIDO em 16/09/2026 — `vendas-hotmart` não existe mais.** Conferido com
+   `git ls-remote --heads origin`: restam só `main`, `calculadora2024` e
+   `calculadora-indulto-comutacao`. Nada a fazer. Se algum dia reaparecer, lembre que o conteúdo
+   dela em `65c4f84` carregava o 500 da calculadora (`<Calculadora motor={motor} />`).
 1c. **Limpar os dados de teste** antes de vender: 3 vendas (`HP0000000003/4/5`), 3 contas de teste e
    os períodos delas. As 3 ofertas, os 4 modelos de e-mail e o hottok ficam. A conta
    `alexandre.pavon+4@gmail.com` ficou com a senha `TesteLocal2026!`, definida durante a verificação;
