@@ -4,7 +4,7 @@ import CabecalhoPagina from '@/components/ui/CabecalhoPagina'
 import EstadoVazio from '@/components/ui/EstadoVazio'
 import Botao from '@/components/ui/Botao'
 import { formatarDataHora } from '@/lib/data-hora'
-import { listarCalculos, type CalculoResumo } from '../../[calculadora]/calculos'
+import { listarCalculos, type CalculoResumo } from './calculos'
 import BotaoExcluirCalculo from './BotaoExcluirCalculo'
 import estilos from './lista-calculos.module.css'
 

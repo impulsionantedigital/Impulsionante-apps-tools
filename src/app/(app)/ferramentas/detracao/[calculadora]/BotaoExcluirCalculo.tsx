@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react'
 import { Trash2 } from 'lucide-react'
 import Botao from '@/components/ui/Botao'
-import { excluirCalculo } from '../../[calculadora]/acoes'
+import { excluirCalculo } from './acoes'
 
 export default function BotaoExcluirCalculo({ id }: { id: string }) {
   const [erro, setErro] = useState<string | null>(null)
