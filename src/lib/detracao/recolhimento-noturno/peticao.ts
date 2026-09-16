@@ -2,8 +2,8 @@
 //
 // Texto de anotação processual para instruir o pedido de detração — um parágrafo fixo que relata
 // o período e o total apurado, sem endereçamento nem fundamentação (isso fica a cargo de quem
-// protocola). A homologação/truncagem para dias inteiros é decisão do juízo: aqui o total de dias
-// é informativo, em fração — por isso não usa `resultado.diasDetracao` (que já vem truncado).
+// protocola). O número de dias é o mesmo `diasDetracao` do destaque na tela (floor de
+// totalMinutos/1440) — não a fração bruta, para não divergir do que já aparece pro usuário.
 
 import { paraInstante, formatarInstante } from './intervalos'
 import type { ResultadoCalculo } from './tipos'
@@ -32,7 +32,7 @@ export function gerarTextoPeticao(resultado: ResultadoCalculo): string {
   const dataInicio = formatarDataBR(intervalos[0].inicio.slice(0, 10))
   const dataFim = formatarDataBR(dataDoFim(intervalos[intervalos.length - 1].fim))
   const horas = (resultado.totalMinutos / 60).toFixed(2)
-  const dias = (resultado.totalMinutos / 1440).toFixed(2)
+  const dias = resultado.diasDetracao
 
   return `Em cumprimento à decisão exarada nos autos, procedo às seguintes anotações:
 O recuperando permaneceu em recolhimento noturno do dia ${dataInicio} a ${dataFim}.

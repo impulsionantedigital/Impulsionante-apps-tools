@@ -21,6 +21,7 @@ describe('gerarTextoPeticao', () => {
     const texto = gerarTextoPeticao(
       resultado({
         totalMinutos: 13712 * 60,
+        diasDetracao: 571,
         intervalosConsolidados: [
           { inicio: '2022-01-05T22:00:00', fim: '2022-01-06T06:00:00' },
           { inicio: '2026-09-13T22:00:00', fim: '2026-09-14T06:00:00' },
@@ -30,7 +31,7 @@ describe('gerarTextoPeticao', () => {
     expect(texto).toBe(
       'Em cumprimento à decisão exarada nos autos, procedo às seguintes anotações:\n' +
         'O recuperando permaneceu em recolhimento noturno do dia 05/01/2022 a 14/09/2026.\n' +
-        'No período indicado, cumpriu 13712.00 horas de recolhimento, correspondentes a 571.33 dias de detração.',
+        'No período indicado, cumpriu 13712.00 horas de recolhimento, correspondentes a 571 dias de detração.',
     )
   })
 

@@ -246,6 +246,56 @@ enviar() { # $1=evento $2=transacao $3=email $4=event_id
 
 **Próximo:** uma terceira correção que o usuário vai trazer.
 
+## Detração por Recolhimento Noturno — o que ficou fora do plano (16/09/2026)
+
+O plano de 15 tarefas (`docs/superpowers/plans/2026-09-15-detracao-recolhimento-noturno.md`) está
+concluído. O que segue foi trabalho feito **depois** da Task 14, sem plano próprio, e não está
+registrado lá.
+
+### Publicado em `f7a760a`
+
+- **Botão de petição** — `BotaoPeticao.tsx`, `PeticaoOverlay.tsx` e
+  `src/lib/detracao/recolhimento-noturno/peticao.ts`: um texto de anotação processual pedindo a
+detreação, com overlay para copiar.
+
+### Sem commit (nesta sessão de 16/09/2026)
+
+- **Painel `Resumo`** — `src/lib/detracao/recolhimento-noturno/resumo.ts` + `resumo.spec.ts` (5
+testes) + `Resumo.tsx`: quebra o total por categoria de dia (útil / fim de semana / feriado),
+fatiando cada intervalo pela meia-noite e contando cada fatia na categoria da SUA própria data
+civil. Diferente da convenção do motor, que atribui o turno inteiro ao dia em que começa.
+- **O total volta ao papel** — a petição passou a usar `resultado.diasDetracao` em vez de
+  `(totalMinutos/1440).toFixed(2)`, para o número não divergir do destaque da tela. E, na folha
+  impressa, o `Resumo` passou a abrir com **"Você tem N dias de detração"**. Veja o defeito abaixo.
+- **`CabecalhoAnexo.tsx`** (novo) — identificação, protocolo e data do anexo, visível só na
+  impressão. Mesmo desenho do CIC, inclusive a data fixada num `useEffect`.
+
+### 🔴 O defeito que a verificação no navegador pegou
+A tabela de `@media print` foi escrita com `.painel` oculto e `.resumo` visível — mas o **total
+apurado vivia só no `.painel`**. A folha saía com datas, período noturno e a composição por
+categoria, **e nenhum número de dias**. Quem imprimia para anexar à petição levava tudo menos o
+resultado. Corrigido levando o total para dentro do `Resumo`; a regra completa, com as decisões que
+um revisor tende a desfazer, está em
+`docs/detracao-recolhimento-noturno/verificacoes-de-conjunto.md`.
+
+### Verificado em 16/09/2026
+- `pnpm test`: **1753 testes, 58 arquivos, todos verdes**.
+- `pnpm exec tsc --noEmit`: sem erros. `pnpm build`: compila.
+- `next-env.d.ts` regenerado pelo build e revertido; varredura de duplicados `* [0-9].*` limpa.
+- **Navegador de verdade**, contra o banco de produção, `pnpm dev` na 3000: um mês de recolhimento
+  noturno das 22h às 06h em todos os dias → tela e papel devolveram o mesmo **"Você tem 9 dias de
+  detração"**, zero erros de console, zero requisições falhas.
+
+⚠️ **`pnpm start` não serve esta build** — é `output: standalone`, e os chunks dão 404, deixando a
+página sem montar. Parece defeito do código e não é. Use `pnpm dev` para conferir telas.
+
+### O que segue pendente nesta feature
+- Nada foi salvo nem excluído num cálculo real nesta sessão (a verificação foi de leitura em
+  `/novo`). O roteiro de 10 passos de `docs/calculadora-indulto-comutacao/pendencias-e-roteiro-de-teste.md`
+também vale para esta tela, adaptado.
+- A exportação em PDF/CSV/JSON que o `LEIA-ME` da pasta promete continua não existindo.
+- A comparação com a calculadora de referência (Streamlit) idem.
+
 ### Dívida menor, sem urgência
 
 4. **Duas ressalvas sem teste automatizado**, corretas no código: `lerModelo` propagar o erro do

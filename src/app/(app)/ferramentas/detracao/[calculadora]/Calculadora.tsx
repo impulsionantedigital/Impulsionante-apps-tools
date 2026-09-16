@@ -3,6 +3,8 @@
 import { useMemo, useState } from 'react'
 import Formulario from './Formulario'
 import Resultado from './Resultado'
+import Resumo from './Resumo'
+import CabecalhoAnexo from './CabecalhoAnexo'
 import BarraSalvar from './BarraSalvar'
 import BotaoImprimir from './BotaoImprimir'
 import BotaoPeticao from './BotaoPeticao'
@@ -106,7 +108,12 @@ export default function Calculadora({
           />
         )}
         {resultado.ok ? (
-          <Resultado resultado={resultado.valor} />
+          <>
+            {/* Só no papel: identifica o caso no anexo. Ver CabecalhoAnexo.tsx. */}
+            <CabecalhoAnexo titulo={titulo} calculoId={calculoId} />
+            <Resultado resultado={resultado.valor} />
+            <Resumo entrada={entrada} resultado={resultado.valor} observacoes={entrada.observacoes} />
+          </>
         ) : (
           <p className={estilos.mensagem} data-tom="erro" role="alert">
             {resultado.erro}

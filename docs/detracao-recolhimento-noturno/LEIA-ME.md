@@ -56,9 +56,21 @@ Se houver monitoramento eletrônico durante o recolhimento, isso é registrado c
 ---
 
 ## Limitações desta versão
-
 - **Exportação de arquivos:** A exportação em PDF, CSV ou JSON ainda está em desenvolvimento. No momento, você pode copiar ou fotografar o resultado na tela.
 - **Comparação com referência:** A validação cruzada com a calculadora de referência (Streamlit) ainda não foi implementada.
+
+---
+
+## Documentação técnica
+| Arquivo | Para quê |
+|---|---|
+| [`logica.md`](logica.md) | A regra jurídica e o algoritmo versionados (`RN-1.0`) — é este arquivo que responde "por que este cálculo deu esse número" um ano depois |
+| [`verificacoes-de-conjunto.md`](verificacoes-de-conjunto.md) | **Leia antes de mexer na impressão.** O que a folha de impressão leva ao anexo de petição e por quê, o defeito do total ausente que foi corrigido em 16/09/2026, e como rodar a tela localmente |
+
+Documentos de origem, versionados junto:
+
+- **Spec:** [`../superpowers/specs/2026-09-15-detracao-recolhimento-noturno-design.md`](../superpowers/specs/2026-09-15-detracao-recolhimento-noturno-design.md)
+- **Plano:** [`../superpowers/plans/2026-09-15-detracao-recolhimento-noturno.md`](../superpowers/plans/2026-09-15-detracao-recolhimento-noturno.md)
 
 ---
 
