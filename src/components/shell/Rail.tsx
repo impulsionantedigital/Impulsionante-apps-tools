@@ -11,7 +11,6 @@ import estilos from './Rail.module.css'
 import ItemNav from './ItemNav'
 import type { WorkspaceOpcao } from './SeletorWorkspace'
 import MenuUsuario, { type UsuarioResumo } from './MenuUsuario'
-import MarcaLockup from '@/components/MarcaLockup'
 import { lerMarca } from '@/server/marca'
 import { temaDaRequisicao } from '@/server/tema'
 import { souDonoDeAlgumWorkspace } from '@/server/auth/comprador'
@@ -96,13 +95,18 @@ export default async function Rail({ user, wsAtivo, workspaces, avisoAtualizacao
   return (
     <aside className={estilos.rail}>
       <div className={estilos.marca}>
-        <MarcaLockup
-          logo={marca.logo}
-          nome={marca.nome}
-          classeTile={estilos.tile}
-          classeLogo={estilos.logo}
-          tamanhoGlifo={16}
-        />
+        {/*
+         * 🔴 Logo FIXA em asset, não a marca configurável (decisão de 2026-09-16): a sidebar
+         * usa `public/marca/logo-clara.png` (traço claro) no tema ESCURO e
+         * `public/marca/logo-escura.png` (traço escuro) no tema CLARO. O rail nunca fica sobre
+         * a página — ele tem superfície própria —, então a logo precisa acompanhar o tema do
+         * rail para continuar legível. As duas `<img>` são renderizadas e o CSS escolhe qual
+         * aparece por `:root[data-tema="claro"]` (ver `Rail.module.css`). Não é `MarcaLockup`
+         * porque aquele respeita a marca do comprador (Configurações → Marca). */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/marca/logo-clara.png" alt={marca.nome} className={`${estilos.logo} ${estilos.logoClara}`} />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/marca/logo-escura.png" alt={marca.nome} className={`${estilos.logo} ${estilos.logoEscura}`} />
         <div className={estilos.marcaTexto}>
           <b>{marca.nome}</b>
         </div>

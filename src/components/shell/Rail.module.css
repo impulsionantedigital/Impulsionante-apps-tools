@@ -148,6 +148,27 @@
   border-radius: var(--r-pequeno);
 }
 
+/* A logo da sidebar é FIXA em asset e acompanha o TEMA (decisão de 2026-09-16): a clara
+ * (traço claro) no tema escuro — o padrão — e a escura (traço escuro) no tema claro.
+ *
+ * 🔴 É a exceção deliberada à regra de `globals.css` de que "nenhum módulo CSS sabe em que
+ * tema está": uma IMAGEM de marca não deriva de token de cor, então não há token pra ler — a
+ * única forma de servir as duas artes é olhar o `data-tema` do `<html>`. O seletor sai do
+ * `:root` (e não de uma classe local), que é exatamente como o `globals.css` já alterna os
+ * temas; não usa `!important` nem depende de ordem. O rail nunca fica sobre a página (tem
+ * superfície própria), então a logo segue o tema do rail, não o do miolo. */
+.logoEscura {
+  display: none;
+}
+
+:global(:root[data-tema='claro']) .logoClara {
+  display: none;
+}
+
+:global(:root[data-tema='claro']) .logoEscura {
+  display: block;
+}
+
 .marcaTexto {
   display: flex;
   flex-direction: column;
