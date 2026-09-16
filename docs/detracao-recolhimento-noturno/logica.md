@@ -198,8 +198,22 @@ O padrão é `America/Sao_Paulo`, mas pode ser alterado. Todo cálculo usa data/
 Se um intervalo gerado tem fim menor ou igual ao início, ele é descartado (não contribui ao cômputo).
 
 ### Segmento sem dias aplicáveis
+Se um segmento não tem `diasSemanaNoturno` nem `diasFolgaIntegral` nem `feriadosIntegral` nem `intervalosAdicionais`, ele gera zero minutos — sem erro sem presunção.
 
-Se um segmento não tem `diasSemanaNoturno` nem `diasFolgaIntegral` nem `feriadosIntegral` nem `intervalosAdicionais`, ele gera zero minutos — sem erro, sem presunção.
+### O turno noturno pertence ao dia em que COMEÇA (madrugada inclusa)
+
+Um turno `22:00 → 06:00` que começa num dia marcado em `diasSemanaNoturno` **conta por inteiro**, incluindo as horas que caem na madrugada do dia seguinte. A madrugada **não** é um turno novo: se o dia seguinte também estiver marcado, ele gera o **próprio** turno (`22:00` do dia seguinte `→ 06:00` da madrugada posterior), separado.
+
+É isso que faz dois dias consecutivos marcarem 16h num turno de 8h — e não 8h nem 22h.
+
+### O ÚLTIMO dia do período gera o turno dele
+Quando o último dia do período está marcado em `diasSemanaNoturno`, a janela é estendida até o **fim** do turno daquele dia (`06:00` do dia seguinte, no caso de `22:00 → 06:00`), para que o turno não seja cortado a zero.
+
+**Por que:** "Fim da cautelar = 01/01/2026" significa que a cautelar vigeu **naquele dia**. O turno das 22:00 de 01/01/2026 é o cumprimento daquele dia e conta por inteiro — antes, a janela fechava à meia-noite de 01/01 e o turno era descartado, o que fazia o total sair **1 dia a menos** que a conta `dias × horas ÷ 24`.
+
+A extensão é sempre para o **fim** do turno, nunca para o **início** dele: a janela é semiaberta `[início, fim)`, então parar no instante de início descartaria o turno inteiro (a fronteira encosta e a interseção é vazia).
+
+Quando o último dia **não** está marcado em `diasSemanaNoturno` (por exemplo, só há folga integral), a janela termina à meia-noite seguinte, sem extensão — a folga integral já é um dia completo de 24h e esticá-la criaria um dia espúrio.
 
 ---
 
@@ -208,6 +222,7 @@ Se um segmento não tem `diasSemanaNoturno` nem `diasFolgaIntegral` nem `feriado
 | Versão | Data | Mudança |
 |--------|------|---------|
 | **RN-1.0** | 15/09/2026 | Versão inicial. Motor de cálculo implementado conforme Tema Repetitivo STJ 1.155 e REsp 1.977.135/SC. Suporta período noturno configurável, dias de folga integral, feriados, intervalos adicionais e exclusões com justificativa. Conversão: `dias = floor(total_minutos / 1440)`. |
+| **RN-1.1** | 16/09/2026 | Correção: o turno noturno do **último dia** do período era descartado (a janela fechava à meia-noite daquele dia, antes das 22:00), e o total saía 1 dia a menos que `dias × horas ÷ 24`. A janela agora é estendida até o **fim** do turno do último dia, quando ele está marcado. Documentados também o pertencimento do turno ao dia em que começa e a fronteira semiaberta. Mesmos dados, antes e depois: `01/01/2020`–`01/01/2026`, todos os dias, `22:00–06:00` — de `17538:00 / 730 dias` para **`17544:00 / 731 dias`**. |
 
 ---
 

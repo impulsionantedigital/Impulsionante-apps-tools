@@ -139,6 +139,16 @@
   color: var(--tinta-2);
 }
 .resumoLinha b { color: var(--tinta); font-weight: 600; }
+/* Cabeçalho da composição por dia de calendário — precisa ser visivelmente secundário ao total de
+ * detração, para o advogado não ler "2445 dias" como se fosse o resultado do cálculo. */
+.resumoSubCategoria {
+  font-size: var(--fs-micro);
+  line-height: var(--lh-micro);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--ls-micro);
+  color: var(--tinta-3);
+}
 .resumoCategorias {
   display: grid;
   gap: var(--s-2);

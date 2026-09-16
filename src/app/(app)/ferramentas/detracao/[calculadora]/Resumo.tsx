@@ -42,6 +42,12 @@ export default function Resumo({
   const feriados = entrada.segmentos.flatMap((s) => s.feriadosIntegral).filter(Boolean)
   const categorias = calcularResumoDetalhado(resultado.intervalosConsolidados, feriados)
   const total = `Você tem ${resultado.diasDetracao} dias de detração`
+  // 🔴 O rótulo diz a UNIDADE (dias de 24h) porque abaixo, em "Composição por dia de calendário",
+  // "dias" significa outra coisa. Sem esta desambiguação o advogado lê os dois como o mesmo número.
+  const rotuloTotal =
+    resultado.diasDetracao === 1
+      ? 'Total de detração — em dias de 24h'
+      : 'Total de detração — em dias de 24h cada'
 
   return (
     <div className={estilos.resumo}>
@@ -52,7 +58,7 @@ export default function Resumo({
 
       <div className={estilos.resumoSegmento}>
         <div className={estilos.resumoLinha}>
-          <span>Total computável</span>
+          <span>{rotuloTotal}</span>
           <b>{total}</b>
         </div>
         <div className={estilos.resumoLinha}>
@@ -82,21 +88,29 @@ export default function Resumo({
         </div>
       ))}
 
+      {/* 🔴 "dias de calendário" aqui, e NÃO "dias de detração" do bloco acima. São métricas
+       *  diferentes e nunca coincidem: acima, `diasDetracao = floor(totalMinutos / 1440)` (dias de
+       *  24h acumulados); aqui, quantos DIAS DO CALENDÁRIO foram tocados por algum recolhimento —
+       *  um turno de 22:00 às 06:00 toca dois dias de calendário e vale 0 dias de detração. Sem
+       *  esta distinção no rótulo, a tela parece contradizer a si mesma. */}
       <div className={estilos.resumoCategorias}>
         <div className={estilos.resumoLinha}>
-          <span>Dias úteis</span>
+          <span className={estilos.resumoSubCategoria}>Composição por dia de calendário (não é o total de detração)</span>
+        </div>
+        <div className={estilos.resumoLinha}>
+          <span>Dias úteis alcançados</span>
           <b>
             {categorias.util.dias} dias — {formatarHoras(categorias.util.minutos)} horas
           </b>
         </div>
         <div className={estilos.resumoLinha}>
-          <span>Finais de semana</span>
+          <span>Finais de semana alcançados</span>
           <b>
             {categorias.fimDeSemana.dias} dias — {formatarHoras(categorias.fimDeSemana.minutos)} horas
           </b>
         </div>
         <div className={estilos.resumoLinha}>
-          <span>Feriados</span>
+          <span>Feriados alcançados</span>
           <b>
             {categorias.feriado.dias} dias — {formatarHoras(categorias.feriado.minutos)} horas
           </b>

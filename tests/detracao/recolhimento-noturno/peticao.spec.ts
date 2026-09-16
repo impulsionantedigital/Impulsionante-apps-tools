@@ -11,7 +11,7 @@ function resultado(parcial: Partial<ResultadoCalculo>): ResultadoCalculo {
     saldoHoras: '00:00',
     intervalosConsolidados: [],
     intervalosExcluidos: [],
-    algoritmoVersao: 'RN-1.0',
+    algoritmoVersao: 'RN-1.1',
     ...parcial,
   }
 }

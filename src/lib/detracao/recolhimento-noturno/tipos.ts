@@ -18,7 +18,7 @@ export const ROTULOS_DIA_SEMANA: Record<Weekday, string> = {
 
 /** A versão do algoritmo, gravada em cada cálculo salvo — o que permite avisar o membro quando
  *  uma correção de fórmula muda um número que ele já usou (ver `[id]/page.tsx`). */
-export const ALGORITMO_VERSAO = 'RN-1.0' as const
+export const ALGORITMO_VERSAO = 'RN-1.1' as const
 
 /** Sempre `[início, fim)` — semiaberto, para que o instante final não conte duas vezes quando
  *  dois períodos são contíguos. Strings ISO `YYYY-MM-DDTHH:MM[:SS]`, sem fuso. */

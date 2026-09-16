@@ -20,7 +20,7 @@ import type { EntradaCalculo, IntervaloComMotivo, ResultadoCalculo, Weekday } fr
 
 const WEEKDAY_POR_INDICE_JS: readonly Weekday[] = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']
 
-function diaSemanaDe(dataISO: string): Weekday {
+export function diaSemanaDe(dataISO: string): Weekday {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dataISO)
   if (!m) throw new Error(`data inválida: ${dataISO}`)
   const indice = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]))).getUTCDay()
