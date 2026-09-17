@@ -151,8 +151,8 @@ O resumo mostra **cinco totais**, nesta ordem:
 | 2 | **Total de penas impeditivas** | `resumo.totalImpeditivo` | o campo `penaImpeditiva` |
 | 3 | **Total de penas permissivas** | `resumo.totalPermissivo` | `penaViolencia` + `penaSemViolencia` |
 | 4 | Total de pena cumprida | `resumo.totalCumprido` | SEEU + não lançado |
-| 5 | Cumprido computável nos impeditivo **(2/3)** | `resumo.penaCumpridaImpeditivos` | `min(cumprido, 2/3 do impeditivo)` |
-| 6 | **Cumprido computável nos permissivos** | `resumo.penaCumpridaPermissivos` | **card 4 − card 5** |
+| 5 | Cumprida computável nos impeditivos **(2/3)** | `resumo.penaCumpridaImpeditivos` | `min(cumprido, 2/3 do impeditivo)` |
+| 6 | **Cumprida computável nos permissivos** | `resumo.penaCumpridaPermissivos` | **card 4 − card 5** |
 | 7 | Pena remanescente | `resumo.remanescente` | `total imposto − total cumprido` |
 | 8 | **Remanescente dos impeditivos (2/3)** | `resumo.remanescenteImpeditivo` | **card 2 − card 5** |
 | 9 | **Remanescente dos permissivos** | `resumo.remanescentePermissivo` | **card 7 − card 8** |

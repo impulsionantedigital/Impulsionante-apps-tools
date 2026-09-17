@@ -16,11 +16,14 @@ describe('QUESTIONARIO_2024', () => {
       'penas-impostas',
       'pena-cumprida',
       'regime-situacao',
+      // Estes dois subiram para cá em 17/09/2026 (estavam depois de "Histórico e vedações"):
+      // são desdobramentos do que se acabou de responder em "Regime, tempo e situação
+      // prisional". A ordem é de TELA — o motor lê por chave.
+      'aberto-restritiva',
+      'patrimonio-multa',
       'educacao-trabalho',
       'pessoais-familiares',
       'historico-vedacoes',
-      'aberto-restritiva',
-      'patrimonio-multa',
       'data-do-fato',
       'observacoes',
     ])

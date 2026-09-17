@@ -148,6 +148,60 @@ export const QUESTIONARIO_2024: Secao[] = [
       },
     ],
   },
+  // 🔴 Estes dois vieram de DEPOIS de "Histórico e vedações" (17/09/2026, a pedido do dono do
+  // produto): são desdobramentos do que se acabou de responder em "Regime, tempo e situação
+  // prisional", e ficam ao lado dele. A ordem é de TELA — o motor lê cada campo pela chave,
+  // onde quer que esteja —, mas os specs de questionário travam a lista. A REDAÇÃO É A DE
+  // 2024: não copie o texto de 2025 ("Todas as penas foram substituídas" vs "Tem pena
+  // substituída"), que a fórmula é a mesma e o sentido para quem responde não é.
+  {
+    id: 'aberto-restritiva',
+    titulo: 'Regime aberto / restritiva de direitos',
+    campos: [
+      {
+        tipo: 'selecao',
+        chave: 'penasSubstituidas',
+        rotulo: 'Tem pena substituída por restritiva de direito ou beneficiadas com a suspensão condicional da pena?',
+        opcoes: SN,
+      },
+      { tipo: 'selecao', chave: 'condenacaoAberto', rotulo: 'Tem condenação em regime aberto?', opcoes: SN },
+    ],
+  },
+  {
+    id: 'patrimonio-multa',
+    titulo: 'Crime contra o patrimônio e multa',
+    campos: [
+      {
+        tipo: 'selecao',
+        chave: 'crimePatrimonio',
+        rotulo: 'Tem crime contra o patrimônio cometido sem violência ou grave ameaça?',
+        opcoes: SN,
+      },
+      {
+        tipo: 'selecao',
+        chave: 'reparouDano',
+        rotulo: 'Reparou o dano até 25/12/2024 ou não há necessidade de reparação?',
+        opcoes: SNA,
+      },
+      {
+        tipo: 'selecao',
+        chave: 'valorBemSalarioMinimo',
+        rotulo: 'Valor do bem estimado do crime contra o patrimônio não é superior a um salário-mínimo à época do fato?',
+        opcoes: SNA,
+      },
+      {
+        tipo: 'numero',
+        chave: 'valorMulta',
+        rotulo: 'Valor da pena de multa (exceto dos crimes impeditivos)',
+      },
+      {
+        tipo: 'selecao',
+        chave: 'hipossuficiente',
+        rotulo: 'Sentenciado hipossuficiente nos termos do Art. 9, §2º?',
+        opcoes: SN,
+      },
+    ],
+  },
   {
     id: 'educacao-trabalho',
     titulo: 'Educação e trabalho',
@@ -302,54 +356,6 @@ export const QUESTIONARIO_2024: Secao[] = [
         chave: 'respondendoOutroCrimeViolento',
         rotulo:
           'Em 25/12/2024 estava respondendo ou foi condenado pela prática de outro crime cometido mediante violência ou grave ameaça a pessoa?',
-        opcoes: SN,
-      },
-    ],
-  },
-  {
-    id: 'aberto-restritiva',
-    titulo: 'Regime aberto / restritiva de direitos',
-    campos: [
-      {
-        tipo: 'selecao',
-        chave: 'penasSubstituidas',
-        rotulo: 'Tem pena substituída por restritiva de direito ou beneficiadas com a suspensão condicional da pena?',
-        opcoes: SN,
-      },
-      { tipo: 'selecao', chave: 'condenacaoAberto', rotulo: 'Tem condenação em regime aberto?', opcoes: SN },
-    ],
-  },
-  {
-    id: 'patrimonio-multa',
-    titulo: 'Crime contra o patrimônio e multa',
-    campos: [
-      {
-        tipo: 'selecao',
-        chave: 'crimePatrimonio',
-        rotulo: 'Tem crime contra o patrimônio cometido sem violência ou grave ameaça?',
-        opcoes: SN,
-      },
-      {
-        tipo: 'selecao',
-        chave: 'reparouDano',
-        rotulo: 'Reparou o dano até 25/12/2024 ou não há necessidade de reparação?',
-        opcoes: SNA,
-      },
-      {
-        tipo: 'selecao',
-        chave: 'valorBemSalarioMinimo',
-        rotulo: 'Valor do bem estimado do crime contra o patrimônio não é superior a um salário-mínimo à época do fato?',
-        opcoes: SNA,
-      },
-      {
-        tipo: 'numero',
-        chave: 'valorMulta',
-        rotulo: 'Valor da pena de multa (exceto dos crimes impeditivos)',
-      },
-      {
-        tipo: 'selecao',
-        chave: 'hipossuficiente',
-        rotulo: 'Sentenciado hipossuficiente nos termos do Art. 9, §2º?',
         opcoes: SN,
       },
     ],

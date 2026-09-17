@@ -104,6 +104,45 @@ export const QUESTIONARIO_2025: Secao[] = [
       },
     ],
   },
+  // 🔴 Estes dois vieram de DEPOIS de "Histórico e vedações" (17/09/2026, a pedido do dono do
+  // produto): "Regime aberto / restritiva" e "Crime contra o patrimônio e multa" são
+  // desdobramentos do que se acabou de responder em "Regime, tempo e situação prisional",
+  // e ficam ao lado dele. A ordem das seções é ordem de TELA — o motor lê cada campo pela
+  // chave, onde quer que esteja —, mas os specs de questionário travam a lista.
+  {
+    id: 'aberto-restritiva',
+    titulo: 'Regime aberto / restritiva de direitos',
+    campos: [
+      {
+        tipo: 'selecao',
+        chave: 'penasSubstituidas',
+        rotulo: 'Todas as penas foram substituídas por restritiva de direito ou com sursis?',
+        opcoes: SN,
+      },
+      { tipo: 'selecao', chave: 'condenacaoAberto', rotulo: 'Tem condenação em regime aberto?', opcoes: SN },
+    ],
+  },
+  {
+    id: 'patrimonio-multa',
+    titulo: 'Crime contra o patrimônio e multa',
+    campos: [
+      {
+        tipo: 'selecao',
+        chave: 'crimePatrimonio',
+        rotulo: 'Todos os crimes são contra o patrimônio sem violência ou grave ameaça?',
+        opcoes: SN,
+      },
+      { tipo: 'selecao', chave: 'reparouDano', rotulo: 'Reparou o dano até 25/12/2025 (ou não há necessidade)?', opcoes: SNA },
+      {
+        tipo: 'selecao',
+        chave: 'valorBemSalarioMinimo',
+        rotulo: 'Valor do bem não supera um salário-mínimo à época do fato?',
+        opcoes: SNA,
+      },
+      { tipo: 'numero', chave: 'valorMulta', rotulo: 'Valor da pena de multa (exceto crimes impeditivos), em R$' },
+      { tipo: 'selecao', chave: 'hipossuficiente', rotulo: 'Sentenciado hipossuficiente (Art. 12, §2º)?', opcoes: SN },
+    ],
+  },
   {
     id: 'educacao-trabalho',
     titulo: 'Educação e trabalho',
@@ -198,40 +237,6 @@ export const QUESTIONARIO_2025: Secao[] = [
         rotulo: 'Crime com violência/grave ameaça foi contra filho, criança ou adolescente?',
         opcoes: SN,
       },
-    ],
-  },
-  {
-    id: 'aberto-restritiva',
-    titulo: 'Regime aberto / restritiva de direitos',
-    campos: [
-      {
-        tipo: 'selecao',
-        chave: 'penasSubstituidas',
-        rotulo: 'Todas as penas foram substituídas por restritiva de direito ou com sursis?',
-        opcoes: SN,
-      },
-      { tipo: 'selecao', chave: 'condenacaoAberto', rotulo: 'Tem condenação em regime aberto?', opcoes: SN },
-    ],
-  },
-  {
-    id: 'patrimonio-multa',
-    titulo: 'Crime contra o patrimônio e multa',
-    campos: [
-      {
-        tipo: 'selecao',
-        chave: 'crimePatrimonio',
-        rotulo: 'Todos os crimes são contra o patrimônio sem violência ou grave ameaça?',
-        opcoes: SN,
-      },
-      { tipo: 'selecao', chave: 'reparouDano', rotulo: 'Reparou o dano até 25/12/2025 (ou não há necessidade)?', opcoes: SNA },
-      {
-        tipo: 'selecao',
-        chave: 'valorBemSalarioMinimo',
-        rotulo: 'Valor do bem não supera um salário-mínimo à época do fato?',
-        opcoes: SNA,
-      },
-      { tipo: 'numero', chave: 'valorMulta', rotulo: 'Valor da pena de multa (exceto crimes impeditivos), em R$' },
-      { tipo: 'selecao', chave: 'hipossuficiente', rotulo: 'Sentenciado hipossuficiente (Art. 12, §2º)?', opcoes: SN },
     ],
   },
   {

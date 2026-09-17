@@ -216,7 +216,7 @@ export default function Resultado({
            o "Total de pena cumprida" acima. O valor é `min(cumprido, 2/3 do impeditivo)` — um
            TETO. Sem a fração no rótulo, o advogado vê 6 onde o cumprido diz 8 e conclui que a
            ferramenta errou; com ela, vê que 6 são os 2/3 de uma pena impeditiva de 9 anos. */}
-        <div><span>Cumprido computável nos impeditivo (2/3)</span><b>{fmtDias(resultado.resumo.penaCumpridaImpeditivos)}</b></div>
+        <div><span>Cumprida computável nos impeditivos (2/3)</span><b>{fmtDias(resultado.resumo.penaCumpridaImpeditivos)}</b></div>
         {/* O par do card acima: o cumprido que sobra depois de atribuir a parte dos
            impeditivos. Fica ao lado dele porque só faz sentido lido junto — e o par se
            relaciona com o "Total de pena cumprida" (acima): os dois somam o total.
@@ -224,7 +224,7 @@ export default function Resultado({
            🔴 Este é o único card do painel cuja regra é uma DIFERENÇA ENTRE CARDS, e não uma
            soma de campos do formulário. Se `penaCumpridaImpeditivos` mudar de fórmula, este
            muda junto sem que ninguém o tenha tocado. */}
-        <div><span>Cumprido computável nos permissivos</span><b>{fmtDias(resultado.resumo.penaCumpridaPermissivos)}</b></div>
+        <div><span>Cumprida computável nos permissivos</span><b>{fmtDias(resultado.resumo.penaCumpridaPermissivos)}</b></div>
         <div><span>Pena remanescente</span><b>{fmtDias(resultado.resumo.remanescente)}</b></div>
         {/* 🔴 POSIÇÃO A CONFIRMAR. O pedido não disse onde este card entra, e ele é IMPEDITIVO —
            lê os cards 2 e 5, que estão no alto da lista. Posto no fim porque foi pedido como
