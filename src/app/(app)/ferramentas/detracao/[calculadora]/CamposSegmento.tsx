@@ -12,45 +12,32 @@ function SeletorDiasSemana({
   rotulo,
   valor,
   aoMudar,
-  /** Dias que a OUTRA linha já tem marcados. Aparecem DESABILITADOS aqui.
-   *
-   *  🔴 Desabilitar, e não aceitar-e-apagar-a-outra: marcar na linha de baixo e ver a de cima se
-   *  esvaziar sozinha parece defeito, e o membro não sabe qual das duas "ganhou". Com o dia
-   *  desabilitado, fica claro ANTES do clique que ele já está em uso na outra regra — e a marcação
-   *  nunca fica ambígua, que era o problema relatado. */
-  bloqueados = [],
+  alternar,
+  campo,
 }: {
   rotulo: string
   valor: Weekday[]
+  /** Chamado ao clicar num dia — recebe QUAL lista e qual dia, para tirar o dia da outra lista. */
   aoMudar: (v: Weekday[]) => void
-  bloqueados?: Weekday[]
+  /** Presente quando o seletor faz parte de um par exclusivo. Sem ele, o clique só alterna nesta
+   *  lista (é o comportamento de um seletor isolado). */
+  alternar?: (campo: 'diasSemanaNoturno' | 'diasFolgaIntegral', dia: Weekday) => void
+  campo?: 'diasSemanaNoturno' | 'diasFolgaIntegral'
 }) {
-  function alternar(dia: Weekday) {
+  function clicar(dia: Weekday) {
+    if (alternar && campo) return alternar(campo, dia)
     aoMudar(valor.includes(dia) ? valor.filter((d) => d !== dia) : [...valor, dia])
   }
   return (
     <div className={estilos.campoTempo}>
       <span className={estilos.rotuloGrupo}>{rotulo}</span>
       <div className={estilos.diasSemana}>
-        {WEEKDAYS.map((dia) => {
-          const bloqueado = bloqueados.includes(dia)
-          return (
-            <label
-              key={dia}
-              className={estilos.diaSemanaItem}
-              data-bloqueado={bloqueado}
-              title={bloqueado ? 'Este dia já está marcado na outra linha.' : undefined}
-            >
-              <input
-                type="checkbox"
-                checked={valor.includes(dia)}
-                disabled={bloqueado}
-                onChange={() => alternar(dia)}
-              />
-              {ROTULOS_DIA_SEMANA[dia]}
-            </label>
-          )
-        })}
+        {WEEKDAYS.map((dia) => (
+          <label key={dia} className={estilos.diaSemanaItem}>
+            <input type="checkbox" checked={valor.includes(dia)} onChange={() => clicar(dia)} />
+            {ROTULOS_DIA_SEMANA[dia]}
+          </label>
+        ))}
       </div>
     </div>
   )
@@ -69,6 +56,28 @@ export default function CamposSegmento({
 }) {
   function set<K extends keyof SegmentoFormulario>(campo: K, valor: SegmentoFormulario[K]) {
     aoMudar({ ...segmento, [campo]: valor })
+  }
+
+  /** 🔴 Marca ou desmarca um dia em UMA das listas, tirando-o da outra.
+   *
+   *  As duas listas alimentam o mesmo motor com valores diferentes — `diasSemanaNoturno` vale
+   *  H_NOTURNO, `diasFolgaIntegral` vale 24h. O mesmo dia nas duas deixava a decisão ambígua na
+   *  tela: o motor resolvia por precedência (folga ganha), mas o membro não tinha como saber qual
+   *  valeria.
+   *
+   *  A exclusão acontece AQUI, e não desabilitando a caixa na outra linha: todos os dias ficam
+   *  clicáveis, e marcar num lado apenas move o dia para lá. O `Campo` de cada seletor continua
+   *  tratando o próprio array — a troca entre os dois é responsabilidade de quem vê os dois. */
+  function alternarDia(campo: 'diasSemanaNoturno' | 'diasFolgaIntegral', dia: Weekday) {
+    const outro = campo === 'diasSemanaNoturno' ? 'diasFolgaIntegral' : 'diasSemanaNoturno'
+    const atual = segmento[campo]
+    const marcando = !atual.includes(dia)
+    aoMudar({
+      ...segmento,
+      [campo]: marcando ? [...atual, dia] : atual.filter((d) => d !== dia),
+      // Só precisa limpar o outro lado ao MARCAR: desmarcar não pode afetar a outra lista.
+      [outro]: marcando ? segmento[outro].filter((d) => d !== dia) : segmento[outro],
+    })
   }
 
   return (
@@ -92,21 +101,21 @@ export default function CamposSegmento({
           <EntradaControle type="time" value={segmento.horaFimNoturno} onChange={(e) => set('horaFimNoturno', e.target.value)} />
         </Campo>
 
-        {/* 🔴 Um dia não pode estar nas DUAS linhas. As duas listas alimentam o mesmo motor com
-         *  valores diferentes (H_NOTURNO na de cima, 24h na de baixo), e a marcação dupla deixava a
-         *  decisão ambígua na tela — o motor resolvia por precedência, mas o membro não tinha como
-         *  saber qual valeria. Agora cada linha bloqueia os dias da outra. */}
+        {/* 🔴 Um dia não pode estar nas DUAS linhas. Marcar num lado TIRA o dia do outro — todos
+         *  os dias ficam clicáveis, e a exclusão acontece na marcação (ver `alternarDia`). */}
         <SeletorDiasSemana
           rotulo="Dias em que a regra noturna se inicia"
           valor={segmento.diasSemanaNoturno}
           aoMudar={(v) => set('diasSemanaNoturno', v)}
-          bloqueados={segmento.diasFolgaIntegral}
+          alternar={alternarDia}
+          campo="diasSemanaNoturno"
         />
         <SeletorDiasSemana
           rotulo="Dias de folga integral"
           valor={segmento.diasFolgaIntegral}
           aoMudar={(v) => set('diasFolgaIntegral', v)}
-          bloqueados={segmento.diasSemanaNoturno}
+          alternar={alternarDia}
+          campo="diasFolgaIntegral"
         />
 
         {/* Feriados NACIONAIS: lista homologada de `feriados.ts`, ligada por este checkbox. */}

@@ -60,13 +60,6 @@
 }
 
 .diasSemana { display: flex; flex-wrap: wrap; gap: var(--s-3); }
-/* Dia já marcado na OUTRA linha: fica esmaecido e não aceita clique. O `cursor: not-allowed` é
- *  sinal de que não é falha de clique — é regra. */
-.diaSemanaItem[data-bloqueado='true'] {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
 .diaSemanaItem {
   display: inline-flex;
   align-items: center;
