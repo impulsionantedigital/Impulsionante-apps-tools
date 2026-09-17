@@ -44,9 +44,39 @@ export default async function EditarCalculo({
   // mostraria um número que aquele cálculo nunca teve, e é justamente o que não se pode fazer com
   // um documento que pode ter virado petição.
   const versao = versaoPorRotulo(calculo.algoritmo_versao)
-  // Versão desconhecida: cálculo gravado por uma versão que não existe mais neste build. Não há
-  // como renderizar nem recalcular — 404 é melhor do que mostrar um número errado sem avisar.
-  if (!versao) notFound()
+  // 🔴 Versão desconhecida NÃO é 404. Aconteceu de verdade: dois cálculos de teste ficaram com o
+  // rótulo `RN-2.0` mas a ENTRADA no formato antigo (gravados entre dois commits, quando a versão
+  // foi renomeada antes de o formato mudar). O 404 os fazia sumir da tela como se o link estivesse
+  // quebrado — o membro via o registro na lista e não tinha como saber por que não abria.
+  //
+  // A tela explica e oferece a saída: um cálculo cuja versão não existe mais neste build não pode
+  // ser lido nem recalculado (fazer isso mostraria um número que ele nunca teve), então o caminho é
+  // excluí-lo e criar de novo. O `ExcluirCalculo` renderiza nos dois casos.
+  if (!versao) {
+    return (
+      <div className={estilos.pagina}>
+        <CabecalhoPagina
+          acima={
+            <Link href={caminhoDoProduto(SLUG)} className={estilos.voltar}>
+              <ArrowLeft size={14} aria-hidden />
+              GPS Detração - Recolhimento Noturno
+            </Link>
+          }
+          titulo={calculo.titulo}
+          subtitulo="Tema Repetitivo 1.155/STJ"
+          className={estilos.cabecalhoDoCalculo}
+        />
+        <div className={estilos.avisoVersao} role="alert">
+          <b>Este cálculo não pode ser aberto.</b> Ele foi gravado na versão{' '}
+          {calculo.algoritmo_versao}, que não está mais disponível nesta instalação. Abri-lo com o
+          motor atual mostraria um número que ele nunca teve, e o registro pode ter virado petição
+          — por isso a tela não tenta. Verifique o anexo já produzido, se houver, e{' '}
+          <b>crie um cálculo novo</b> para apurar o período na regra atual.
+        </div>
+        <ExcluirCalculo id={calculo.id} />
+      </div>
+    )
+  }
 
   const desatualizada = estaDesatualizada(calculo.algoritmo_versao)
 

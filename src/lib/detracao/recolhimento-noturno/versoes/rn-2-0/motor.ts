@@ -42,8 +42,14 @@ function diasEntre(inicio: string, fim: string): string[] {
   return datas
 }
 
-function validarData(data: string, campo: string) {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(data)) throw new Error(`${campo} deve estar no formato AAAA-MM-DD.`)
+function validarData(data: unknown, campo: string) {
+  // 🔴 A mensagem cita o campo e o valor recebido, e não estoura com `undefined.slice`. Já
+  // aconteceu: um cálculo ficou com o rótulo `RN-2.0` mas a entrada no formato ANTIGO
+  // (`inicio`/`fim`), e o motor quebrava com "Cannot read properties of undefined (reading
+  // 'slice')" — erro que não diz nada a quem for investigar depois.
+  if (typeof data !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(data)) {
+    throw new Error(`${campo} deve estar no formato AAAA-MM-DD (recebido: ${JSON.stringify(data)}).`)
+  }
 }
 
 function validarHora(hora: string, campo: string) {
