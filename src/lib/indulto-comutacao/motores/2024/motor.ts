@@ -19,15 +19,18 @@
  * Convenção de tempo de PENA: 30 dias/mês, 360 dias/ano.
  * Exceção: o inciso IV usa dias-calendário reais (`F43 = E43 - D43`).
  *
+ * ✅ uma ambiguidade RESOLVIDA pelo dono do produto: o Art. 13 (`c13`) exigia
+ * cumprimento MAIOR que a fração (`<` estrito, Cálculo!H132) e agora aceita o exato
+ * (`<=`), como o texto do Decreto e todos os demais dispositivos. Ver o comentário
+ * no próprio `c13`.
+ *
  * Ambiguidades da planilha, PRESERVADAS — nenhuma "consertada". Todas saem em
  * AVISOS_2024.validarJuridicamente, que é o que a tela mostra:
  *   1. Inciso VIII: o §2º DOBRA o teto da pena remanescente em vez de reduzi-lo
  *      à metade, e a base é a remanescente NÃO impeditiva (M17) — em 2025 é a
  *      total (N16);
- *   2. Art. 13 (`c13`): exige cumprimento MAIOR que a fração (`<` estrito,
- *      Cálculo!H132), onde todo outro dispositivo aceita o exato (`<=`);
- *   3. base da comutação do Art. 13 e §4º: o max entre cumprida e remanescente;
- *   4. Art. 11: "NÃO SE APLICA" na reincidência satisfaz tanto o requisito de
+ *   2. base da comutação do Art. 13 e §4º: o max entre cumprida e remanescente;
+ *   3. Art. 11: "NÃO SE APLICA" na reincidência satisfaz tanto o requisito de
  *      reincidente obrigatório quanto o de não reincidente.
  */
 
@@ -629,10 +632,15 @@ export function calcular2024(entrada: Entrada): Resultado {
     const E = travaComut
     const F = dataFatoImpeditivoOk
     const G = doisTercosOk
-    // ⚖️ AMBIGUIDADE PRESERVADA: `<` ESTRITO. Todo outro dispositivo, inclusive o
-    // §4º logo abaixo, usa `<=`. Quem cumpriu EXATAMENTE a fração tem a comutação
-    // do Art. 13 negada. Provável erro da planilha, mantido por fidelidade.
-    const H = I20 === 2 ? D6 + G7 + G8 < M13 : D6 + E7 + E8 < M13
+    // ✅ AMBIGUIDADE RESOLVIDA PELO DONO DO PRODUTO (antes: `<`, divergindo da planilha).
+    // A planilha exigia pena cumprida MAIOR que a fração, com `<` estrito; o texto do
+    // Art. 13 fala em "que tenham cumprido […] um quinto da pena", o que INCLUI o exato,
+    // e todos os demais dispositivos usam `<=` — inclusive o §4º logo abaixo. O `<` era
+    // erro da planilha e prejudicava quem cumpriu exatamente a fração. `<=` aqui é
+    // INTENCIONAL: não "restaure" o `<` para bater com a planilha — a divergência é o
+    // ponto. O cenário congelado que cai na igualdade exata é desvio DOCUMENTADO em
+    // motor-2024.spec.ts.
+    const H = I20 === 2 ? D6 + G7 + G8 <= M13 : D6 + E7 + E8 <= M13
     const I = !(M8 === 0 && M7 === 0)
     const preenche = E && F && G && H && I
     incisos.push({

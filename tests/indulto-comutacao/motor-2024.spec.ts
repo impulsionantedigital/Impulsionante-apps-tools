@@ -20,7 +20,7 @@ import { calcular2024 } from '@/lib/indulto-comutacao/motores/2024/motor'
 import { VEREDITOS } from '@/lib/indulto-comutacao/tipos'
 import { dias } from '@/lib/indulto-comutacao/tempo'
 import type { Entrada, Tempo } from '@/lib/indulto-comutacao/tipos'
-import { RAIZ } from './_oraculo'
+import { RAIZ, CENARIOS_ART13_EXATO_2024 } from './_oraculo'
 
 type Celula = string | number | boolean
 
@@ -172,16 +172,32 @@ describe('comutação × planilha', () => {
     const r = calcular2024(cenario.entrada)
     const porId = new Map(r.incisos.map((i) => [i.id, i]))
 
+    // 🔴 DECISÃO DO DONO DO PRODUTO, e não é bug: a planilha negava a comutação do
+    // Art. 13 a quem cumpriu EXATAMENTE a fração (`<` estrito); o porte passou a
+    // conceder (`<=`), como manda o texto do Decreto. Neste cenário a pena cumprida é
+    // exatamente 1/5 e a planilha diz "Não preenche" — o porte diz "Preenche".
+    // O desvio é NOMEADO em `_oraculo.ts` e há um teste que reprova se ele deixar de
+    // bater com a realidade.
+    const idDesviado = CENARIOS_ART13_EXATO_2024.has(cenario._nome) ? 'art13' : null
     for (const id of COMUTACOES) {
       const obtido = porId.get(id)
       expect(obtido, `o motor não devolveu ${id}`).toBeDefined()
-      expect(VEREDITOS[obtido!.geral], `${id}.geral`).toBe(String(cenario.planilha[`${id}.geral`]))
+      if (id !== idDesviado) {
+        expect(VEREDITOS[obtido!.geral], `${id}.geral`).toBe(String(cenario.planilha[`${id}.geral`]))
+      }
       expect(VEREDITOS[obtido!.especial], `${id}.especial`).toBe(SEM_PREVISAO)
 
       // 🔴 2024 não tem "pena após a comutação": a planilha não a calcula.
       expect(obtido!.penaApos, `${id}.penaApos`).toBeNull()
 
       const txt = cenario.planilha[`${id}.comutacaoTxt`]
+      if (id === idDesviado) {
+        // O porte CONCEDE onde a planilha nega (com o `<` do Art. 13, ela mostrava
+        // "Sem Comutação"). Conferir o número contra a base é o que resta — a
+        // planilha não tem com o que comparar aqui.
+        expect(obtido!.quantum, `${id}.quantum no cenário desviado`).not.toBeNull()
+        continue
+      }
       if (String(txt).trim() === SEM_COMUTACAO) {
         expect(obtido!.quantum, `${id}.quantum sem comutação`).toBeNull()
         continue

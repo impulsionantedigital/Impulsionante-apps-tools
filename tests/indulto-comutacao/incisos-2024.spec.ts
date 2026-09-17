@@ -56,9 +56,13 @@ describe('AVISOS_2024', () => {
     expect(texto).toMatch(/não impeditiv/i)
   })
 
-  it('avisa sobre a comparação estrita do Art. 13', () => {
+  it('NÃO avisa mais sobre a comparação estrita do Art. 13 — a ambiguidade foi resolvida', () => {
+    // O aviso existia porque o motor negava a comutação a quem cumpriu EXATAMENTE a
+    // fração (`<` estrito). O dono do produto decidiu aceitar o exato (`<=`), como
+    // manda o texto do Decreto. O aviso saiu: descrevia um comportamento que o motor
+    // não tem mais. Se ele voltar, o texto tem de voltar a ser verdadeiro.
     const texto = AVISOS_2024.validarJuridicamente.join(' ')
-    expect(texto).toMatch(/Art\. 13/)
+    expect(texto).not.toMatch(/comparação estrita/i)
   })
 
   it('NÃO menciona pena após a comutação — 2024 não calcula esse valor', () => {

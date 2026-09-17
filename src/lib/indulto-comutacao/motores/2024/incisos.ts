@@ -172,7 +172,10 @@ export const AVISOS_2024 = {
   validarJuridicamente: [
     'No Art. 9º, VIII, a pena remanescente comparada com o teto é a NÃO IMPEDITIVA (Cálculo!M17), tanto na regra geral quanto na do §2º. Na planilha de 2025 o mesmo dispositivo usa a pena remanescente TOTAL. Cada planilha é coerente consigo, mas o dispositivo mede coisa diferente em cada ano: conferir contra o texto dos dois decretos.',
     'No Art. 9º, VIII, a regra especial do §2º DOBRA o teto da pena remanescente (de 6 anos para 12, ou de 4 para 8) em vez de reduzi-lo à metade, ao contrário de todos os outros incisos. A planilha faz assim porque ali o §2º incide sobre um teto, e não sobre uma fração exigida de cumprimento — reduzir pela metade tornaria o §2º mais restritivo para o perfil vulnerável. É interpretação, não transcrição: conferir contra o texto do Decreto.',
-    'No Art. 13, a planilha exige pena cumprida MAIOR que um quinto (ou um quarto, se reincidente), numa comparação estrita, enquanto o texto do dispositivo fala em "tenham cumprido um quinto da pena". Todos os demais dispositivos, inclusive o §4º do mesmo artigo, aceitam o cumprimento exato. Com isso, quem cumpriu exatamente a fração tem a comutação do Art. 13 negada. Provável erro da fórmula original, mantido por fidelidade à planilha.',
+    // O Art. 13 com `<` estrito era a quinta ambiguidade desta lista. Foi RESOLVIDA pelo
+    // dono do produto: o motor passou a aceitar o cumprimento exato da fração (`<=`), como
+    // manda o texto do Decreto. O aviso saiu — descreveria um comportamento que o motor
+    // não tem mais.
     'A base da comutação do Art. 13 e do §4º usa o maior valor entre pena cumprida e pena remanescente — a comutação legalmente incide sobre a remanescente.',
     'Nos incisos do Art. 11, responder "NÃO SE APLICA" à reincidência satisfaz TANTO o requisito de "reincidente obrigatório" (I e III) quanto o de "não reincidente obrigatório" (II), porque a fórmula original testa a diferença e não a igualdade. Se a reincidência for controvertida nos autos, responder "SIM" ou "NÃO" em vez de "NÃO SE APLICA".',
     'A pergunta sobre hipossuficiência traz, na planilha, a remissão ao "Art. 9, §2º". A resposta alimenta o Art. 9º, XV (reparação do dano) e o Art. 12 (pena de multa acima de R$ 20.000) — não o §2º. O rótulo foi transcrito como está na planilha: conferir a remissão correta.',
