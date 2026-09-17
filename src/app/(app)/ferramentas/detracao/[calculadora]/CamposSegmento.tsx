@@ -3,9 +3,9 @@
 import { Plus, Trash2 } from 'lucide-react'
 import Botao from '@/components/ui/Botao'
 import { Campo, Entrada as EntradaControle } from '@/components/ui/Campo'
-import { ROTULOS_DIA_SEMANA, WEEKDAYS } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-1/tipos'
-import type { Weekday } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-1/tipos'
-import type { SegmentoFormulario } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-1/formulario'
+import { ROTULOS_DIA_SEMANA, WEEKDAYS } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-2/tipos'
+import type { Weekday } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-2/tipos'
+import type { SegmentoFormulario } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-2/formulario'
 import estilos from './calculadora.module.css'
 
 function SeletorDiasSemana({
@@ -93,15 +93,16 @@ export default function CamposSegmento({
         </label>
 
         {/* 🔴 Feriados MUNICIPAIS e ESTADUAIS. Não há lista automática possível — dependem de lei
-         *  local —, então o membro digita cada um. Vêm do modo avançado na RN-2.1: o motor já os
-         *  lia desde a RN-2.0, e o que faltava era um jeito de preenchê-los que não fosse escondido. */}
-        <div className={estilos.editorLista}>
+         *  local —, então o membro digita cada um, com a data e o NOME. O nome não entra na conta;
+         *  ele existe para o resumo e o anexo dizerem DE QUE feriado se trata, o que "09/07/2025"
+         *  sozinho não faz. */}
+        <div className={estilos.blocoSeparado}>
           <div className={estilos.editorCabecalho}>
             <span className={estilos.rotuloGrupo}>Feriados municipais e estaduais</span>
             <Botao
               type="button"
               tamanho="pequeno"
-              onClick={() => set('feriadosIntegral', [...segmento.feriadosIntegral, ''])}
+              onClick={() => set('feriadosIntegral', [...segmento.feriadosIntegral, { data: '', nome: '' }])}
             >
               <Plus size={14} strokeWidth={2} />
               Adicionar
@@ -112,15 +113,31 @@ export default function CamposSegmento({
               Nenhum. Use para os feriados da comarca ou do estado que a decisão mande computar por inteiro.
             </p>
           )}
-          {segmento.feriadosIntegral.map((data, indice) => (
+          {segmento.feriadosIntegral.map((feriado, indice) => (
             <div key={indice} className={estilos.linhaIntervalo}>
-              <Campo rotulo={`Feriado ${indice + 1}`}>
+              <Campo rotulo="Data" obrigatorio>
                 <EntradaControle
                   type="date"
-                  value={data}
+                  value={feriado.data}
                   onChange={(e) => {
                     const proximos = [...segmento.feriadosIntegral]
-                    proximos[indice] = e.target.value
+                    proximos[indice] = { ...feriado, data: e.target.value }
+                    set('feriadosIntegral', proximos)
+                  }}
+                />
+              </Campo>
+              <Campo
+                rotulo="Nome do feriado"
+                ajuda="Ex.: Aniversário da cidade, Dia do Evangélico."
+                className={estilos.campoNomeFeriado}
+              >
+                <EntradaControle
+                  value={feriado.nome ?? ''}
+                  maxLength={120}
+                  placeholder="Ex.: Aniversário da cidade"
+                  onChange={(e) => {
+                    const proximos = [...segmento.feriadosIntegral]
+                    proximos[indice] = { ...feriado, nome: e.target.value }
                     set('feriadosIntegral', proximos)
                   }}
                 />

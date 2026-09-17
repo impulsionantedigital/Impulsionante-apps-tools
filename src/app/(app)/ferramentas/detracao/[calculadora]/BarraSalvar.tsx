@@ -6,7 +6,7 @@ import Botao from '@/components/ui/Botao'
 import { Campo as CampoUI, Entrada as EntradaControle } from '@/components/ui/Campo'
 import { caminhoDoProduto } from '@/lib/produtos/catalogo'
 import { versaoAtual } from '@/lib/detracao/recolhimento-noturno/versoes/registro'
-import type { EntradaFormulario } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-1/formulario'
+import type { EntradaFormulario } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-2/formulario'
 import { atualizarCalculo, salvarCalculo } from './acoes'
 import estilos from './calculadora.module.css'
 

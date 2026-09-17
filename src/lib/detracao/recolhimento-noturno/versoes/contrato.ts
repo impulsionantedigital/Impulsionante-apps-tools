@@ -45,7 +45,14 @@ export type ResultadoCalculo = {
   saldoHoras: string
   diasUteis: number
   diasIntegrais: number
-  feriadosConsiderados: Array<{ data: string; nome: string; diaSemana: string }>
+  // 🔴 `origem` entra como OPCIONAL: resultados gravados antes da RN-2.2 não a têm, e a tela
+  // precisa aceitar os dois — o resumo marca só o que é `declarado`.
+  feriadosConsiderados: Array<{
+    data: string
+    nome: string
+    diaSemana: string
+    origem?: 'nacional' | 'declarado'
+  }>
   composicao: {
     diasUteis: number
     minutosUteis: number

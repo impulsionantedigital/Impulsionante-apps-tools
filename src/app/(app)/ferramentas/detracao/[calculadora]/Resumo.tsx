@@ -1,5 +1,5 @@
-import type { EntradaFormulario } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-1/formulario'
-import type { ResultadoCalculo } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-1/tipos'
+import type { EntradaFormulario } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-2/formulario'
+import type { ResultadoCalculo } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-2/tipos'
 import estilos from './calculadora.module.css'
 
 function formatarDataBR(dataISO: string): string {
@@ -138,10 +138,14 @@ export default function Resumo({
         </div>
       </div>
 
-      {/* 🔴 A lista dos feriados que ENTRARAM no cálculo. O número ("5 dias — 120 horas") sozinho
-       *  não permite conferir nada: o membro não tem como saber QUAIS cinco são. Com a data, o dia
-       *  da semana e o nome, ele confere contra o calendário — e é isso que dá auditabilidade ao
-       *  cômputo, que é o propósito desta calculadora. */}
+      {/* 🔴 A lista dos feriados que ENTRARAM no cálculo — NACIONAIS e os DECLARADOS à mão
+       *  (municipais/estaduais), juntos. O número ("6 dias — 144 horas") sozinho não permite
+       *  conferir nada: o membro não tem como saber QUAIS seis são. Antes os declarados ficavam de
+       *  fora desta lista, e o resumo dizia "6 feriados" enquanto ele havia informado 8 — parecia
+       *  que os extras tinham sido ignorados.
+       *
+       *  A ORIGEM aparece em cada linha porque no documento a diferença importa: um feriado se
+       *  confere contra o calendário nacional, o outro contra a decisão da comarca. */}
       {resultado.feriadosConsiderados.length > 0 && (
         <div className={estilos.resumoCategorias}>
           <div className={estilos.resumoLinha}>
@@ -154,7 +158,13 @@ export default function Resumo({
               <li key={f.data}>
                 <span className={estilos.feriadoData}>{formatarDiaMes(f.data)}</span>
                 <span className={estilos.feriadoDiaSemana}>{f.diaSemana}</span>
-                <span className={estilos.feriadoNome}>{f.nome}</span>
+                <span className={estilos.feriadoNome}>
+                  {f.nome}
+                  {/* Ausente em resultados gravados antes da RN-2.2, que não tinham o campo. */}
+                  {f.origem === 'declarado' && (
+                    <em className={estilos.feriadoOrigem}> — municipal/estadual</em>
+                  )}
+                </span>
               </li>
             ))}
           </ul>

@@ -9,8 +9,8 @@ import BarraSalvar from './BarraSalvar'
 import BotaoImprimir from './BotaoImprimir'
 import BotaoPeticao from './BotaoPeticao'
 import { versaoPorRotulo, versaoAtual, pacoteTipado } from '@/lib/detracao/recolhimento-noturno/versoes/registro'
-import type { EntradaCalculo, ResultadoCalculo } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-1/tipos'
-import type { EntradaFormulario, SegmentoFormulario } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-1/formulario'
+import type { EntradaCalculo, ResultadoCalculo } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-2/tipos'
+import type { EntradaFormulario, SegmentoFormulario } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-2/formulario'
 import estilos from './calculadora.module.css'
 
 /** 🔴 SEM MODO AVANÇADO (RN-2.1): a entrada é UM período, e o formulário tem exatamente os campos

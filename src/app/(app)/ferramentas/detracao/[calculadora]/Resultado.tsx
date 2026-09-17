@@ -1,4 +1,4 @@
-import type { ResultadoCalculo } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-1/tipos'
+import type { ResultadoCalculo } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-2/tipos'
 import estilos from './calculadora.module.css'
 
 export default function Resultado({ resultado }: { resultado: ResultadoCalculo }) {

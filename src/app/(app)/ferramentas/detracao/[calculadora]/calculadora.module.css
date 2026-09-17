@@ -69,6 +69,23 @@
 }
 
 .editorLista { display: grid; gap: var(--s-3); }
+
+/* Bloco que abre uma SEÇÃO nova dentro do mesmo card, separada do que vem acima por uma linha —
+ *  é o caso dos feriados municipais/estaduais, que vinham colados no checkbox de feriados
+ *  nacionais e pareciam parte dele. O espaço é de SEÇÃO, não de campo (ver `--s-4`), para o olho
+ *  ler a quebra. */
+.blocoSeparado {
+  display: grid;
+  gap: var(--s-3);
+  margin-top: var(--s-4);
+  padding-top: var(--s-4);
+  border-top: 1px solid var(--linha);
+}
+
+/* O nome do feriado ocupa o resto da linha; a data tem largura fixa (`linhaIntervalo > *` garante
+ *  o mínimo). Sem isto o campo de nome ficaria do tamanho da data e "Aniversário da cidade"
+ *  apareceria cortado. */
+.campoNomeFeriado { flex: 1 1 100%; }
 .editorCabecalho {
   display: flex;
   align-items: center;
@@ -225,6 +242,7 @@
 .feriadoData { font-variant-numeric: tabular-nums; color: var(--tinta); font-weight: 600; }
 .feriadoDiaSemana { color: var(--tinta-3); }
 .feriadoNome { color: var(--tinta-2); }
+.feriadoOrigem { color: var(--tinta-3); font-style: normal; }
 
 /* No papel, a lista estreita não cabe em três colunas sem quebrar feio. */
 @media print {

@@ -2,13 +2,13 @@
 
 import { versaoPorRotulo, versaoAtual } from '@/lib/detracao/recolhimento-noturno/versoes/registro'
 import CamposSegmento from './CamposSegmento'
-import type { EntradaFormulario, SegmentoFormulario } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-1/formulario'
+import type { EntradaFormulario, SegmentoFormulario } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-2/formulario'
 import estilos from './calculadora.module.css'
 
 // 🔴 NÃO HÁ MODO AVANÇADO a partir da RN-2.1. O formulário edita UM período, com todos os campos à
 // vista: datas, turno noturno, dias da regra, folga integral, feriado nacional (checkbox) e feriados
 // municipais/estaduais (lista). O que era do avançado e não era cálculo — fuso, monitoramento
-// eletrônico, observações — saiu; ver `versoes/rn-2-1/formulario.ts`.
+// eletrônico, observações — saiu; ver `versoes/rn-2-2/formulario.ts`.
 
 export default function Formulario({
   versao,

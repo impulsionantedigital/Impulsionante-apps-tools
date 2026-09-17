@@ -10,12 +10,13 @@
 // É ela que todo cálculo NOVO usa.
 
 import type { VersaoRecolhimento } from './contrato'
+import { rn22 } from './rn-2-2'
 import { rn21 } from './rn-2-1'
 import { rn20 } from './rn-2-0'
 
 // 🔴 Da MAIS RECENTE para a mais antiga. `versaoAtual()` é a primeira da lista, e é ela que todo
 // cálculo NOVO usa. As anteriores ficam para poder ABRIR o que já foi gravado com elas.
-export const VERSOES: readonly VersaoRecolhimento[] = [rn21, rn20]
+export const VERSOES: readonly VersaoRecolhimento[] = [rn22, rn21, rn20]
 
 /** A versão com que todo cálculo NOVO é feito. Sempre a mais recente do registro. */
 export function versaoAtual(): VersaoRecolhimento {

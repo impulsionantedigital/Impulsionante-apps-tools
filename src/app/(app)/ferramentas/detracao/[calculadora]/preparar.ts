@@ -2,7 +2,7 @@
 import { z } from 'zod'
 import { detalheSeguro } from '@/lib/sanitizar-erro'
 import { versaoAtual } from '@/lib/detracao/recolhimento-noturno/versoes/registro'
-import type { EntradaCalculo, ResultadoCalculo } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-1/tipos'
+import type { EntradaCalculo, ResultadoCalculo } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-2/tipos'
 
 // Módulo SEM `'use server'` de propósito, mesma razão do `preparar.ts` do CIC: é lógica pura
 // (validação + recálculo), testável direto, sem sessão nem rede.
@@ -14,7 +14,16 @@ const Segmento = z.object({
   horaFimNoturno: z.string().regex(/^\d{2}:\d{2}$/, 'Horário inválido.'),
   diasSemanaNoturno: z.array(z.string()),
   diasFolgaIntegral: z.array(z.string()),
-  feriadosIntegral: z.array(z.string()),
+  // 🔴 RN-2.2: cada feriado declarado tem DATA e, opcionalmente, NOME. O `nome` é limitado porque
+  // vai direto para o resumo e o anexo; sem limite, um texto colado faria a lista virar um
+  // parágrafo. `data` vazia é aceita: é a linha que o membro acabou de adicionar e ainda não
+  // preencheu — o motor a ignora (ver `motor.ts`).
+  feriadosIntegral: z.array(
+    z.object({
+      data: z.union([z.literal(''), z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Data inválida.')]),
+      nome: z.string().max(120, 'Nome do feriado muito longo.').optional(),
+    }),
+  ),
   incluirFeriadosUteis: z.boolean().default(false),
 })
 

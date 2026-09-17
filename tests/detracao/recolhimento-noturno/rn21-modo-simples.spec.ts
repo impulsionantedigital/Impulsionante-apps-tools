@@ -26,16 +26,19 @@ const BASE = {
   incluirFeriadosUteis: false,
 }
 
-describe('RN-2.1 é a versão vigente', () => {
-  it('`versaoAtual()` é a RN-2.1', () => {
-    expect(versaoAtual().versao).toBe('RN-2.1')
+describe('a versão vigente', () => {
+  it('`versaoAtual()` é a MAIS RECENTE do registro', () => {
+    // 🔴 Não fixa um rótulo literal: cada versão nova tornaria este teste vermelho sem que nada
+    // estivesse errado. O que importa é que a vigente é a primeira do registro.
+    expect(versaoAtual().versao).toBe('RN-2.2')
   })
 
-  it('a RN-2.0 continua disponível para abrir cálculos existentes', () => {
-    // 🔴 Congelar não é apagar: um cálculo gravado na RN-2.0 tem de continuar abrindo com o motor
-    // DELE. Se esta versão sair do registro, esses cálculos deixam de abrir.
+  it('as versões anteriores continuam disponíveis para abrir o que foi gravado nelas', () => {
+    // 🔴 Congelar não é apagar: um cálculo gravado na RN-2.0 ou na RN-2.1 tem de continuar abrindo
+    // com o motor DELE. Se uma versão sair do registro, esses cálculos deixam de abrir.
     expect(rn20).not.toBeNull()
     expect(rn20.versao).toBe('RN-2.0')
+    expect(rn21.versao).toBe('RN-2.1')
   })
 })
 
