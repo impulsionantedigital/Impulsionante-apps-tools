@@ -201,6 +201,61 @@ describe('motor — feriados nacionais (checkbox `incluirFeriadosUteis`)', () =>
   })
 })
 
+describe('motor — lista dos feriados considerados', () => {
+  it('lista os feriados do período com nome e dia da semana quando o checkbox está ligado', () => {
+    const r = calcular1({
+      dataInicio: '2025-01-01',
+      dataFim: '2025-12-31',
+      incluirFeriadosUteis: true,
+    })
+    // 2025 tem 9 feriados na lista (nem todos em dia útil).
+    expect(r.feriadosConsiderados.length).toBeGreaterThan(0)
+    const natal = r.feriadosConsiderados.find((f) => f.data === '2025-12-25')
+    expect(natal?.nome).toBe('Natal')
+    expect(natal?.diaSemana).toBe('quinta-feira')
+  })
+
+  it('o dia da semana é derivado da data — nenhuma linha sai em branco', () => {
+    const r = calcular1({ dataInicio: '2025-01-01', dataFim: '2025-12-31', incluirFeriadosUteis: true })
+    for (const f of r.feriadosConsiderados) {
+      expect(f.diaSemana, f.data).toMatch(/feira$|^domingo$|^sábado$/)
+    }
+  })
+
+  it('só lista o que está DENTRO do período', () => {
+    const r = calcular1({ dataInicio: '2025-01-01', dataFim: '2025-01-31', incluirFeriadosUteis: true })
+    // Só 01/01/2025 (Confraternização Universal) cai em janeiro.
+    expect(r.feriadosConsiderados.map((f) => f.data)).toEqual(['2025-01-01'])
+  })
+
+  it('a lista sai ordenada por data', () => {
+    const r = calcular1({ dataInicio: '2025-01-01', dataFim: '2025-12-31', incluirFeriadosUteis: true })
+    const datas = r.feriadosConsiderados.map((f) => f.data)
+    expect([...datas].sort()).toEqual(datas)
+  })
+
+  it('lista vazia quando o checkbox está desmarcado', () => {
+    const r = calcular1({ dataInicio: '2025-01-01', dataFim: '2025-12-31', incluirFeriadosUteis: false })
+    expect(r.feriadosConsiderados).toEqual([])
+  })
+
+  it('entra na lista mesmo caindo em fim de semana (a folga integral não o exclui dela)', () => {
+    // 🔴 21/04/2026 é Tiradentes, uma TERÇA — mas o ponto aqui é o nome e o dia da semana, e o
+    // feriado entra na lista pelo que ELE é, não por onde cai.
+    const r = calcular1({ dataInicio: '2026-04-21', dataFim: '2026-04-21', incluirFeriadosUteis: true })
+    expect(r.feriadosConsiderados.map((f) => f.data)).toEqual(['2026-04-21'])
+    expect(r.feriadosConsiderados[0].nome).toBe('Tiradentes')
+    expect(r.feriadosConsiderados[0].diaSemana).toBe('terça-feira')
+  })
+
+  it('Finados (02/11) NÃO está na lista de 2025 — lacuna do arquivo de origem', () => {
+    // 🔴 Mesma lacuna que o `feriados.spec.ts` já fixa: o arquivo homologado não traz Finados em
+    // todos os anos. Se este teste ficar vermelho, alguém "completou" a tabela por conta própria.
+    const r = calcular1({ dataInicio: '2025-01-01', dataFim: '2025-12-31', incluirFeriadosUteis: true })
+    expect(r.feriadosConsiderados.map((f) => f.data)).not.toContain('2025-11-02')
+  })
+})
+
 describe('motor — o último dia NÃO vaza para o dia seguinte', () => {
   it('período de um dia só não computa o dia seguinte', () => {
     // 🔴 Regressivo: a versão anterior esticava a janela até o fim do turno, e um cálculo de

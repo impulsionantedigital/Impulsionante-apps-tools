@@ -8,6 +8,13 @@ function formatarDataBR(dataISO: string): string {
   return `${dia}/${mes}/${ano}`
 }
 
+/** `AAAA-MM-DD` → `DD/MM` — a lista de feriados já diz o ano no cabeçalho da seção, e repetir
+ *  "2025" em cada linha só ocupa largura sem acrescentar informação. */
+function formatarDiaMes(dataISO: string): string {
+  const [, mes, dia] = dataISO.split('-')
+  return `${dia}/${mes}`
+}
+
 function duracaoNoturnaMinutos(horaInicio: string, horaFim: string): number {
   const [hi, mi] = horaInicio.split(':').map(Number)
   const [hf, mf] = horaFim.split(':').map(Number)
@@ -118,6 +125,29 @@ export default function Resumo({
           </b>
         </div>
       </div>
+
+      {/* 🔴 A lista dos feriados que ENTRARAM no cálculo. O número ("5 dias — 120 horas") sozinho
+       *  não permite conferir nada: o membro não tem como saber QUAIS cinco são. Com a data, o dia
+       *  da semana e o nome, ele confere contra o calendário — e é isso que dá auditabilidade ao
+       *  cômputo, que é o propósito desta calculadora. */}
+      {resultado.feriadosConsiderados.length > 0 && (
+        <div className={estilos.resumoCategorias}>
+          <div className={estilos.resumoLinha}>
+            <span className={estilos.resumoSubCategoria}>
+              Feriados considerados no cálculo ({resultado.feriadosConsiderados.length})
+            </span>
+          </div>
+          <ul className={estilos.listaFeriados}>
+            {resultado.feriadosConsiderados.map((f) => (
+              <li key={f.data}>
+                <span className={estilos.feriadoData}>{formatarDiaMes(f.data)}</span>
+                <span className={estilos.feriadoDiaSemana}>{f.diaSemana}</span>
+                <span className={estilos.feriadoNome}>{f.nome}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {/* 🔴 Só na tela. Ao contrário das respostas do CIC, este campo é texto LIVRE do advogado —
        *  num anexo de petição ele é rascunho, e rascunho não vai assinado ao juízo (ver

@@ -20,6 +20,7 @@ function resultado(parcial: Partial<ResultadoCalculo>): ResultadoCalculo {
       diasFolgaIntegral: 0,
       minutosIntegrais: 0,
     },
+    feriadosConsiderados: [],
     algoritmoVersao: 'RN-2.0',
     ...parcial,
   }

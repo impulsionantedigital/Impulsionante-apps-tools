@@ -3,6 +3,8 @@
 // Os contratos do domínio de detração por recolhimento noturno. Forma, sem regra de negócio —
 // quem soma e converte é `motor.ts`.
 
+import type { FeriadoConsiderado } from './feriados'
+
 export const WEEKDAYS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'] as const
 export type Weekday = (typeof WEEKDAYS)[number]
 
@@ -56,6 +58,10 @@ export type ResultadoCalculo = {
    *  `totalMinutos = diasIntegrais × 1440 + diasUteis × H_NOTURNO`. */
   diasUteis: number
   diasIntegrais: number
+  /** Os feriados NACIONAIS que este cálculo efetivamente computou, com nome e dia da semana —
+   *  para a tela poder LISTAR o que entrou no número, e não só dizer quantos são. Vazio quando o
+   *  checkbox está desmarcado. */
+  feriadosConsiderados: FeriadoConsiderado[]
   /** A mesma contagem aberta por categoria, para o resumo da tela. Só o MOTOR sabe isto — tentar
    *  reconstruir depois dá número errado, e era daí que saíam os valores errados na tela. */
   composicao: {

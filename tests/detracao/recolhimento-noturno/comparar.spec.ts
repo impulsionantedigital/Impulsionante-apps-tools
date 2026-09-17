@@ -46,6 +46,7 @@ describe('mesmoResultado', () => {
       diasUteis: r.diasUteis,
       diasIntegrais: r.diasIntegrais,
       composicao: r.composicao,
+      feriadosConsiderados: r.feriadosConsiderados,
     }
     expect(mesmoResultado(r, outraOrdem)).toBe(true)
     void reordenado // só para não sobrar variável não usada

@@ -9,7 +9,8 @@
 // — ninguém precisa saber em que data civil cada hora cai. A versão anterior materializava faixas e
 // recortava por uma janela, e era justamente daí que saíam os números errados na tela.
 
-import { feriadosNacionais } from './feriados'
+import { feriadosDoIntervalo, feriadosNacionais } from './feriados'
+import type { FeriadoConsiderado } from './feriados'
 import { ALGORITMO_VERSAO } from './tipos'
 import type { EntradaCalculo, ResultadoCalculo, SegmentoRegra, Weekday } from './tipos'
 
@@ -113,6 +114,12 @@ export function calcular(entrada: EntradaCalculo): ResultadoCalculo {
   // Os feriados nacionais do período inteiro, uma vez só: `Set` dá a consulta O(1) e a comparação é
   // TEXTUAL em `YYYY-MM-DD`, então não há fuso horário para errar aqui.
   const feriadosDoSet = feriadosDoPeriodo(entrada.segmentos)
+  // Os mesmos feriados, com nome e dia da semana, para a tela LISTAR o que entrou no cálculo.
+  const feriadosConsiderados = entrada.segmentos
+    .filter((s) => s.incluirFeriadosUteis)
+    .flatMap((s) => feriadosDoIntervalo(s.dataInicio, s.dataFim))
+    .filter((f, i, todos) => todos.findIndex((o) => o.data === f.data) === i)
+    .sort((a, b) => a.data.localeCompare(b.data))
 
   let minutosNoturno = 0
   let diasUteis = 0
@@ -165,6 +172,7 @@ export function calcular(entrada: EntradaCalculo): ResultadoCalculo {
       diasFolgaIntegral,
       minutosIntegrais,
     },
+    feriadosConsiderados,
     algoritmoVersao: ALGORITMO_VERSAO,
   }
 }

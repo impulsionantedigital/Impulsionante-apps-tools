@@ -12,7 +12,15 @@
 @media (max-width: 900px) {
   .layout { grid-template-columns: 1fr; }
 }
-.coluna { min-width: 0; }
+/* 🔴 `gap` aqui, e não `margin` em cada card: a coluna empilha `.painel` + `.resumo` (mais a
+ *  barra que os precede), e sem o gap eles ficam colados — `padding` é espaço INTERNO e não separa
+ * irmãos. Assim todo card novo já nasce espaçado, sem depender de quem escreve o componente. */
+.coluna {
+  min-width: 0;
+  display: grid;
+  gap: var(--s-6);
+  align-content: start;
+}
 
 .pagina { display: grid; gap: var(--s-6); }
 
@@ -154,6 +162,33 @@
   gap: var(--s-2);
   padding-top: var(--s-2);
   border-top: 1px solid var(--linha);
+}
+
+/* Lista dos feriados computados. Três colunas de largura fixa para a data e o dia da semana, e o
+ *  nome ocupando o resto: assim as três colunas ficam alinhadas entre as linhas e a lista se lê
+ *  como tabela, sem `display: table` (que brigaria com o grid do painel). */
+.listaFeriados {
+  display: grid;
+  gap: var(--s-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--fs-body);
+  color: var(--tinta-2);
+}
+.listaFeriados li {
+  display: grid;
+  grid-template-columns: 4rem 8rem minmax(0, 1fr);
+  gap: var(--s-3);
+  align-items: baseline;
+}
+.feriadoData { font-variant-numeric: tabular-nums; color: var(--tinta); font-weight: 600; }
+.feriadoDiaSemana { color: var(--tinta-3); }
+.feriadoNome { color: var(--tinta-2); }
+
+/* No papel, a lista estreita não cabe em três colunas sem quebrar feio. */
+@media print {
+  .listaFeriados li { grid-template-columns: 3.5rem 7rem minmax(0, 1fr); gap: var(--s-2); }
 }
 .resumoObservacoes {
   display: grid;

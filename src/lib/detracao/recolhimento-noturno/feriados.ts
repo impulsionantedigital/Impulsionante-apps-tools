@@ -401,3 +401,33 @@ export function feriadosNacionais(anoInicio: number, anoFim: number): string[] {
     return ano >= anoInicio && ano <= anoFim
   })
 }
+
+const ROTULOS_DIA: readonly string[] = [
+  'domingo',
+  'segunda-feira',
+  'terça-feira',
+  'quarta-feira',
+  'quinta-feira',
+  'sexta-feira',
+  'sábado',
+]
+
+/** Um feriado já RESOLVIDO para exibição — o que a tela mostra na lista de feriados considerados. */
+export type FeriadoConsiderado = { data: string; nome: string; diaSemana: string }
+
+/** Os feriados NACIONAIS dentro de `[dataInicio, dataFim]` (datas de calendário, inclusivas), com
+ *  nome e dia da semana.
+ *
+ *  🔴 É este (e só este) o conjunto que o checkbox faz computar. A tela lista o que ESTE cálculo
+ *  considerou — não a tabela inteira de 1990-2050 — porque o que o membro precisa conferir é o que
+ *  entrou no número dele, não o histórico completo de feriados do país. */
+export function feriadosDoIntervalo(dataInicio: string, dataFim: string): FeriadoConsiderado[] {
+  return FERIADOS.filter((f) => f.data >= dataInicio && f.data <= dataFim).map((f) => ({
+    data: f.data,
+    nome: f.nome,
+    // O dia da semana é derivado da própria data, no mesmo eixo UTC das outras comparações —
+    // o arquivo de origem traz um `dia_semana` em texto, mas reaproveitá-lo acoplaria a exibição
+    // à transcrição, e uma divergência entre os dois passaria despercebida.
+    diaSemana: ROTULOS_DIA[new Date(`${f.data}T00:00:00Z`).getUTCDay()],
+  }))
+}
