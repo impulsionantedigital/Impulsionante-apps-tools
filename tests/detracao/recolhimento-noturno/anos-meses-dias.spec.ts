@@ -84,9 +84,10 @@ describe('o resultado do cálculo traz a conversão coerente com os dias', () =>
         },
       ],
     })
-    // 194 dias → 6 meses e 14 dias (194 = 6 × 30 + 14), sem completar um ano.
-    expect(r.diasDetracao).toBe(194)
-    expect(r.detracaoEmAnosMesesDias).toEqual({ anos: 0, meses: 6, dias: 14 })
+    // 195 dias → 6 meses e 15 dias (195 = 6 × 30 + 15), sem completar um ano.
+    // (Eram 194 antes de a Sexta-feira Santa entrar na lista: 18/04/2025 é um dia útil.)
+    expect(r.diasDetracao).toBe(195)
+    expect(r.detracaoEmAnosMesesDias).toEqual({ anos: 0, meses: 6, dias: 15 })
   })
 
   it('o saldo abaixo de 24h NÃO entra na conversão', () => {

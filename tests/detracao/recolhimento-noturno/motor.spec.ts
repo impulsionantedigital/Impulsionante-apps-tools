@@ -3,6 +3,7 @@ import { describe, it, expect } from 'vitest'
 import { calcular } from '@/lib/detracao/recolhimento-noturno/motor'
 import type { SegmentoRegra, Weekday } from '@/lib/detracao/recolhimento-noturno/tipos'
 
+
 /** `SegmentoRegra` com todos os campos preenchidos — os testes só sobrescrevem o que importa. */
 function segmentoBase(overrides: Partial<SegmentoRegra>): SegmentoRegra {
   return {
@@ -92,20 +93,22 @@ describe('motor — contagem de dias', () => {
       diasFolgaIntegral: ['SAT', 'SUN'],
       incluirFeriadosUteis: true,
     })
-    // 365 = 104 (fds) + 5 (feriados em dia útil) + 256 (regra noturna).
+    // 365 = 104 (fds) + 6 (feriados em dia útil) + 255 (regra noturna).
+    // Os 6 de 2025: 01/01, 18/04 Sexta-feira Santa, 21/04 Tiradentes, 01/05, 20/11 e 25/12.
     expect(r.diasUteis + r.composicao.diasFeriados + r.composicao.diasFolgaIntegral).toBe(365)
-    expect(r.diasIntegrais).toBe(109)
+    expect(r.diasIntegrais).toBe(110)
     expect(r.composicao.diasFolgaIntegral).toBe(104)
-    expect(r.composicao.diasFeriados).toBe(5)
-    expect(r.diasUteis).toBe(256)
-    // 🔴 As 256 noites valem 256 × 8h = 2048h — era ESTE o número que a tela mostrava como 1718h.
-    expect(r.composicao.minutosUteis).toBe(256 * 8 * 60)
-    expect(r.composicao.minutosUteis / 60).toBe(2048)
-    // O total soma também os 109 dias integrais (104 fins de semana + 5 feriados) × 24h.
-    expect(r.composicao.diasIntegrais).toBe(109)
-    expect(r.composicao.minutosIntegrais).toBe(109 * 1440)
-    expect(r.totalMinutos).toBe(256 * 8 * 60 + 109 * 1440)
-    expect(r.totalHoras).toBe('4664:00')
+    expect(r.composicao.diasFeriados).toBe(6)
+    expect(r.diasUteis).toBe(255)
+    // 🔴 As 255 noites valem 255 × 8h = 2040h (eram 2048h antes de a Sexta-feira Santa entrar:
+    // um dia útil de 2025 virou feriado). Era ESTE o número que a tela mostrava como 1718h.
+    expect(r.composicao.minutosUteis).toBe(255 * 8 * 60)
+    expect(r.composicao.minutosUteis / 60).toBe(2040)
+    // O total soma os 110 dias integrais (104 fins de semana + 6 feriados) × 24h.
+    expect(r.composicao.diasIntegrais).toBe(110)
+    expect(r.composicao.minutosIntegrais).toBe(110 * 1440)
+    expect(r.totalMinutos).toBe(255 * 8 * 60 + 110 * 1440)
+    expect(r.totalHoras).toBe('4680:00')
   })
 
   it('folga integral tem PRECEDÊNCIA sobre a regra noturna', () => {
@@ -180,14 +183,32 @@ describe('motor — feriados nacionais (checkbox `incluirFeriadosUteis`)', () =>
     expect(r.totalMinutos).toBe(3 * 1440)
   })
 
-  it('feriado móvel NÃO entra: a lista de origem só tem datas fixas', () => {
-    // 03/04/2026 é Sexta-feira Santa, e não está na lista homologada.
+  it('Sexta-feira Santa é feriado nacional e entra na lista (móvel, derivada da Páscoa)', () => {
+    // 🔴 03/04/2026 é Sexta-feira Santa (Páscoa em 05/04/2026). Feriado nacional pela Lei
+    // 662/1949, vige em todo o período — antes o cálculo a ignorava em TODOS os anos.
     const r = calcular1({
       dataInicio: '2026-04-03',
       dataFim: '2026-04-03',
       incluirFeriadosUteis: true,
     })
-    expect(r.totalMinutos).toBe(0)
+    expect(r.composicao.diasFeriados).toBe(1)
+    expect(r.totalMinutos).toBe(1440)
+  })
+
+  it('Sexta-feira Santa é reconhecida em qualquer ano coberto', () => {
+    // 1990: 13/04 · 2025: 18/04 · 2050: 08/04.
+    for (const data of ['1990-04-13', '2025-04-18', '2050-04-08']) {
+      const r = calcular1({ dataInicio: data, dataFim: data, incluirFeriadosUteis: true })
+      expect(r.totalMinutos, `Sexta-feira Santa de ${data}`).toBe(1440)
+    }
+  })
+
+  it('Carnaval e Corpus Christi NÃO entram: são ponto facultativo, não feriado nacional', () => {
+    // 17/02/2026 é terça de Carnaval; 04/06/2026 é Corpus Christi.
+    for (const data of ['2026-02-17', '2026-06-04']) {
+      const r = calcular1({ dataInicio: data, dataFim: data, incluirFeriadosUteis: true })
+      expect(r.totalMinutos, data).toBe(0)
+    }
   })
 
   it('feriado declarado à mão (`feriadosIntegral`) vale 24h sem o checkbox', () => {

@@ -55,9 +55,11 @@ Feriados nacionais também podem contar integralmente (24 horas), sem necessidad
 
 A lista **não é digitada por você**: ela vem de uma planilha homologada de feriados, versionada junto do produto, que cobre **1990 a 2050**.
 
-> ⚠️ São feriados **nacionais**. Para um feriado estadual ou municipal, use o campo **"Feriados de recolhimento integral"** no modo avançado.
+> ⚠️ São feriados **nacionais**, e nacionais é o que a lista tem — inclusive a **Sexta-feira Santa**, que muda de data a cada ano. Carnaval e Corpus Christi **não** entram: são ponto facultativo, não feriado nacional.
 
-> ⚠️ A lista acompanha o que a lei diz **em cada ano**: a Consciência Negra (20/11) só entra a partir de **2024**, e feriados móveis (Carnaval, Sexta-feira Santa, Corpus Christi) **não** estão na lista. Fora da faixa 1990-2050, nenhum feriado é computado.
+> ⚠️ Para um feriado **estadual ou municipal**, use o campo **"Feriados de recolhimento integral"** no modo avançado.
+
+> ⚠️ A lista acompanha o que a lei diz **em cada ano**: a Consciência Negra (20/11) só entra a partir de **2024**. Fora da faixa 1990-2050, nenhum feriado é computado.
 
 ### Precedência dos dias
 Quando um dia se encaixa em mais de uma regra, vale **nesta ordem**: dia de folga integral → feriado nacional (com o checkbox marcado) → dia de horário noturno. Assim um feriado que cai no sábado vale 24 horas uma vez só, e não 48.

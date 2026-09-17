@@ -130,11 +130,14 @@ precedência:
 
 > 📌 **De onde vem a lista de feriados nacionais.** De uma planilha homologada, versionada em
 > `dados/feriados.json` e transcrita em `feriados.ts` (o motor precisa do `Set` pronto em runtime,
-> sem ler arquivo). Ela cobre **1990-2050** e
-> registra o que a lei diz **em cada ano** — a Consciência Negra só entra em 2024, Finados não é
-> feriado em todos os anos, e 1990 e 1994 têm as Eleições gerais. Feriados **móveis** (Carnaval,
-> Sexta-feira Santa, Corpus Christi) **não** estão na lista, e derivá-los por Páscoa reintroduziria
-> uma regra que a fonte não tem. Fora da faixa coberta, nenhum feriado é computado.
+> sem ler arquivo). Ela cobre **1990-2050** e registra o que a lei diz **em cada ano** — a
+> Consciência Negra só entra em 2024, Finados não é feriado em todos os anos, e 1990 e 1994 têm as
+> Eleições gerais.
+>
+> ⚠️ A **Sexta-feira Santa** é a única data MÓVEL da lista: feriado nacional pela Lei 662/1949,
+> vige em todo o período coberto, e foi gerada para cada ano a partir da Páscoa. **Carnaval** e
+> **Corpus Christi** NÃO entram — são ponto facultativo federal, não feriado nacional. Fora da
+> faixa 1990-2050, nenhum feriado é computado.
 
 ### PASSO 4 — total, dias e saldo
 1. `totalMinutos = diasIntegrais × 1440 + diasUteis × H_NOTURNO` (inteiros, nunca float).

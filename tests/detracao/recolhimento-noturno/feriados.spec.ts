@@ -24,8 +24,20 @@ describe('FERIADOS — forma da lista', () => {
     for (const f of FERIADOS) expect(f.data, f.nome).toMatch(/^\d{4}-\d{2}-\d{2}$/)
   })
 
-  it('nenhuma data repetida', () => {
-    expect(new Set(DATAS_FERIADOS).size).toBe(DATAS_FERIADOS.length)
+  it('nenhuma entrada repetida', () => {
+    // 🔴 Duas datas IGUAIS com nomes diferentes é LEGÍTIMO: em 21/04/2000 a Sexta-feira Santa caiu
+    // no mesmo dia que Tiradentes. O que não pode existir é a MESMA entrada duas vezes, que faria
+    // a lista mentir sobre o próprio tamanho.
+    const chaves = FERIADOS.map((f) => `${f.data}|${f.nome}`)
+    expect(new Set(chaves).size).toBe(chaves.length)
+  })
+
+  it('as coincidências de data são conhecidas e poucas', () => {
+    // Trava o crescimento acidental: se isto subir, uma geração de Sexta-feira Santa saiu errada.
+    const porData = new Map<string, number>()
+    for (const f of FERIADOS) porData.set(f.data, (porData.get(f.data) ?? 0) + 1)
+    const coincidentes = [...porData.entries()].filter(([, n]) => n > 1)
+    expect(coincidentes).toEqual([['2000-04-21', 2]])
   })
 
   it('está ordenada por data', () => {
@@ -75,6 +87,29 @@ describe('cobertura histórica que o arquivo de origem registra', () => {
   it('1990 e 1994 têm as Eleições gerais (Lei nº 1.266/1950)', () => {
     expect(feriadosNacionais(1990, 1990)).toContain('1990-10-03')
     expect(feriadosNacionais(1994, 1994)).toContain('1994-10-03')
+  })
+
+  it('Sexta-feira Santa existe em TODOS os anos cobertos (1990-2050)', () => {
+    // 🔴 Feriado nacional pela Lei 662/1949, e a ÚNICA data móvel da lista. Antes faltava em todos
+    // os anos, e o cálculo a ignorava; o checklist abaixo falha se um ano ficar sem a dela.
+    const anos = new Set(FERIADOS.filter((f) => f.nome === 'Sexta-feira Santa').map((f) => f.data.slice(0, 4)))
+    for (let ano = 1990; ano <= 2050; ano++) {
+      expect(anos.has(String(ano)), `sem Sexta-feira Santa em ${ano}`).toBe(true)
+    }
+  })
+
+  it('a Sexta-feira Santa de cada ano cai numa sexta-feira', () => {
+    const sextas = FERIADOS.filter((f) => f.nome === 'Sexta-feira Santa')
+    expect(sextas.length).toBe(61)
+    for (const f of sextas) {
+      expect(new Date(`${f.data}T00:00:00Z`).getUTCDay(), f.data).toBe(5)
+    }
+  })
+
+  it('Carnaval e Corpus Christi NÃO estão na lista — ponto facultativo, não feriado nacional', () => {
+    const nomes = FERIADOS.map((f) => f.nome.toLowerCase())
+    expect(nomes.some((n) => n.includes('carnaval'))).toBe(false)
+    expect(nomes.some((n) => n.includes('corpus'))).toBe(false)
   })
 
   it('Finados não é feriado em todos os anos — 2003 não tem, 2004 tem', () => {

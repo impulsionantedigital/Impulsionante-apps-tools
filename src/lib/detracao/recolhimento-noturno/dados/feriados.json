@@ -5,6 +5,11 @@
     "dia_semana": "segunda-feira"
   },
   {
+    "data": "1990-04-13",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
     "data": "1990-05-01",
     "nome": "Dia do Trabalho",
     "dia_semana": "terça-feira"
@@ -40,6 +45,11 @@
     "dia_semana": "terça-feira"
   },
   {
+    "data": "1991-03-29",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
     "data": "1991-05-01",
     "nome": "Dia do Trabalho",
     "dia_semana": "quarta-feira"
@@ -58,6 +68,11 @@
     "data": "1992-01-01",
     "nome": "Confraternização Universal",
     "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "1992-04-17",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
   },
   {
     "data": "1992-04-21",
@@ -90,6 +105,11 @@
     "dia_semana": "sexta-feira"
   },
   {
+    "data": "1993-04-09",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
     "data": "1993-04-21",
     "nome": "Tiradentes",
     "dia_semana": "quarta-feira"
@@ -108,6 +128,11 @@
     "data": "1993-11-15",
     "nome": "Proclamação da República",
     "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "1994-04-01",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
   },
   {
     "data": "1994-04-21",
@@ -133,6 +158,11 @@
     "data": "1994-11-15",
     "nome": "Proclamação da República",
     "dia_semana": "terça-feira"
+  },
+  {
+    "data": "1995-04-14",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
   },
   {
     "data": "1995-04-21",
@@ -170,6 +200,11 @@
     "dia_semana": "segunda-feira"
   },
   {
+    "data": "1996-04-05",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
     "data": "1996-05-01",
     "nome": "Dia do Trabalho",
     "dia_semana": "quarta-feira"
@@ -190,6 +225,11 @@
     "dia_semana": "quarta-feira"
   },
   {
+    "data": "1997-03-28",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
     "data": "1997-04-21",
     "nome": "Tiradentes",
     "dia_semana": "segunda-feira"
@@ -208,6 +248,11 @@
     "data": "1998-01-01",
     "nome": "Confraternização Universal",
     "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "1998-04-10",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
   },
   {
     "data": "1998-04-21",
@@ -240,6 +285,11 @@
     "dia_semana": "sexta-feira"
   },
   {
+    "data": "1999-04-02",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
     "data": "1999-04-21",
     "nome": "Tiradentes",
     "dia_semana": "quarta-feira"
@@ -258,6 +308,11 @@
     "data": "1999-11-15",
     "nome": "Proclamação da República",
     "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "2000-04-21",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
   },
   {
     "data": "2000-04-21",
@@ -295,6 +350,11 @@
     "dia_semana": "segunda-feira"
   },
   {
+    "data": "2001-04-13",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
     "data": "2001-05-01",
     "nome": "Dia do Trabalho",
     "dia_semana": "terça-feira"
@@ -325,6 +385,11 @@
     "dia_semana": "terça-feira"
   },
   {
+    "data": "2002-03-29",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
     "data": "2002-05-01",
     "nome": "Dia do Trabalho",
     "dia_semana": "quarta-feira"
@@ -345,6 +410,11 @@
     "dia_semana": "quarta-feira"
   },
   {
+    "data": "2003-04-18",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
     "data": "2003-04-21",
     "nome": "Tiradentes",
     "dia_semana": "segunda-feira"
@@ -363,6 +433,11 @@
     "data": "2004-01-01",
     "nome": "Confraternização Universal",
     "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "2004-04-09",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
   },
   {
     "data": "2004-04-21",
@@ -390,6 +465,11 @@
     "dia_semana": "segunda-feira"
   },
   {
+    "data": "2005-03-25",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
     "data": "2005-04-21",
     "nome": "Tiradentes",
     "dia_semana": "quinta-feira"
@@ -413,6 +493,11 @@
     "data": "2005-11-15",
     "nome": "Proclamação da República",
     "dia_semana": "terça-feira"
+  },
+  {
+    "data": "2006-04-14",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
   },
   {
     "data": "2006-04-21",
@@ -455,6 +540,11 @@
     "dia_semana": "segunda-feira"
   },
   {
+    "data": "2007-04-06",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
     "data": "2007-05-01",
     "nome": "Dia do Trabalho",
     "dia_semana": "terça-feira"
@@ -490,6 +580,11 @@
     "dia_semana": "terça-feira"
   },
   {
+    "data": "2008-03-21",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
     "data": "2008-04-21",
     "nome": "Tiradentes",
     "dia_semana": "segunda-feira"
@@ -508,6 +603,11 @@
     "data": "2009-01-01",
     "nome": "Confraternização Universal",
     "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "2009-04-10",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
   },
   {
     "data": "2009-04-21",
@@ -545,6 +645,11 @@
     "dia_semana": "sexta-feira"
   },
   {
+    "data": "2010-04-02",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
     "data": "2010-04-21",
     "nome": "Tiradentes",
     "dia_semana": "quarta-feira"
@@ -575,6 +680,11 @@
     "dia_semana": "quinta-feira"
   },
   {
+    "data": "2011-04-22",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
     "data": "2011-09-07",
     "nome": "Independência do Brasil",
     "dia_semana": "quarta-feira"
@@ -593,6 +703,11 @@
     "data": "2011-11-15",
     "nome": "Proclamação da República",
     "dia_semana": "terça-feira"
+  },
+  {
+    "data": "2012-04-06",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
   },
   {
     "data": "2012-05-01",
@@ -630,6 +745,11 @@
     "dia_semana": "terça-feira"
   },
   {
+    "data": "2013-03-29",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
     "data": "2013-05-01",
     "nome": "Dia do Trabalho",
     "dia_semana": "quarta-feira"
@@ -650,6 +770,11 @@
     "dia_semana": "quarta-feira"
   },
   {
+    "data": "2014-04-18",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
     "data": "2014-04-21",
     "nome": "Tiradentes",
     "dia_semana": "segunda-feira"
@@ -668,6 +793,11 @@
     "data": "2015-01-01",
     "nome": "Confraternização Universal",
     "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "2015-04-03",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
   },
   {
     "data": "2015-04-21",
@@ -705,6 +835,11 @@
     "dia_semana": "sexta-feira"
   },
   {
+    "data": "2016-03-25",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
     "data": "2016-04-21",
     "nome": "Tiradentes",
     "dia_semana": "quinta-feira"
@@ -728,6 +863,11 @@
     "data": "2016-11-15",
     "nome": "Proclamação da República",
     "dia_semana": "terça-feira"
+  },
+  {
+    "data": "2017-04-14",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
   },
   {
     "data": "2017-04-21",
@@ -770,6 +910,11 @@
     "dia_semana": "segunda-feira"
   },
   {
+    "data": "2018-03-30",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
     "data": "2018-05-01",
     "nome": "Dia do Trabalho",
     "dia_semana": "terça-feira"
@@ -805,6 +950,11 @@
     "dia_semana": "terça-feira"
   },
   {
+    "data": "2019-04-19",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
     "data": "2019-05-01",
     "nome": "Dia do Trabalho",
     "dia_semana": "quarta-feira"
@@ -823,6 +973,11 @@
     "data": "2020-01-01",
     "nome": "Confraternização Universal",
     "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "2020-04-10",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
   },
   {
     "data": "2020-04-21",
@@ -860,6 +1015,11 @@
     "dia_semana": "sexta-feira"
   },
   {
+    "data": "2021-04-02",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
     "data": "2021-04-21",
     "nome": "Tiradentes",
     "dia_semana": "quarta-feira"
@@ -885,6 +1045,11 @@
     "dia_semana": "segunda-feira"
   },
   {
+    "data": "2022-04-15",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
     "data": "2022-04-21",
     "nome": "Tiradentes",
     "dia_semana": "quinta-feira"
@@ -908,6 +1073,11 @@
     "data": "2022-11-15",
     "nome": "Proclamação da República",
     "dia_semana": "terça-feira"
+  },
+  {
+    "data": "2023-04-07",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
   },
   {
     "data": "2023-04-21",
@@ -950,6 +1120,11 @@
     "dia_semana": "segunda-feira"
   },
   {
+    "data": "2024-03-29",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
     "data": "2024-05-01",
     "nome": "Dia do Trabalho",
     "dia_semana": "quarta-feira"
@@ -975,6 +1150,11 @@
     "dia_semana": "quarta-feira"
   },
   {
+    "data": "2025-04-18",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
     "data": "2025-04-21",
     "nome": "Tiradentes",
     "dia_semana": "segunda-feira"
@@ -998,6 +1178,11 @@
     "data": "2026-01-01",
     "nome": "Confraternização Universal",
     "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "2026-04-03",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
   },
   {
     "data": "2026-04-21",
@@ -1040,6 +1225,11 @@
     "dia_semana": "sexta-feira"
   },
   {
+    "data": "2027-03-26",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
     "data": "2027-04-21",
     "nome": "Tiradentes",
     "dia_semana": "quarta-feira"
@@ -1063,6 +1253,11 @@
     "data": "2027-11-15",
     "nome": "Proclamação da República",
     "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "2028-04-14",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
   },
   {
     "data": "2028-04-21",
@@ -1110,6 +1305,11 @@
     "dia_semana": "segunda-feira"
   },
   {
+    "data": "2029-03-30",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
     "data": "2029-05-01",
     "nome": "Dia do Trabalho",
     "dia_semana": "terça-feira"
@@ -1150,6 +1350,11 @@
     "dia_semana": "terça-feira"
   },
   {
+    "data": "2030-04-19",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
     "data": "2030-05-01",
     "nome": "Dia do Trabalho",
     "dia_semana": "quarta-feira"
@@ -1173,6 +1378,11 @@
     "data": "2031-01-01",
     "nome": "Confraternização Universal",
     "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "2031-04-11",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
   },
   {
     "data": "2031-04-21",
@@ -1200,6 +1410,11 @@
     "dia_semana": "quinta-feira"
   },
   {
+    "data": "2032-03-26",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
     "data": "2032-04-21",
     "nome": "Tiradentes",
     "dia_semana": "quarta-feira"
@@ -1225,6 +1440,11 @@
     "dia_semana": "segunda-feira"
   },
   {
+    "data": "2033-04-15",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
     "data": "2033-04-21",
     "nome": "Tiradentes",
     "dia_semana": "quinta-feira"
@@ -1248,6 +1468,11 @@
     "data": "2033-11-15",
     "nome": "Proclamação da República",
     "dia_semana": "terça-feira"
+  },
+  {
+    "data": "2034-04-07",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
   },
   {
     "data": "2034-04-21",
@@ -1295,6 +1520,11 @@
     "dia_semana": "segunda-feira"
   },
   {
+    "data": "2035-03-23",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
     "data": "2035-05-01",
     "nome": "Dia do Trabalho",
     "dia_semana": "terça-feira"
@@ -1335,6 +1565,11 @@
     "dia_semana": "terça-feira"
   },
   {
+    "data": "2036-04-11",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
     "data": "2036-04-21",
     "nome": "Tiradentes",
     "dia_semana": "segunda-feira"
@@ -1358,6 +1593,11 @@
     "data": "2037-01-01",
     "nome": "Confraternização Universal",
     "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "2037-04-03",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
   },
   {
     "data": "2037-04-21",
@@ -1405,6 +1645,11 @@
     "dia_semana": "quarta-feira"
   },
   {
+    "data": "2038-04-23",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
     "data": "2038-09-07",
     "nome": "Independência do Brasil",
     "dia_semana": "terça-feira"
@@ -1423,6 +1668,11 @@
     "data": "2038-11-15",
     "nome": "Proclamação da República",
     "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "2039-04-08",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
   },
   {
     "data": "2039-04-21",
@@ -1448,6 +1698,11 @@
     "data": "2039-11-15",
     "nome": "Proclamação da República",
     "dia_semana": "terça-feira"
+  },
+  {
+    "data": "2040-03-30",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
   },
   {
     "data": "2040-05-01",
@@ -1490,6 +1745,11 @@
     "dia_semana": "terça-feira"
   },
   {
+    "data": "2041-04-19",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
     "data": "2041-05-01",
     "nome": "Dia do Trabalho",
     "dia_semana": "quarta-feira"
@@ -1515,6 +1775,11 @@
     "dia_semana": "quarta-feira"
   },
   {
+    "data": "2042-04-04",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
     "data": "2042-04-21",
     "nome": "Tiradentes",
     "dia_semana": "segunda-feira"
@@ -1538,6 +1803,11 @@
     "data": "2043-01-01",
     "nome": "Confraternização Universal",
     "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "2043-03-27",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
   },
   {
     "data": "2043-04-21",
@@ -1580,6 +1850,11 @@
     "dia_semana": "sexta-feira"
   },
   {
+    "data": "2044-04-15",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
     "data": "2044-04-21",
     "nome": "Tiradentes",
     "dia_semana": "quinta-feira"
@@ -1603,6 +1878,11 @@
     "data": "2044-11-15",
     "nome": "Proclamação da República",
     "dia_semana": "terça-feira"
+  },
+  {
+    "data": "2045-04-07",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
   },
   {
     "data": "2045-04-21",
@@ -1650,6 +1930,11 @@
     "dia_semana": "segunda-feira"
   },
   {
+    "data": "2046-03-23",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
     "data": "2046-05-01",
     "nome": "Dia do Trabalho",
     "dia_semana": "terça-feira"
@@ -1690,6 +1975,11 @@
     "dia_semana": "terça-feira"
   },
   {
+    "data": "2047-04-12",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
     "data": "2047-05-01",
     "nome": "Dia do Trabalho",
     "dia_semana": "quarta-feira"
@@ -1713,6 +2003,11 @@
     "data": "2048-01-01",
     "nome": "Confraternização Universal",
     "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "2048-04-03",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
   },
   {
     "data": "2048-04-21",
@@ -1755,6 +2050,11 @@
     "dia_semana": "sexta-feira"
   },
   {
+    "data": "2049-04-16",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
     "data": "2049-04-21",
     "nome": "Tiradentes",
     "dia_semana": "quarta-feira"
@@ -1778,6 +2078,11 @@
     "data": "2049-11-15",
     "nome": "Proclamação da República",
     "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "2050-04-08",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
   },
   {
     "data": "2050-04-21",
