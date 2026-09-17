@@ -44,7 +44,7 @@ export const PRODUTOS = [
     versao: '1.0',
     ativo: true,
     rotulo: 'Detração por Recolhimento Noturno — Tema Repetitivo 1.155/STJ',
-    menuTitulo: 'GPS Detração - Recolhimento Noturno',
+    menuTitulo: 'Recolhimento Noturno',
     menuDescricao: 'Tema 1.155/STJ',
   },
 ] as const
