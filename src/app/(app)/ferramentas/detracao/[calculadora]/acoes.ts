@@ -13,7 +13,7 @@ import { preparar } from './preparar'
 import { exigirEscrita } from '@/server/vendas/acesso'
 import { caminhoDoProduto } from '@/lib/produtos/catalogo'
 import { versaoAtual } from '@/lib/detracao/recolhimento-noturno/versoes/registro'
-import type { EntradaCalculo } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-0/tipos'
+import type { EntradaCalculo } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-1/tipos'
 
 // 🔴 A versão gravada vem do REGISTRO, e não de uma constante do módulo da versão: é ele que diz
 // qual é a vigente, e um cálculo novo tem de sair com ela. A constante interna seria uma segunda

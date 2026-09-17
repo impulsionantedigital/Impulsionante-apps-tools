@@ -5,7 +5,7 @@ import { FileText } from 'lucide-react'
 import Botao from '@/components/ui/Botao'
 import PeticaoOverlay from './PeticaoOverlay'
 import { versaoAtual } from '@/lib/detracao/recolhimento-noturno/versoes/registro'
-import type { EntradaCalculo, ResultadoCalculo } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-0/tipos'
+import type { EntradaCalculo, ResultadoCalculo } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-1/tipos'
 
 /** Some quando não há período informado — nunca promete uma petição que o overlay mostraria
  *  em branco (mesmo critério do BotaoPeticao do CIC). */

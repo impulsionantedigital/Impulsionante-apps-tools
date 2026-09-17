@@ -8,33 +8,39 @@ import CabecalhoAnexo from './CabecalhoAnexo'
 import BarraSalvar from './BarraSalvar'
 import BotaoImprimir from './BotaoImprimir'
 import BotaoPeticao from './BotaoPeticao'
-import { versaoPorRotulo, versaoAtual } from '@/lib/detracao/recolhimento-noturno/versoes/registro'
-import type { EntradaFormulario } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-0/formulario'
-import type { EntradaCalculo, ResultadoCalculo } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-0/tipos'
+import { versaoPorRotulo, versaoAtual, pacoteTipado } from '@/lib/detracao/recolhimento-noturno/versoes/registro'
+import type { EntradaCalculo, ResultadoCalculo } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-1/tipos'
+import type { EntradaFormulario, SegmentoFormulario } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-1/formulario'
 import estilos from './calculadora.module.css'
 
+/** 🔴 SEM MODO AVANÇADO (RN-2.1): a entrada é UM período, e o formulário tem exatamente os campos
+ *  que o motor lê. Não há mais segmentos extras, fuso, monitoramento nem observações — os três
+ *  últimos eram metadados de auditoria que nunca entraram na conta, e os múltiplos segmentos eram
+ *  o que obrigava o modo avançado a existir. */
 function entradaInicial(inicial?: EntradaCalculo): EntradaFormulario {
-  if (!inicial) {
-    return { timezone: 'America/Sao_Paulo', segmentos: [versaoAtual().formulario.emBranco()] }
+  if (!inicial || inicial.segmentos.length === 0) {
+    return { segmentos: [versaoAtual().formulario.emBranco() as SegmentoFormulario] }
   }
+  // O cálculo salvo pode ter mais de um segmento (gravado quando o modo avançado existia). A tela
+  // edita só o primeiro — os outros continuariam contando no total sem aparecer para o membro, que
+  // é o defeito que a RN-2.1 veio eliminar.
+  const s = inicial.segmentos[0]
   return {
-    timezone: inicial.timezone,
-    observacoes: inicial.observacoes,
-    monitoramentoEletronico: inicial.monitoramentoEletronico,
-    segmentos: inicial.segmentos.map((s) => ({
-      dataInicio: s.dataInicio,
-      dataFim: s.dataFim,
-      horaInicioNoturno: s.horaInicioNoturno,
-      horaFimNoturno: s.horaFimNoturno,
-      diasSemanaNoturno: s.diasSemanaNoturno,
-      diasFolgaIntegral: s.diasFolgaIntegral,
-      feriadosIntegral: s.feriadosIntegral,
-      // `?? false`: cálculos gravados antes deste campo existir (RN-1.1 e anteriores) não o têm
-      // no jsonb, e reabri-los não pode quebrar a tela.
-      incluirFeriadosUteis: s.incluirFeriadosUteis ?? false,
-    })),
+    segmentos: [
+      {
+        dataInicio: s.dataInicio,
+        dataFim: s.dataFim,
+        horaInicioNoturno: s.horaInicioNoturno,
+        horaFimNoturno: s.horaFimNoturno,
+        diasSemanaNoturno: s.diasSemanaNoturno,
+        diasFolgaIntegral: s.diasFolgaIntegral,
+        feriadosIntegral: s.feriadosIntegral,
+        incluirFeriadosUteis: s.incluirFeriadosUteis ?? false,
+      },
+    ],
   }
 }
+
 
 export default function Calculadora({
   /** 🔴 A versão do MOTOR com que este cálculo é feito. Ausente em cálculo NOVO — aí vale a
@@ -59,17 +65,13 @@ export default function Calculadora({
   // 🔴 A versão vem do RÓTULO gravado e é resolvida aqui, não recebida pronta: assim o pacote
   // (motor + formulário + resumo) é sempre o mesmo objeto, e não há como a tela receber o motor de
   // uma versão com o formulário de outra.
-  const pacote = versaoPorRotulo(rotulo) ?? versaoAtual()
+  // 🔴 O pacote resolvido e tipado para o formulário da versão. É AQUI, e só aqui, que os tipos do
+  // registro heterogêneo se encontram com os do formulário — ver `pacoteTipado` em `registro.ts`.
+  const pacote = pacoteTipado<SegmentoFormulario, EntradaFormulario, EntradaCalculo>(
+    versaoPorRotulo(rotulo) ?? versaoAtual(),
+  )
   const [entrada, setEntrada] = useState<EntradaFormulario>(() => entradaInicial(inicial))
-  const [avancado, setAvancado] = useState(() => Boolean(inicial && inicial.segmentos.length > 1))
   const [titulo, setTitulo] = useState(tituloInicial ?? '')
-
-  // Sair do modo avançado descarta segmentos extras — em modo simples só o primeiro é editável,
-  // e deixá-los "escondidos" contribuindo pro cálculo confundiria o membro (ver spec §4).
-  function mudarAvancado(v: boolean) {
-    setAvancado(v)
-    if (!v) setEntrada((e) => ({ ...e, segmentos: e.segmentos.slice(0, 1) }))
-  }
 
   const calculo = useMemo<{ ok: true; entrada: EntradaCalculo; valor: ResultadoCalculo } | { ok: false; erro: string }>(() => {
     try {
@@ -89,13 +91,7 @@ export default function Calculadora({
     <div className={estilos.layout}>
       <div className={estilos.coluna}>
         <fieldset disabled={somenteLeitura} className={estilos.fieldsetSemBorda}>
-          <Formulario
-            versao={pacote.versao}
-            entrada={entrada}
-            aoMudar={setEntrada}
-            avancado={avancado}
-            aoMudarAvancado={mudarAvancado}
-          />
+          <Formulario versao={pacote.versao} entrada={entrada} aoMudar={setEntrada} />
         </fieldset>
       </div>
       <div className={estilos.coluna}>
@@ -123,7 +119,7 @@ export default function Calculadora({
             {/* Só no papel: identifica o caso no anexo. Ver CabecalhoAnexo.tsx. */}
             <CabecalhoAnexo titulo={titulo} calculoId={calculoId} />
             <Resultado resultado={exibido} />
-            <Resumo entrada={entrada} resultado={exibido} observacoes={entrada.observacoes} />
+            <Resumo entrada={entrada} resultado={exibido} />
           </>
         ) : (
           <p className={estilos.mensagem} data-tom="erro" role="alert">

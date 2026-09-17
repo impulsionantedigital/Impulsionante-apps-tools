@@ -1,0 +1,2112 @@
+[
+  {
+    "data": "1990-01-01",
+    "nome": "Confraternização Universal",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "1990-04-13",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "1990-05-01",
+    "nome": "Dia do Trabalho",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "1990-09-07",
+    "nome": "Independência do Brasil",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "1990-10-03",
+    "nome": "Eleições gerais em todo o País (Lei nº 1.266/1950)",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "1990-10-12",
+    "nome": "Nossa Senhora Aparecida",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "1990-11-15",
+    "nome": "Proclamação da República",
+    "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "1990-12-25",
+    "nome": "Natal",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "1991-01-01",
+    "nome": "Confraternização Universal",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "1991-03-29",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "1991-05-01",
+    "nome": "Dia do Trabalho",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "1991-11-15",
+    "nome": "Proclamação da República",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "1991-12-25",
+    "nome": "Natal",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "1992-01-01",
+    "nome": "Confraternização Universal",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "1992-04-17",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "1992-04-21",
+    "nome": "Tiradentes",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "1992-05-01",
+    "nome": "Dia do Trabalho",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "1992-09-07",
+    "nome": "Independência do Brasil",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "1992-10-12",
+    "nome": "Nossa Senhora Aparecida",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "1992-12-25",
+    "nome": "Natal",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "1993-01-01",
+    "nome": "Confraternização Universal",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "1993-04-09",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "1993-04-21",
+    "nome": "Tiradentes",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "1993-09-07",
+    "nome": "Independência do Brasil",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "1993-10-12",
+    "nome": "Nossa Senhora Aparecida",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "1993-11-15",
+    "nome": "Proclamação da República",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "1994-04-01",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "1994-04-21",
+    "nome": "Tiradentes",
+    "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "1994-09-07",
+    "nome": "Independência do Brasil",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "1994-10-03",
+    "nome": "Eleições gerais em todo o País (Lei nº 1.266/1950)",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "1994-10-12",
+    "nome": "Nossa Senhora Aparecida",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "1994-11-15",
+    "nome": "Proclamação da República",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "1995-04-14",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "1995-04-21",
+    "nome": "Tiradentes",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "1995-05-01",
+    "nome": "Dia do Trabalho",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "1995-09-07",
+    "nome": "Independência do Brasil",
+    "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "1995-10-12",
+    "nome": "Nossa Senhora Aparecida",
+    "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "1995-11-15",
+    "nome": "Proclamação da República",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "1995-12-25",
+    "nome": "Natal",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "1996-01-01",
+    "nome": "Confraternização Universal",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "1996-04-05",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "1996-05-01",
+    "nome": "Dia do Trabalho",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "1996-11-15",
+    "nome": "Proclamação da República",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "1996-12-25",
+    "nome": "Natal",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "1997-01-01",
+    "nome": "Confraternização Universal",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "1997-03-28",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "1997-04-21",
+    "nome": "Tiradentes",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "1997-05-01",
+    "nome": "Dia do Trabalho",
+    "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "1997-12-25",
+    "nome": "Natal",
+    "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "1998-01-01",
+    "nome": "Confraternização Universal",
+    "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "1998-04-10",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "1998-04-21",
+    "nome": "Tiradentes",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "1998-05-01",
+    "nome": "Dia do Trabalho",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "1998-09-07",
+    "nome": "Independência do Brasil",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "1998-10-12",
+    "nome": "Nossa Senhora Aparecida",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "1998-12-25",
+    "nome": "Natal",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "1999-01-01",
+    "nome": "Confraternização Universal",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "1999-04-02",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "1999-04-21",
+    "nome": "Tiradentes",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "1999-09-07",
+    "nome": "Independência do Brasil",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "1999-10-12",
+    "nome": "Nossa Senhora Aparecida",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "1999-11-15",
+    "nome": "Proclamação da República",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "2000-04-21",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2000-04-21",
+    "nome": "Tiradentes",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2000-05-01",
+    "nome": "Dia do Trabalho",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "2000-09-07",
+    "nome": "Independência do Brasil",
+    "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "2000-10-12",
+    "nome": "Nossa Senhora Aparecida",
+    "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "2000-11-15",
+    "nome": "Proclamação da República",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "2000-12-25",
+    "nome": "Natal",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "2001-01-01",
+    "nome": "Confraternização Universal",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "2001-04-13",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2001-05-01",
+    "nome": "Dia do Trabalho",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "2001-09-07",
+    "nome": "Independência do Brasil",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2001-10-12",
+    "nome": "Nossa Senhora Aparecida",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2001-11-15",
+    "nome": "Proclamação da República",
+    "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "2001-12-25",
+    "nome": "Natal",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "2002-01-01",
+    "nome": "Confraternização Universal",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "2002-03-29",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2002-05-01",
+    "nome": "Dia do Trabalho",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "2002-11-15",
+    "nome": "Proclamação da República",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2002-12-25",
+    "nome": "Natal",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "2003-01-01",
+    "nome": "Confraternização Universal",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "2003-04-18",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2003-04-21",
+    "nome": "Tiradentes",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "2003-05-01",
+    "nome": "Dia do Trabalho",
+    "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "2003-12-25",
+    "nome": "Natal",
+    "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "2004-01-01",
+    "nome": "Confraternização Universal",
+    "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "2004-04-09",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2004-04-21",
+    "nome": "Tiradentes",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "2004-09-07",
+    "nome": "Independência do Brasil",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "2004-10-12",
+    "nome": "Nossa Senhora Aparecida",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "2004-11-02",
+    "nome": "Finados",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "2004-11-15",
+    "nome": "Proclamação da República",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "2005-03-25",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2005-04-21",
+    "nome": "Tiradentes",
+    "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "2005-09-07",
+    "nome": "Independência do Brasil",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "2005-10-12",
+    "nome": "Nossa Senhora Aparecida",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "2005-11-02",
+    "nome": "Finados",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "2005-11-15",
+    "nome": "Proclamação da República",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "2006-04-14",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2006-04-21",
+    "nome": "Tiradentes",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2006-05-01",
+    "nome": "Dia do Trabalho",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "2006-09-07",
+    "nome": "Independência do Brasil",
+    "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "2006-10-12",
+    "nome": "Nossa Senhora Aparecida",
+    "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "2006-11-02",
+    "nome": "Finados",
+    "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "2006-11-15",
+    "nome": "Proclamação da República",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "2006-12-25",
+    "nome": "Natal",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "2007-01-01",
+    "nome": "Confraternização Universal",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "2007-04-06",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2007-05-01",
+    "nome": "Dia do Trabalho",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "2007-09-07",
+    "nome": "Independência do Brasil",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2007-10-12",
+    "nome": "Nossa Senhora Aparecida",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2007-11-02",
+    "nome": "Finados",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2007-11-15",
+    "nome": "Proclamação da República",
+    "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "2007-12-25",
+    "nome": "Natal",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "2008-01-01",
+    "nome": "Confraternização Universal",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "2008-03-21",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2008-04-21",
+    "nome": "Tiradentes",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "2008-05-01",
+    "nome": "Dia do Trabalho",
+    "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "2008-12-25",
+    "nome": "Natal",
+    "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "2009-01-01",
+    "nome": "Confraternização Universal",
+    "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "2009-04-10",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2009-04-21",
+    "nome": "Tiradentes",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "2009-05-01",
+    "nome": "Dia do Trabalho",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2009-09-07",
+    "nome": "Independência do Brasil",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "2009-10-12",
+    "nome": "Nossa Senhora Aparecida",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "2009-11-02",
+    "nome": "Finados",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "2009-12-25",
+    "nome": "Natal",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2010-01-01",
+    "nome": "Confraternização Universal",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2010-04-02",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2010-04-21",
+    "nome": "Tiradentes",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "2010-09-07",
+    "nome": "Independência do Brasil",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "2010-10-12",
+    "nome": "Nossa Senhora Aparecida",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "2010-11-02",
+    "nome": "Finados",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "2010-11-15",
+    "nome": "Proclamação da República",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "2011-04-21",
+    "nome": "Tiradentes",
+    "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "2011-04-22",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2011-09-07",
+    "nome": "Independência do Brasil",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "2011-10-12",
+    "nome": "Nossa Senhora Aparecida",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "2011-11-02",
+    "nome": "Finados",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "2011-11-15",
+    "nome": "Proclamação da República",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "2012-04-06",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2012-05-01",
+    "nome": "Dia do Trabalho",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "2012-09-07",
+    "nome": "Independência do Brasil",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2012-10-12",
+    "nome": "Nossa Senhora Aparecida",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2012-11-02",
+    "nome": "Finados",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2012-11-15",
+    "nome": "Proclamação da República",
+    "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "2012-12-25",
+    "nome": "Natal",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "2013-01-01",
+    "nome": "Confraternização Universal",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "2013-03-29",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2013-05-01",
+    "nome": "Dia do Trabalho",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "2013-11-15",
+    "nome": "Proclamação da República",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2013-12-25",
+    "nome": "Natal",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "2014-01-01",
+    "nome": "Confraternização Universal",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "2014-04-18",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2014-04-21",
+    "nome": "Tiradentes",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "2014-05-01",
+    "nome": "Dia do Trabalho",
+    "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "2014-12-25",
+    "nome": "Natal",
+    "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "2015-01-01",
+    "nome": "Confraternização Universal",
+    "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "2015-04-03",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2015-04-21",
+    "nome": "Tiradentes",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "2015-05-01",
+    "nome": "Dia do Trabalho",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2015-09-07",
+    "nome": "Independência do Brasil",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "2015-10-12",
+    "nome": "Nossa Senhora Aparecida",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "2015-11-02",
+    "nome": "Finados",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "2015-12-25",
+    "nome": "Natal",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2016-01-01",
+    "nome": "Confraternização Universal",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2016-03-25",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2016-04-21",
+    "nome": "Tiradentes",
+    "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "2016-09-07",
+    "nome": "Independência do Brasil",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "2016-10-12",
+    "nome": "Nossa Senhora Aparecida",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "2016-11-02",
+    "nome": "Finados",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "2016-11-15",
+    "nome": "Proclamação da República",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "2017-04-14",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2017-04-21",
+    "nome": "Tiradentes",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2017-05-01",
+    "nome": "Dia do Trabalho",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "2017-09-07",
+    "nome": "Independência do Brasil",
+    "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "2017-10-12",
+    "nome": "Nossa Senhora Aparecida",
+    "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "2017-11-02",
+    "nome": "Finados",
+    "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "2017-11-15",
+    "nome": "Proclamação da República",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "2017-12-25",
+    "nome": "Natal",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "2018-01-01",
+    "nome": "Confraternização Universal",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "2018-03-30",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2018-05-01",
+    "nome": "Dia do Trabalho",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "2018-09-07",
+    "nome": "Independência do Brasil",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2018-10-12",
+    "nome": "Nossa Senhora Aparecida",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2018-11-02",
+    "nome": "Finados",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2018-11-15",
+    "nome": "Proclamação da República",
+    "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "2018-12-25",
+    "nome": "Natal",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "2019-01-01",
+    "nome": "Confraternização Universal",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "2019-04-19",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2019-05-01",
+    "nome": "Dia do Trabalho",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "2019-11-15",
+    "nome": "Proclamação da República",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2019-12-25",
+    "nome": "Natal",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "2020-01-01",
+    "nome": "Confraternização Universal",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "2020-04-10",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2020-04-21",
+    "nome": "Tiradentes",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "2020-05-01",
+    "nome": "Dia do Trabalho",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2020-09-07",
+    "nome": "Independência do Brasil",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "2020-10-12",
+    "nome": "Nossa Senhora Aparecida",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "2020-11-02",
+    "nome": "Finados",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "2020-12-25",
+    "nome": "Natal",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2021-01-01",
+    "nome": "Confraternização Universal",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2021-04-02",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2021-04-21",
+    "nome": "Tiradentes",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "2021-09-07",
+    "nome": "Independência do Brasil",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "2021-10-12",
+    "nome": "Nossa Senhora Aparecida",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "2021-11-02",
+    "nome": "Finados",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "2021-11-15",
+    "nome": "Proclamação da República",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "2022-04-15",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2022-04-21",
+    "nome": "Tiradentes",
+    "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "2022-09-07",
+    "nome": "Independência do Brasil",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "2022-10-12",
+    "nome": "Nossa Senhora Aparecida",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "2022-11-02",
+    "nome": "Finados",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "2022-11-15",
+    "nome": "Proclamação da República",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "2023-04-07",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2023-04-21",
+    "nome": "Tiradentes",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2023-05-01",
+    "nome": "Dia do Trabalho",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "2023-09-07",
+    "nome": "Independência do Brasil",
+    "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "2023-10-12",
+    "nome": "Nossa Senhora Aparecida",
+    "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "2023-11-02",
+    "nome": "Finados",
+    "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "2023-11-15",
+    "nome": "Proclamação da República",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "2023-12-25",
+    "nome": "Natal",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "2024-01-01",
+    "nome": "Confraternização Universal",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "2024-03-29",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2024-05-01",
+    "nome": "Dia do Trabalho",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "2024-11-15",
+    "nome": "Proclamação da República",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2024-11-20",
+    "nome": "Dia Nacional de Zumbi e da Consciência Negra",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "2024-12-25",
+    "nome": "Natal",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "2025-01-01",
+    "nome": "Confraternização Universal",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "2025-04-18",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2025-04-21",
+    "nome": "Tiradentes",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "2025-05-01",
+    "nome": "Dia do Trabalho",
+    "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "2025-11-20",
+    "nome": "Dia Nacional de Zumbi e da Consciência Negra",
+    "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "2025-12-25",
+    "nome": "Natal",
+    "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "2026-01-01",
+    "nome": "Confraternização Universal",
+    "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "2026-04-03",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2026-04-21",
+    "nome": "Tiradentes",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "2026-05-01",
+    "nome": "Dia do Trabalho",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2026-09-07",
+    "nome": "Independência do Brasil",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "2026-10-12",
+    "nome": "Nossa Senhora Aparecida",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "2026-11-02",
+    "nome": "Finados",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "2026-11-20",
+    "nome": "Dia Nacional de Zumbi e da Consciência Negra",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2026-12-25",
+    "nome": "Natal",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2027-01-01",
+    "nome": "Confraternização Universal",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2027-03-26",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2027-04-21",
+    "nome": "Tiradentes",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "2027-09-07",
+    "nome": "Independência do Brasil",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "2027-10-12",
+    "nome": "Nossa Senhora Aparecida",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "2027-11-02",
+    "nome": "Finados",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "2027-11-15",
+    "nome": "Proclamação da República",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "2028-04-14",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2028-04-21",
+    "nome": "Tiradentes",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2028-05-01",
+    "nome": "Dia do Trabalho",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "2028-09-07",
+    "nome": "Independência do Brasil",
+    "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "2028-10-12",
+    "nome": "Nossa Senhora Aparecida",
+    "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "2028-11-02",
+    "nome": "Finados",
+    "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "2028-11-15",
+    "nome": "Proclamação da República",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "2028-11-20",
+    "nome": "Dia Nacional de Zumbi e da Consciência Negra",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "2028-12-25",
+    "nome": "Natal",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "2029-01-01",
+    "nome": "Confraternização Universal",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "2029-03-30",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2029-05-01",
+    "nome": "Dia do Trabalho",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "2029-09-07",
+    "nome": "Independência do Brasil",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2029-10-12",
+    "nome": "Nossa Senhora Aparecida",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2029-11-02",
+    "nome": "Finados",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2029-11-15",
+    "nome": "Proclamação da República",
+    "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "2029-11-20",
+    "nome": "Dia Nacional de Zumbi e da Consciência Negra",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "2029-12-25",
+    "nome": "Natal",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "2030-01-01",
+    "nome": "Confraternização Universal",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "2030-04-19",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2030-05-01",
+    "nome": "Dia do Trabalho",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "2030-11-15",
+    "nome": "Proclamação da República",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2030-11-20",
+    "nome": "Dia Nacional de Zumbi e da Consciência Negra",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "2030-12-25",
+    "nome": "Natal",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "2031-01-01",
+    "nome": "Confraternização Universal",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "2031-04-11",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2031-04-21",
+    "nome": "Tiradentes",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "2031-05-01",
+    "nome": "Dia do Trabalho",
+    "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "2031-11-20",
+    "nome": "Dia Nacional de Zumbi e da Consciência Negra",
+    "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "2031-12-25",
+    "nome": "Natal",
+    "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "2032-01-01",
+    "nome": "Confraternização Universal",
+    "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "2032-03-26",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2032-04-21",
+    "nome": "Tiradentes",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "2032-09-07",
+    "nome": "Independência do Brasil",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "2032-10-12",
+    "nome": "Nossa Senhora Aparecida",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "2032-11-02",
+    "nome": "Finados",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "2032-11-15",
+    "nome": "Proclamação da República",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "2033-04-15",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2033-04-21",
+    "nome": "Tiradentes",
+    "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "2033-09-07",
+    "nome": "Independência do Brasil",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "2033-10-12",
+    "nome": "Nossa Senhora Aparecida",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "2033-11-02",
+    "nome": "Finados",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "2033-11-15",
+    "nome": "Proclamação da República",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "2034-04-07",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2034-04-21",
+    "nome": "Tiradentes",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2034-05-01",
+    "nome": "Dia do Trabalho",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "2034-09-07",
+    "nome": "Independência do Brasil",
+    "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "2034-10-12",
+    "nome": "Nossa Senhora Aparecida",
+    "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "2034-11-02",
+    "nome": "Finados",
+    "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "2034-11-15",
+    "nome": "Proclamação da República",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "2034-11-20",
+    "nome": "Dia Nacional de Zumbi e da Consciência Negra",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "2034-12-25",
+    "nome": "Natal",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "2035-01-01",
+    "nome": "Confraternização Universal",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "2035-03-23",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2035-05-01",
+    "nome": "Dia do Trabalho",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "2035-09-07",
+    "nome": "Independência do Brasil",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2035-10-12",
+    "nome": "Nossa Senhora Aparecida",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2035-11-02",
+    "nome": "Finados",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2035-11-15",
+    "nome": "Proclamação da República",
+    "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "2035-11-20",
+    "nome": "Dia Nacional de Zumbi e da Consciência Negra",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "2035-12-25",
+    "nome": "Natal",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "2036-01-01",
+    "nome": "Confraternização Universal",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "2036-04-11",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2036-04-21",
+    "nome": "Tiradentes",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "2036-05-01",
+    "nome": "Dia do Trabalho",
+    "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "2036-11-20",
+    "nome": "Dia Nacional de Zumbi e da Consciência Negra",
+    "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "2036-12-25",
+    "nome": "Natal",
+    "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "2037-01-01",
+    "nome": "Confraternização Universal",
+    "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "2037-04-03",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2037-04-21",
+    "nome": "Tiradentes",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "2037-05-01",
+    "nome": "Dia do Trabalho",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2037-09-07",
+    "nome": "Independência do Brasil",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "2037-10-12",
+    "nome": "Nossa Senhora Aparecida",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "2037-11-02",
+    "nome": "Finados",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "2037-11-20",
+    "nome": "Dia Nacional de Zumbi e da Consciência Negra",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2037-12-25",
+    "nome": "Natal",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2038-01-01",
+    "nome": "Confraternização Universal",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2038-04-21",
+    "nome": "Tiradentes",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "2038-04-23",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2038-09-07",
+    "nome": "Independência do Brasil",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "2038-10-12",
+    "nome": "Nossa Senhora Aparecida",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "2038-11-02",
+    "nome": "Finados",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "2038-11-15",
+    "nome": "Proclamação da República",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "2039-04-08",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2039-04-21",
+    "nome": "Tiradentes",
+    "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "2039-09-07",
+    "nome": "Independência do Brasil",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "2039-10-12",
+    "nome": "Nossa Senhora Aparecida",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "2039-11-02",
+    "nome": "Finados",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "2039-11-15",
+    "nome": "Proclamação da República",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "2040-03-30",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2040-05-01",
+    "nome": "Dia do Trabalho",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "2040-09-07",
+    "nome": "Independência do Brasil",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2040-10-12",
+    "nome": "Nossa Senhora Aparecida",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2040-11-02",
+    "nome": "Finados",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2040-11-15",
+    "nome": "Proclamação da República",
+    "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "2040-11-20",
+    "nome": "Dia Nacional de Zumbi e da Consciência Negra",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "2040-12-25",
+    "nome": "Natal",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "2041-01-01",
+    "nome": "Confraternização Universal",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "2041-04-19",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2041-05-01",
+    "nome": "Dia do Trabalho",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "2041-11-15",
+    "nome": "Proclamação da República",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2041-11-20",
+    "nome": "Dia Nacional de Zumbi e da Consciência Negra",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "2041-12-25",
+    "nome": "Natal",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "2042-01-01",
+    "nome": "Confraternização Universal",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "2042-04-04",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2042-04-21",
+    "nome": "Tiradentes",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "2042-05-01",
+    "nome": "Dia do Trabalho",
+    "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "2042-11-20",
+    "nome": "Dia Nacional de Zumbi e da Consciência Negra",
+    "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "2042-12-25",
+    "nome": "Natal",
+    "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "2043-01-01",
+    "nome": "Confraternização Universal",
+    "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "2043-03-27",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2043-04-21",
+    "nome": "Tiradentes",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "2043-05-01",
+    "nome": "Dia do Trabalho",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2043-09-07",
+    "nome": "Independência do Brasil",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "2043-10-12",
+    "nome": "Nossa Senhora Aparecida",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "2043-11-02",
+    "nome": "Finados",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "2043-11-20",
+    "nome": "Dia Nacional de Zumbi e da Consciência Negra",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2043-12-25",
+    "nome": "Natal",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2044-01-01",
+    "nome": "Confraternização Universal",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2044-04-15",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2044-04-21",
+    "nome": "Tiradentes",
+    "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "2044-09-07",
+    "nome": "Independência do Brasil",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "2044-10-12",
+    "nome": "Nossa Senhora Aparecida",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "2044-11-02",
+    "nome": "Finados",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "2044-11-15",
+    "nome": "Proclamação da República",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "2045-04-07",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2045-04-21",
+    "nome": "Tiradentes",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2045-05-01",
+    "nome": "Dia do Trabalho",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "2045-09-07",
+    "nome": "Independência do Brasil",
+    "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "2045-10-12",
+    "nome": "Nossa Senhora Aparecida",
+    "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "2045-11-02",
+    "nome": "Finados",
+    "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "2045-11-15",
+    "nome": "Proclamação da República",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "2045-11-20",
+    "nome": "Dia Nacional de Zumbi e da Consciência Negra",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "2045-12-25",
+    "nome": "Natal",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "2046-01-01",
+    "nome": "Confraternização Universal",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "2046-03-23",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2046-05-01",
+    "nome": "Dia do Trabalho",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "2046-09-07",
+    "nome": "Independência do Brasil",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2046-10-12",
+    "nome": "Nossa Senhora Aparecida",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2046-11-02",
+    "nome": "Finados",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2046-11-15",
+    "nome": "Proclamação da República",
+    "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "2046-11-20",
+    "nome": "Dia Nacional de Zumbi e da Consciência Negra",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "2046-12-25",
+    "nome": "Natal",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "2047-01-01",
+    "nome": "Confraternização Universal",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "2047-04-12",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2047-05-01",
+    "nome": "Dia do Trabalho",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "2047-11-15",
+    "nome": "Proclamação da República",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2047-11-20",
+    "nome": "Dia Nacional de Zumbi e da Consciência Negra",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "2047-12-25",
+    "nome": "Natal",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "2048-01-01",
+    "nome": "Confraternização Universal",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "2048-04-03",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2048-04-21",
+    "nome": "Tiradentes",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "2048-05-01",
+    "nome": "Dia do Trabalho",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2048-09-07",
+    "nome": "Independência do Brasil",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "2048-10-12",
+    "nome": "Nossa Senhora Aparecida",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "2048-11-02",
+    "nome": "Finados",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "2048-11-20",
+    "nome": "Dia Nacional de Zumbi e da Consciência Negra",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2048-12-25",
+    "nome": "Natal",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2049-01-01",
+    "nome": "Confraternização Universal",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2049-04-16",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2049-04-21",
+    "nome": "Tiradentes",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "2049-09-07",
+    "nome": "Independência do Brasil",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "2049-10-12",
+    "nome": "Nossa Senhora Aparecida",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "2049-11-02",
+    "nome": "Finados",
+    "dia_semana": "terça-feira"
+  },
+  {
+    "data": "2049-11-15",
+    "nome": "Proclamação da República",
+    "dia_semana": "segunda-feira"
+  },
+  {
+    "data": "2050-04-08",
+    "nome": "Sexta-feira Santa",
+    "dia_semana": "sexta-feira"
+  },
+  {
+    "data": "2050-04-21",
+    "nome": "Tiradentes",
+    "dia_semana": "quinta-feira"
+  },
+  {
+    "data": "2050-09-07",
+    "nome": "Independência do Brasil",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "2050-10-12",
+    "nome": "Nossa Senhora Aparecida",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "2050-11-02",
+    "nome": "Finados",
+    "dia_semana": "quarta-feira"
+  },
+  {
+    "data": "2050-11-15",
+    "nome": "Proclamação da República",
+    "dia_semana": "terça-feira"
+  }
+]

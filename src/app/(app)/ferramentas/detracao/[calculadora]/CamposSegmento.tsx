@@ -3,9 +3,9 @@
 import { Plus, Trash2 } from 'lucide-react'
 import Botao from '@/components/ui/Botao'
 import { Campo, Entrada as EntradaControle } from '@/components/ui/Campo'
-import { ROTULOS_DIA_SEMANA, WEEKDAYS } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-0/tipos'
-import type { Weekday } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-0/tipos'
-import type { SegmentoFormulario } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-0/formulario'
+import { ROTULOS_DIA_SEMANA, WEEKDAYS } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-1/tipos'
+import type { Weekday } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-1/tipos'
+import type { SegmentoFormulario } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-1/formulario'
 import estilos from './calculadora.module.css'
 
 function SeletorDiasSemana({
@@ -35,16 +35,16 @@ function SeletorDiasSemana({
   )
 }
 
+// 🔴 O MODO SIMPLES É O ÚNICO a partir da RN-2.1. Não há mais a prop `avancado`: todos os campos
+// aparecem sempre, e os feriados municipais/estaduais — que eram a última coisa escondida atrás do
+// modo avançado — passam a ser preenchidos aqui, ao lado dos nacionais.
+
 export default function CamposSegmento({
   segmento,
   aoMudar,
-  aoRemover,
-  avancado,
 }: {
   segmento: SegmentoFormulario
   aoMudar: (s: SegmentoFormulario) => void
-  aoRemover?: () => void
-  avancado: boolean
 }) {
   function set<K extends keyof SegmentoFormulario>(campo: K, valor: SegmentoFormulario[K]) {
     aoMudar({ ...segmento, [campo]: valor })
@@ -54,12 +54,6 @@ export default function CamposSegmento({
     <div className={estilos.secao}>
       <div className={estilos.editorCabecalho}>
         <b className={estilos.tituloSecao}>Regra do período</b>
-        {aoRemover && (
-          <Botao type="button" variante="fantasma" tom="erro" tamanho="pequeno" onClick={aoRemover}>
-            <Trash2 size={14} strokeWidth={1.75} />
-            Remover segmento
-          </Botao>
-        )}
       </div>
 
       <div className={estilos.campos}>
@@ -88,8 +82,7 @@ export default function CamposSegmento({
           aoMudar={(v) => set('diasFolgaIntegral', v)}
         />
 
-        {/* 🔴 Fica no modo SIMPLES também, e não só no avançado: é uma escolha jurídica do caso
-         *  (computar feriado nacional como dia cheio), não uma configuração de exceção. */}
+        {/* Feriados NACIONAIS: lista homologada de `feriados.ts`, ligada por este checkbox. */}
         <label className={estilos.alternadorModo}>
           <input
             type="checkbox"
@@ -99,45 +92,52 @@ export default function CamposSegmento({
           Computar feriados nacionais que caem em dias úteis como dia integral (24h)
         </label>
 
-        {avancado && (
-          <>
-            <div className={estilos.editorLista}>
-              <div className={estilos.editorCabecalho}>
-                <span className={estilos.rotuloGrupo}>Feriados de recolhimento integral</span>
-                <Botao type="button" tamanho="pequeno" onClick={() => set('feriadosIntegral', [...segmento.feriadosIntegral, ''])}>
-                  <Plus size={14} strokeWidth={2} />
-                  Adicionar
-                </Botao>
-              </div>
-              {segmento.feriadosIntegral.map((data, indice) => (
-                <div key={indice} className={estilos.linhaIntervalo}>
-                  <Campo rotulo={`Feriado ${indice + 1}`}>
-                    <EntradaControle
-                      type="date"
-                      value={data}
-                      onChange={(e) => {
-                        const proximos = [...segmento.feriadosIntegral]
-                        proximos[indice] = e.target.value
-                        set('feriadosIntegral', proximos)
-                      }}
-                    />
-                  </Campo>
-                  <Botao
-                    type="button"
-                    variante="fantasma"
-                    tom="erro"
-                    soIcone
-                    aria-label="Remover feriado"
-                    onClick={() => set('feriadosIntegral', segmento.feriadosIntegral.filter((_, i) => i !== indice))}
-                  >
-                    <Trash2 size={14} strokeWidth={1.75} />
-                  </Botao>
-                </div>
-              ))}
+        {/* 🔴 Feriados MUNICIPAIS e ESTADUAIS. Não há lista automática possível — dependem de lei
+         *  local —, então o membro digita cada um. Vêm do modo avançado na RN-2.1: o motor já os
+         *  lia desde a RN-2.0, e o que faltava era um jeito de preenchê-los que não fosse escondido. */}
+        <div className={estilos.editorLista}>
+          <div className={estilos.editorCabecalho}>
+            <span className={estilos.rotuloGrupo}>Feriados municipais e estaduais</span>
+            <Botao
+              type="button"
+              tamanho="pequeno"
+              onClick={() => set('feriadosIntegral', [...segmento.feriadosIntegral, ''])}
+            >
+              <Plus size={14} strokeWidth={2} />
+              Adicionar
+            </Botao>
+          </div>
+          {segmento.feriadosIntegral.length === 0 && (
+            <p className={estilos.ajudaGrupo}>
+              Nenhum. Use para os feriados da comarca ou do estado que a decisão mande computar por inteiro.
+            </p>
+          )}
+          {segmento.feriadosIntegral.map((data, indice) => (
+            <div key={indice} className={estilos.linhaIntervalo}>
+              <Campo rotulo={`Feriado ${indice + 1}`}>
+                <EntradaControle
+                  type="date"
+                  value={data}
+                  onChange={(e) => {
+                    const proximos = [...segmento.feriadosIntegral]
+                    proximos[indice] = e.target.value
+                    set('feriadosIntegral', proximos)
+                  }}
+                />
+              </Campo>
+              <Botao
+                type="button"
+                variante="fantasma"
+                tom="erro"
+                soIcone
+                aria-label="Remover feriado"
+                onClick={() => set('feriadosIntegral', segmento.feriadosIntegral.filter((_, i) => i !== indice))}
+              >
+                <Trash2 size={14} strokeWidth={1.75} />
+              </Botao>
             </div>
-
-          </>
-        )}
+          ))}
+        </div>
       </div>
     </div>
   )

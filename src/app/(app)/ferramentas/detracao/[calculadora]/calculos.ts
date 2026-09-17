@@ -4,7 +4,7 @@ import { criarClienteServidor } from '@/server/supabase-session'
 import { resolverWorkspaceAtivo } from '@/server/auth/workspace-ativo'
 import { codigoDeBanco } from '@/lib/erro-de-banco'
 import { detalheSeguro } from '@/lib/sanitizar-erro'
-import type { EntradaCalculo, ResultadoCalculo } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-0/tipos'
+import type { EntradaCalculo, ResultadoCalculo } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-1/tipos'
 
 export type CalculoSalvo = {
   id: string

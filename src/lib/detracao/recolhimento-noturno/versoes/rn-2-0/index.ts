@@ -27,30 +27,12 @@ import { calcular } from './motor'
 import { gerarTextoPeticao } from './peticao'
 import { segmentoFormularioEmBranco, entradaFormularioParaCalculo, segmentoParaRegra } from './formulario'
 import { mesmoResultado } from './comparar'
-import type { EntradaCalculo, ResultadoCalculo } from './tipos'
+import type { VersaoRecolhimento } from '../contrato'
+import type { EntradaCalculo } from './tipos'
 import type { EntradaFormulario, SegmentoFormulario } from './formulario'
 
 export const VERSAO = 'RN-2.0' as const
 
-export type VersaoRecolhimento = {
-  /** O rótulo gravado no banco e comparado ao abrir o cálculo. */
-  versao: string
-  /** Quando a versão entrou em uso — para a tela dizer QUAL regra o cálculo usou. */
-  desde: string
-  /** O que mudou em relação à anterior, em uma linha, para exibição ao membro. */
-  resumo: string
-
-  calcular: (entrada: EntradaCalculo) => ResultadoCalculo
-  mesmoResultado: (a: ResultadoCalculo, b: ResultadoCalculo) => boolean
-  gerarTextoPeticao: (entrada: EntradaCalculo, resultado: ResultadoCalculo) => string
-
-  /** O formulário desta versão: os campos que o membro via, congelados junto do motor. */
-  formulario: {
-    emBranco: () => SegmentoFormulario
-    paraCalculo: (entrada: EntradaFormulario) => EntradaCalculo
-    segmentoParaRegra: (s: SegmentoFormulario) => EntradaCalculo['segmentos'][number]
-  }
-}
 
 export const rn20: VersaoRecolhimento = {
   versao: VERSAO,

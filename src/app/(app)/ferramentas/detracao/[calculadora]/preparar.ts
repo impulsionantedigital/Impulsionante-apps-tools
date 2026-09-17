@@ -2,7 +2,7 @@
 import { z } from 'zod'
 import { detalheSeguro } from '@/lib/sanitizar-erro'
 import { versaoAtual } from '@/lib/detracao/recolhimento-noturno/versoes/registro'
-import type { EntradaCalculo, ResultadoCalculo } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-0/tipos'
+import type { EntradaCalculo, ResultadoCalculo } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-1/tipos'
 
 // Módulo SEM `'use server'` de propósito, mesma razão do `preparar.ts` do CIC: é lógica pura
 // (validação + recálculo), testável direto, sem sessão nem rede.
@@ -25,10 +25,14 @@ export const Dados = z.object({
     .min(1, 'Dê um título ao cálculo — o nº de execução serve.')
     .max(200, 'Use no máximo 200 caracteres no título.'),
   entrada: z.object({
-    timezone: z.string().trim().min(1, 'Informe o fuso horário.'),
-    segmentos: z.array(Segmento).min(1, 'Informe ao menos um segmento de regra.'),
-    observacoes: z.string().optional(),
-    monitoramentoEletronico: z.enum(['sim', 'nao', 'nao_informado']).optional(),
+    // O fuso vem do pacote da versão (`formulario.ts`), não do membro — deixou de ser editável na
+    // RN-2.1. `observacoes` e `monitoramentoEletronico` saíram junto: eram do modo avançado, e o
+    // motor nunca os leu.
+    timezone: z.string().trim().min(1),
+    // 🔴 UM segmento. O modo avançado (múltiplos períodos) foi removido na RN-2.1; aceitar vários
+    // aqui deixaria passar uma entrada que a tela não produz mais, e que contaria dias que o membro
+    // não vê. `.max(1)` em vez de `.length(1)` para a mensagem sair clara.
+    segmentos: z.array(Segmento).min(1, 'Informe o período da cautelar.').max(1, 'O cálculo tem um período.'),
   }),
 })
 
