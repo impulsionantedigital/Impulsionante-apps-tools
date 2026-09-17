@@ -1,7 +1,7 @@
 # As telas do resultado e do questionário — decisões de 17/09/2026
 
 > Leia antes de mexer em `Resultado.tsx`, `Questionario.tsx`, `CabecalhoAnexo.tsx`,
-> `resultado.module.css` ou `calculadora.module.css`. **Sete coisas aqui contrariam o que o plano e
+> `resultado.module.css` ou `calculadora.module.css`. **Oito coisas aqui contrariam o que o plano e
 > os documentos anteriores diziam**, e todas foram pedidas pelo dono do produto olhando a tela no ar.
 > Quem revisar sem saber disto vai "corrigir" de volta — foi o que aconteceu antes, com a folha de
 > impressão (ver `verificacoes-de-conjunto.md`).
@@ -142,10 +142,83 @@ E as **cinco frações de referência saíram do resumo** — da tela **e** do p
 imprimindo, então não existe um estado de impressão para dessincronizar do que o CSS decidiu.
 Mantenha assim.
 
-## 7. As cinco frações saíram do resumo
-O resumo de tempos mostra **quatro totais** (total imposto, total cumprido, cumprido computável nos
-impeditivos, remanescente). As cinco frações de referência — `2/3 dos impeditivos`, `1/5`, `1/4`,
-`1/3`, `1/2 da pena não impeditiva` — saíram da tela.
+## 7. O resumo de tempos, card a card
+O resumo mostra **cinco totais**, nesta ordem:
+
+| # | Card | Campo do motor | O que é |
+|---|---|
+| 1 | Total de penas impostas | `resumo.totalImposto` | a soma das três categorias do questionário |
+| 2 | **Total de penas impeditivas** | `resumo.totalImpeditivo` | o campo `penaImpeditiva` |
+| 3 | **Total de penas permissivas** | `resumo.totalPermissivo` | `penaViolencia` + `penaSemViolencia` |
+| 4 | Total de pena cumprida | `resumo.totalCumprido` | SEEU + não lançado |
+| 5 | Cumprido computável nos impeditivo **(2/3)** | `resumo.penaCumpridaImpeditivos` | `min(cumprido, 2/3 do impeditivo)` |
+| 6 | **Cumprido computável nos permissivos** | `resumo.penaCumpridaPermissivos` | **card 4 − card 5** |
+| 7 | Pena remanescente | `resumo.remanescente` | `total imposto − total cumprido` |
+| 8 | **Remanescente dos impeditivos (2/3)** | `resumo.remanescenteImpeditivo` | **card 2 − card 5** |
+| 9 | **Remanescente dos permissivos** | `resumo.remanescentePermissivo` | **card 7 − card 8** |
+
+🔴 **A POSIÇÃO dos cards 8 e 9 está a confirmar.** Ele é o único que lê cards do alto da lista
+(os 2 e 5) estando no fim — o pedido foi "criar card 8", e ele foi posto depois do 7. Se a
+intenção for lê-lo junto dos outros impeditivos, o ajuste é mover um bloco no `Resultado.tsx`;
+nada mais depende da ordem.
+
+Os **cards 2, 3 e 6 são novos** (17/09/2026), com regra explícita do dono do produto.
+
+### Cards 2 e 3 — decomposição do card 1, e leem o FORMULÁRIO
+Leem os **campos do formulário "Penas impostas"** e nada mais. Ficam logo abaixo do card 1:
+
+> `totalImpeditivo + totalPermissivo == totalImposto`
+
+### Cards 6, 8 e 9 — decomposição, e leem OUTROS CARDS
+São **diferenças entre dois cards**, e não somas de campos do formulário — as três únicas
+grandezas do painel definidas assim:
+
+> `card 6 = card 4 − card 5`  →  `penaCumpridaPermissivos = totalCumprido − penaCumpridaImpeditivos`
+>
+> `card 8 = card 2 − card 5`  →  `remanescenteImpeditivo = totalImpeditivo − penaCumpridaImpeditivos`
+>
+> `card 9 = card 7 − card 8`  →  `remanescentePermissivo = remanescente − remanescenteImpeditivo`
+
+O **card 8 usa o impeditivo CHEIO (card 2) como base**, e não os 2/3 dele: quem é limitado pelos
+2/3 é o subtraendo (card 5). Usar a fração como base daria 0 no cenário do relato (6 − 6) em vez
+de 3 — é o erro natural de leitura do nome do card, e há teste para ele.
+
+🔴 **O card 9 parece o card 4 e não é.** No cenário do relato os dois mostram **8 anos**, por
+coincidência aritmética. Divergem assim que a pena impeditiva é pequena: com 3 anos de impeditivo
+e 5 cumpridos, o card 4 mostra 5 e o card 9 mostra 7; sem nada cumprido, 0 e 10. Quem
+"simplificar" o card 9 para `totalCumprido` acerta no cenário de hoje e erra em todos os outros —
+há um teste que fixa os três casos justamente para isso.
+
+Desenvolvendo a expressão, o card 9 **equivale** a `card 3 − card 6` (a mesma regra dita de dois
+jeitos). As duas leituras coincidem, e há teste conferindo as duas em três cenários — mas a
+forma que está no motor é a pedida (card 7 − card 8).
+
+Essas igualdades têm teste (`resumo.spec.ts`), inclusive com valor quebrado em dias, e o
+card 6 tem teste de **não ficar negativo** (com pena impeditiva que ultrapassa o cumprido, o
+card 6 zera em vez de virar número negativo — que iria para petição).
+
+🔴 **A diferença entre cards é sensível à ordem de cálculo:** se a fórmula do card 5 mudar,
+**o card 6 muda junto sem que ninguém o tenha tocado.** Ao mexer em `penaCumpridaImpeditivos`,
+confira o card 6.
+
+⚠️ **Os dois primeiros são os únicos que somam entre si.** O card 3 tem "permissiva" no nome e
+card 5 fala de impeditivo, mas eles não se relacionam: o card 5 é do **cumprido**, não do
+imposto. Não tire conclusão de semelhança de nome — só do campo de origem na tabela.
+
+🔴 **Não confunda o card 2 com o card 5.** Os nomes se parecem e as grandezas não:
+
+- card 2 = o impeditivo **IMPOSTO** pela sentença;
+- card 5 = o que já foi **CUMPRIDO** e conta contra os impeditivos, **limitado aos 2/3
+deles** — com 9 anos impeditivos, o teto do card 5 são 6 anos.
+
+Os dois são plausíveis e diferentes no mesmo cenário (foi o que aconteceu: com 19 anos
+impostos dos quais 9 impeditivos e 8 cumpridos, o card 2 mostra 9 e o card 5 mostra 6). Trocar
+um pelo outro põe um número juridicamente errado na tela sem quebrar teste nenhum de paridade
+— que compara dispositivo a dispositivo e não olha o resumo por esse ângulo.
+
+### As cinco frações saíram do resumo
+As cinco frações de referência — `2/3 dos impeditivos`, `1/5`, `1/4`, `1/3`, `1/2 da pena não
+impeditiva` — saíram da tela.
 
 🔴 **As frações continuam sendo CALCULADAS pelo motor** (`resultado.resumo.fracoes`), e continuam nos
 testes. Não as remova para "limpar": a régua de **1/5** é a que o Art. 13 exige (é a comparação que o

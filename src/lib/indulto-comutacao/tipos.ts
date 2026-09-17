@@ -56,9 +56,76 @@ export type ResultadoInciso = {
 /** O painel de contexto que abre a tela de resultado. Tudo em dias (30/360). */
 export type Resumo = {
   totalImposto: number
+  /**
+   * Só a fatia IMPEDITIVA do total imposto — o que a tela chama de "Total de penas
+   * impeditivas".
+   *
+   * 🔴 É o MESMO valor que o campo `penaImpeditiva` do questionário guarda (um dos três
+   * que compõem `totalImposto`), e NÃO se confunde com `penaCumpridaImpeditivos`, que logo
+   * abaixo é a fatia do **cumprido** atribuída aos impeditivos. Um é o que foi IMPOSTO
+   * pela sentença; o outro, o que já foi CUMPRIDO e conta contra aquele. Trocar os dois
+   * troca um número que vai para petição.
+   */
+  totalImpeditivo: number
+  /**
+   * Só a fatia NÃO IMPEDITIVA do total imposto — o que a tela chama de "Total de penas
+   * permissivas".
+   *
+   * 🔴 É a SOMA de DOIS campos do questionário: `penaViolencia` + `penaSemViolencia`. Não
+   * confundir com `fracoes.{umQuinto,umQuarto,...}`, que aplicam uma fração a essa mesma
+   * soma — ali é a fração exigida por dispositivo, aqui é o total cheio.
+   *
+   * Com `totalImpeditivo`, fecha o `totalImposto`: os dois somados dão o card 1.
+   */
+  totalPermissivo: number
   totalCumprido: number
   /** min(total cumprido, 2/3 do impeditivo) — o que conta para os impeditivos. */
   penaCumpridaImpeditivos: number
+  /**
+   * O que sobra do cumprido depois de atribuir a parte dos impeditivos — o cumprido que
+   * conta para os crimes PERMISSIVOS.
+   *
+   * 🔴 Diferença entre dois CAMPOS DO RESUMO, e não soma de campos do formulário:
+   * `totalCumprido − penaCumpridaImpeditivos`. É a única grandeza do painel definida assim,
+   * e por isso ela é sensível à ordem: se `penaCumpridaImpeditivos` mudar de fórmula, este
+   * muda junto, sem que ninguém tenha mexido nele.
+   *
+   * Pode dar NEGATIVO no papel? Não: `penaCumpridaImpeditivos` é `min(cumprido, 2/3 do
+   * impeditivo)`, limitado por `totalCumprido` — nunca ultrapassa o que foi cumprido. Ainda
+   * assim o motor trava em zero, porque um número negativo aqui iria para petição.
+   */
+  penaCumpridaPermissivos: number
+  /**
+   * O que falta cumprir da pena impeditiva para atingir os 2/3 dela — diferença entre
+   * dois campos do RESUMO: `totalImpeditivo − penaCumpridaImpeditivos`.
+   *
+   * 🔴 Como `penaCumpridaPermissivos`, é diferença ENTRE CARDS, não soma de campos do
+   * formulário. E a base é o impeditivo CHEIO (card 2), e não os 2/3 dele: o que se
+   * desconta é o que já foi cumprido (card 5), que é justamente o limitado pelos 2/3.
+   *
+   * ⚠️ Ao contrário de `penaCumpridaPermissivos`, este PODE dar negativo no papel? Não:
+   * `penaCumpridaImpeditivos = min(cumprido, 2/3 do impeditivo)`, e `2/3 de X <= X` para
+   * qualquer X >= 0 — então o subtraendo nunca ultrapassa o minuendo. O `Math.max(0, ...)`
+   * no motor fica como guarda, pelo mesmo motivo do outro.
+   */
+  remanescenteImpeditivo: number
+  /**
+   * O que falta cumprir da parte NÃO impeditiva — diferença entre dois campos do RESUMO:
+   * `remanescente − remanescenteImpeditivo` (card 7 − card 8).
+   *
+   * 🔴 Também entre CARDS, como os cards 6 e 8. E, como eles, é sensível aos dois lados:
+   * mexer na fórmula do remanescente OU na do impeditivo muda este card sem ninguém o tocar.
+   *
+   * ⚠️ Ele PODE parecer igual ao `totalCumprido` (card 4) — no cenário do relato dá 8 nos
+   * dois. É COINCIDÊNCIA aritmética, não identidade: com pena impeditiva pequena o card 4 dá
+   * 5 e este dá 7; sem nada cumprido, 0 e 10. Não troque um pelo outro.
+   *
+   * Pode ficar negativo? `card 7 = totalImposto − totalCumprido` e `card 8 = totalImpeditivo
+   * − penaCumpridaImpeditivos`; desenvolvendo, este card é `totalPermissivo −
+   * penaCumpridaPermissivos` — a mesma estrutura de card 3 (imposto) menos card 6 (cumprido)
+   * da parte permissiva, e ambos os lados são >= 0. Ainda assim o motor trava em zero.
+   */
+  remanescentePermissivo: number
   remanescente: number
   fracoes: {
     doisTercosImpeditivos: number

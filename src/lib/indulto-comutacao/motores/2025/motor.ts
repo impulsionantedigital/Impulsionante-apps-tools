@@ -563,10 +563,34 @@ export function calcular2025(entrada: Entrada): Resultado {
 
   // ---- Resumo de tempos (aba Questionario) ----
   // O engine.js formatava com `fmtDias`; aqui saem os DIAS e a tela formata.
+  // O cumprido que conta para os impeditivos. Extraído numa constante porque DOIS cards o
+  // usam (o 5, que o mostra, e o 8, que o subtrai) — e porque o card 8 depende da fórmula
+  // dele: se ela mudar, o 8 muda junto sem ninguém tocar nele.
+  const cumpridoImpeditivo = N13 < D6 ? N13 : D6
   const resumo = {
     totalImposto: N9,
+    // A fatia IMPEDITIVA do imposto — "Total de penas de crimes IMPEDITIVOS" na tela.
+    // É `N6` (e não `D6`, que são os 2/3 dele), o mesmo valor que `penaImpeditiva` traz.
+    totalImpeditivo: N6,
+    // A fatia NÃO impeditiva — a SOMA dos dois outros campos do questionário. Fecha o
+    // `totalImposto` com o de cima (`totalImpeditivo + totalPermissivo == totalImposto`).
+    totalPermissivo: N7 + N8,
     totalCumprido: N13,
-    penaCumpridaImpeditivos: N13 < D6 ? N13 : D6,
+    penaCumpridaImpeditivos: cumpridoImpeditivo,
+    // O que sobra do cumprido para os permissivos: diferença entre os dois valores ACIMA,
+    // não entre campos do formulário. O `Math.max(0, ...)` é guarda de sanidade — com a
+    // fórmula de `penaCumpridaImpeditivos` (limitada por `N13`) o resultado não fica
+    // negativo, mas um número negativo aqui iria para petição.
+    penaCumpridaPermissivos: Math.max(0, N13 - cumpridoImpeditivo),
+    // O impeditivo que FALTA cumprir até o que conta: card 2 menos card 5, também entre
+    // cards. `2/3 de N6 <= N6` para todo `N6 >= 0`, então a subtração não fica negativa —
+    // o `Math.max` fica como guarda, não como correção.
+    remanescenteImpeditivo: Math.max(0, N6 - cumpridoImpeditivo),
+    // O remanescente da parte NÃO impeditiva: card 7 menos card 8, como os outros dois
+    // derivados. Desenvolvendo, equivale a `totalPermissivo − penaCumpridaPermissivos`
+    // (card 3 menos card 6), porque o remanescente e o impeditivo remanescente se cancelam
+    // na conta — mas a regra pedida é a diferença entre os cards 7 e 8, e é essa que fica.
+    remanescentePermissivo: Math.max(0, N16 - Math.max(0, N6 - cumpridoImpeditivo)),
     remanescente: N16,
     fracoes: {
       doisTercosImpeditivos: D6,

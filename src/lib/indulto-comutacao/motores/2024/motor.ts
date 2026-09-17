@@ -675,8 +675,26 @@ export function calcular2024(entrada: Entrada): Resultado {
     incisos,
     resumo: {
       totalImposto: M9,
+      // A fatia IMPEDITIVA do imposto — "Total de penas de crimes IMPEDITIVOS" na tela.
+      // É `M6` (e não `D6`, que são os 2/3 dele), o mesmo valor que `penaImpeditiva` traz.
+      totalImpeditivo: M6,
+      // A fatia NÃO impeditiva — a SOMA dos dois outros campos do questionário. Fecha o
+      // `totalImposto` com o de cima (`totalImpeditivo + totalPermissivo == totalImposto`).
+      totalPermissivo: M7 + M8,
       totalCumprido: M13,
       penaCumpridaImpeditivos: M15,
+      // O que sobra do cumprido para os permissivos: diferença entre os dois valores ACIMA,
+      // não entre campos do formulário. O `Math.max(0, ...)` é guarda de sanidade — a
+      // fórmula limita o impeditivo a `M13`, mas número negativo aqui iria para petição.
+      penaCumpridaPermissivos: Math.max(0, M13 - M15),
+      // O impeditivo que FALTA cumprir até o que conta: o total impeditivo (`M6`) menos o
+      // cumprido impeditivo (`M15`). Também entre cards. `2/3 de M6 <= M6`, então não fica
+      // negativo; o `Math.max` é guarda, não correção.
+      remanescenteImpeditivo: Math.max(0, M6 - M15),
+      // O remanescente da parte NÃO impeditiva: card 7 menos card 8, como os outros dois
+      // derivados. Em 2024 o remanescente é `M16` e o impeditivo remanescente é
+      // `max(0, M6 - M15)`.
+      remanescentePermissivo: Math.max(0, M16 - Math.max(0, M6 - M15)),
       remanescente: M16,
       fracoes: {
         doisTercosImpeditivos: D6,

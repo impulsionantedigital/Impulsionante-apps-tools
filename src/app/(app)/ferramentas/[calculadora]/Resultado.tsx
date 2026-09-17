@@ -118,7 +118,32 @@ function Grupo({
   const enquadramentos = enquadramentosDe(motor, resultado, grupo)
   const aplicaveis = enquadramentos.filter(ehAplicavel)
   const naoAplicaveis = enquadramentos.filter((e) => !ehAplicavel(e))
-  const elemento = grupo === 'indulto' ? 'Indulto' : 'Comutação'
+  // 🔴 «Indultos aplicáveis», no PLURAL, e não «Indulto aplicáveis». O rótulo conta
+  // DISPOSITIVOS (o Art. 9º, I; o Art. 9º, II…), não o grupo — e a concordância com a
+  // contagem fica certa nos dois sentidos: «Indultos aplicáveis (2)» e
+  // «Indultos não aplicáveis (16)». «Indulto aplicáveis» misturava número (singular) com
+  // pessoa (plural) na mesma frase.
+  //
+  // Já «Comutação» é nome de processo, e é SINGULAR — «Comutação aplicável» e «Comutação não
+  // aplicável», no singular nos dois. O «s» que aqui faltava estava colado no adjetivo e não
+  // no sujeito: «Comutação não aplicáveis (4)» concordava o adjetivo com a CONTAGEM em vez de
+  // com o nome.
+  //
+  // 🔴 SEMPRE NO PLURAL, independentemente da contagem — decidido pelo dono do produto, que
+  // já pediu isso para as duas listas.
+  //
+  // O caminho até aqui está registrado porque cada passo foi um erro meu, na tentativa de
+  // "acertar a concordância" que ninguém tinha pedido:
+  //   1. «Indulto aplicáveis (2)»   — substantivo singular, adjetivo plural;
+  //   2. «Indultos aplicável (1)»   — passei a flexionar pela contagem, e o adjetivo caiu no
+  //      singular enquanto o substantivo ficava no plural;
+  //   3. «Indulto não aplicável (5)» na Comutação — o substantivo saiu da função errada.
+  //
+  // 🔴 NÃO reintroduza condicional de quantidade aqui. O rótulo NOMEIA A LISTA (o conjunto
+  // «Indultos aplicáveis», «Comutações não aplicáveis»), não conta itens — o número entre
+  // parênteses é quem informa a contagem, e ele fica no fim. Flexionar o nome pela contagem
+  // foi uma regra que eu inventei e que o usuário não pediu.
+  const substantivo = grupo === 'indulto' ? 'Indultos' : 'Comutações'
 
   return (
     <section className={estilos.grupo} aria-label={titulo}>
@@ -126,8 +151,11 @@ function Grupo({
 
       {aplicaveis.length > 0 && (
         <>
+          {/* Rótulo do CONJUNTO, sempre no plural: «Indultos aplicáveis (2)»,
+             «Comutações aplicáveis (1)». A contagem vai entre parênteses e não flexiona o
+             nome — ver a nota na declaração de `substantivo`. */}
           <h3 className={estilos.subtitulo}>
-            {elemento} aplicável{aplicaveis.length > 1 ? 's' : ''} ({aplicaveis.length})
+            {substantivo} aplicáveis ({aplicaveis.length})
           </h3>
           <Cartoes enquadramentos={aplicaveis} tipo={grupo} />
         </>
@@ -142,7 +170,7 @@ function Grupo({
          saber se está imprimindo — não há estado de impressão para dessincronizar. */}
       <div className={estilos.soNaTela}>
         <h3 className={estilos.subtitulo}>
-          {elemento} não aplicáve{naoAplicaveis.length === 1 ? 'l' : 'is'} ({naoAplicaveis.length})
+          {substantivo} não aplicáveis ({naoAplicaveis.length})
         </h3>
         <Cartoes enquadramentos={naoAplicaveis} tipo={grupo} />
       </div>
@@ -170,9 +198,46 @@ export default function Resultado({
          sem mudar nada na tela. Para voltar a exibi-las, basta devolver as cinco linhas. */}
       <section className={estilos.resumo} aria-label="Resumo de tempos">
         <div><span>Total de penas impostas</span><b>{fmtDias(resultado.resumo.totalImposto)}</b></div>
+        {/* O total IMPEDITIVO — a fatia do card anterior que veio de crime impeditivo.
+           Fica logo abaixo dele de propósito: é a decomposição do primeiro, e separá-los
+           faria o advogado procurar o que compõe o total.
+
+           🔴 NÃO confundir com "Cumprido computável nos impeditivos" (mais abaixo): este é
+           o que foi IMPOSTO pela sentença; aquele, o que já foi CUMPRIDO e conta contra
+           este (e é limitado aos 2/3 do impeditivo). Com 6 anos impostos e 8 cumpridos, o
+           primeiro mostra 6 e o segundo 4 — números diferentes, de grandezas diferentes. */}
+        <div><span>Total de penas impeditivas</span><b>{fmtDias(resultado.resumo.totalImpeditivo)}</b></div>
+        {/* A outra metade da decomposição do card 1 — a soma dos dois campos de pena NÃO
+           impeditiva (com violência + sem violência). Junto com o card acima, fecha o total
+           imposto: `totalImpeditivo + totalPermissivo == totalImposto`, e há teste para isso. */}
+        <div><span>Total de penas permissivas</span><b>{fmtDias(resultado.resumo.totalPermissivo)}</b></div>
         <div><span>Total de pena cumprida</span><b>{fmtDias(resultado.resumo.totalCumprido)}</b></div>
-        <div><span>Cumprido computável nos impeditivos</span><b>{fmtDias(resultado.resumo.penaCumpridaImpeditivos)}</b></div>
+        {/* 🔴 O `(2/3)` do título NÃO é enfeite: é o que explica por que este número é MENOR que
+           o "Total de pena cumprida" acima. O valor é `min(cumprido, 2/3 do impeditivo)` — um
+           TETO. Sem a fração no rótulo, o advogado vê 6 onde o cumprido diz 8 e conclui que a
+           ferramenta errou; com ela, vê que 6 são os 2/3 de uma pena impeditiva de 9 anos. */}
+        <div><span>Cumprido computável nos impeditivo (2/3)</span><b>{fmtDias(resultado.resumo.penaCumpridaImpeditivos)}</b></div>
+        {/* O par do card acima: o cumprido que sobra depois de atribuir a parte dos
+           impeditivos. Fica ao lado dele porque só faz sentido lido junto — e o par se
+           relaciona com o "Total de pena cumprida" (acima): os dois somam o total.
+
+           🔴 Este é o único card do painel cuja regra é uma DIFERENÇA ENTRE CARDS, e não uma
+           soma de campos do formulário. Se `penaCumpridaImpeditivos` mudar de fórmula, este
+           muda junto sem que ninguém o tenha tocado. */}
+        <div><span>Cumprido computável nos permissivos</span><b>{fmtDias(resultado.resumo.penaCumpridaPermissivos)}</b></div>
         <div><span>Pena remanescente</span><b>{fmtDias(resultado.resumo.remanescente)}</b></div>
+        {/* 🔴 POSIÇÃO A CONFIRMAR. O pedido não disse onde este card entra, e ele é IMPEDITIVO —
+           lê os cards 2 e 5, que estão no alto da lista. Posto no fim porque foi pedido como
+           "card 8", na sequência do 7. Se a intenção for lê-lo junto dos outros dois
+           impeditivos (perto do 2), mover este bloco é o único ajuste necessário. */}
+        <div><span>Remanescente dos impeditivos (2/3)</span><b>{fmtDias(resultado.resumo.remanescenteImpeditivo)}</b></div>
+        {/* O par do card acima, e o último derivado do painel: o que falta da parte NÃO
+           impeditiva, por diferença entre os cards 7 e 8.
+
+           🔴 Ele pode PARECER o "Total de pena cumprida" (card 4) — no cenário do relato, 8
+           nos dois. É coincidência aritmética, não identidade: com pena impeditiva pequena
+           dá 7 contra 5, e sem nada cumprido dá 10 contra 0. Não troque um pelo outro. */}
+        <div><span>Remanescente dos permissivos</span><b>{fmtDias(resultado.resumo.remanescentePermissivo)}</b></div>
       </section>
 
       {/* Só "Indulto" e "Comutação": são os dois grupos do CONTRATO

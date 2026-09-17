@@ -46,8 +46,18 @@ function resultado(overrides: Partial<Resultado['resumo']> = {}, incisos: Result
     incisos,
     resumo: {
       totalImposto: 2880,
+      // Toda a pena deste fixture é NÃO impeditiva (o default do motor falso): nada de
+      // impeditivo, e os 2880 dias todos no permissivo.
+      totalImpeditivo: 0,
+      totalPermissivo: 2880,
       totalCumprido: 1440,
       penaCumpridaImpeditivos: 0,
+      // Sem impeditivo no fixture, o impeditivo computável é zero e TODO o cumprido sobra
+      // para os permissivos: 1440 - 0.
+      penaCumpridaPermissivos: 1440,
+      // Sem pena impeditiva no fixture, `M6`/`N6` é zero e este card também: 0 - 0.
+      remanescenteImpeditivo: 0,
+      remanescentePermissivo: 1440,
       remanescente: 1440,
       fracoes: { doisTercosImpeditivos: 0, umQuinto: 288, umQuarto: 360, umTerco: 480, metade: 720 },
       ...overrides,
