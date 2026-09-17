@@ -30,21 +30,84 @@
   gap: var(--s-5);
 }
 
+/* A seção do questionário é um ACORDEÃO: o `padding` saiu daqui (o botão do
+ * cabeçalho e `.corpoSecao` o trazem cada um do seu lado), senão o cabeçalho
+ * fechado ficaria com o respiro de um card cheio e o conjunto pareceria maior do
+ * que é — justamente o que a mudança veio corrigir. */
 .secao {
-  display: grid;
-  gap: var(--s-4);
-  padding: var(--s-5);
   background: var(--superficie);
   border: 1px solid var(--linha);
   border-radius: var(--r-painel);
   box-shadow: var(--elev-1);
+  overflow: hidden;
+}
+
+/* A seção aberta ganha a borda do token de destaque do produto. Num acordeão, a
+ * única aberta precisa se distinguir das fechadas por algo além da altura — e a
+ * altura só serve a quem enxerga a tela inteira. */
+.secaoAberta {
+  border-color: var(--linha-forte);
+}
+
+/* `h2` sem margem: é um invólucro para o botão, não um bloco de texto. */
+.cabecalhoSecao {
+  margin: 0;
+}
+
+/* O cabeçalho clicável. `width: 100%` + `text-align: left` para o alvo ser a linha
+ * inteira, não só o texto — o título curto como "Observações" ficaria com um alvo
+ * de uns 100px, fácil de errar. */
+.botaoSecao {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  width: 100%;
+  padding: var(--s-4) var(--s-5);
+  background: none;
+  border: 0;
+  font: inherit;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+}
+.botaoSecao:hover {
+  background: var(--superficie-hover);
+}
+/* `--acento` e o mesmo anel dos inputs do produto (globals.css): o foco do cabeçalho
+ * não pode ser um desenho próprio. O `offset` negativo mantém o anel DENTRO do
+ * painel, que tem `overflow: hidden` — com offset positivo ele seria cortado. */
+.botaoSecao:focus-visible {
+  outline: 2px solid var(--acento);
+  outline-offset: -2px;
 }
 
 .tituloSecao {
-  padding: 0 var(--s-2);
   font-size: var(--fs-title);
   font-weight: 600;
   color: var(--tinta);
+}
+
+/* Sem quadro de foco próprio: ele vive no botão que o contém, e um segundo anel no
+ * ícone faria o foco parecer duplo. A rotação é o que comunica aberto/fechado a quem
+ * não vê a lista — o `aria-expanded` é quem faz isso para o leitor de tela. */
+.chevron {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  color: var(--tinta-3);
+  transition: transform 0.15s ease;
+}
+.chevronAberto {
+  transform: rotate(180deg);
+}
+
+/* O miolo da seção aberta. O `gap` que antes era da `.secao` mora aqui: separado do
+ * cabeçalho, ele só precisa espaçar aviso/descrição/campos entre si. */
+.corpoSecao {
+  display: grid;
+  gap: var(--s-4);
+  padding: 0 var(--s-5) var(--s-5);
 }
 
 /* O aviso de veto ("responder NÃO bloqueia...") — mesmo vocabulário de banner
@@ -66,9 +129,15 @@
   color: var(--tinta-3);
 }
 
+/* `fieldset` sem borda nem margem: ele existe pelo `disabled` que carrega (acesso
+ * encerrado), não para desenhar um quadro — o painel da seção já é o quadro. */
 .campos {
   display: grid;
   gap: var(--s-4);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
 }
 
 .campoTempo {

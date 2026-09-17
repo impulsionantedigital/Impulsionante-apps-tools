@@ -44,6 +44,23 @@
   margin: 0;
 }
 
+/* Um grupo (Indulto, Comutação) = título + a lista de aplicáveis + a de não aplicáveis.
+ * `gap` maior que o de `.resultado` porque aqui os subtítulos precisam de ar para separar
+ * as duas listas; sem isso a tela vira um bloco só de cartões. */
+.grupo {
+  display: grid;
+  gap: var(--s-3);
+}
+
+/* O subtítulo das duas listas. Menor e mais discreto que o `.titulo` do grupo: a hierarquia
+ * é "Indulto" > "aplicáveis" > "Art. 9º, I", e três pesos iguais achatariam a leitura. */
+.subtitulo {
+  margin: 0;
+  font-size: var(--fs-body);
+  font-weight: 600;
+  color: var(--tinta-2);
+}
+
 .cartoes {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -59,7 +76,10 @@
   border-radius: var(--r-painel);
   box-shadow: var(--elev-1);
 }
-.cartao h3 { margin: 0; font-size: var(--fs-body); font-weight: 600; color: var(--tinta); }
+/* `h4` (era `h3`): o título do cartão desceu um nível quando o grupo ganhou os subtítulos
+ * "aplicáveis"/"não aplicáveis" — a hierarquia do documento passa a ser h2 (grupo) > h3
+ * (lista) > h4 (dispositivo). Não é preciosismo: leitor de tela navega por cabeçalho. */
+.cartao h4 { margin: 0; font-size: var(--fs-body); font-weight: 600; color: var(--tinta); }
 .cartao p { margin: 0; font-size: var(--fs-body); color: var(--tinta-3); }
 
 .selo {

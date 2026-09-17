@@ -13,6 +13,8 @@
 // `Selecao` que o resto do CRM usa, com o mesmo anel de foco e o mesmo token
 // de borda. Os nomes colidem com os tipos do domínio (`Campo`, `Entrada`), daí
 // os apelidos abaixo.
+import { useState } from 'react'
+import { ChevronDown } from 'lucide-react'
 import { Campo as CampoUI, Entrada as EntradaControle, Selecao as SelecaoControle } from '@/components/ui/Campo'
 import type { Campo as CampoDado, Entrada as EntradaDados, Secao, Tempo } from '@/lib/indulto-comutacao/tipos'
 import estilos from './calculadora.module.css'
@@ -33,20 +35,72 @@ export default function Questionario({
   /** Acesso encerrado: o `disabled` do fieldset desliga todos os controles de dentro. */
   desabilitado?: boolean
 }) {
+  // Acordeão de UMA seção aberta por vez (a primeira, de saída). O que se ganha com o
+  // fechamento é a coluna do lado: com as 12 seções abertas o questionário empurrava o
+  // `Resultado` para fora da tela, e o advogado não via o veredito mudar enquanto
+  // respondia — que é a única razão de a calculadora calcular ao vivo.
+  const [aberta, setAberta] = useState<string | null>(secoes[0]?.id ?? null)
+
   return (
     <div className={estilos.questionario}>
-      {secoes.map((secao) => (
-        <fieldset key={secao.id} className={estilos.secao} disabled={desabilitado}>
-          <legend className={estilos.tituloSecao}>{secao.titulo}</legend>
-          {secao.aviso && <p className={estilos.aviso}>{secao.aviso}</p>}
-          {secao.descricao && <p className={estilos.descricao}>{secao.descricao}</p>}
-          <div className={estilos.campos}>
-            {secao.campos.map((campo) => (
-              <CampoUnico key={campo.chave} campo={campo} valor={entrada[campo.chave]} aoMudar={aoMudar} />
-            ))}
-          </div>
-        </fieldset>
-      ))}
+      {secoes.map((secao) => {
+        const expandida = aberta === secao.id
+        const idConteudo = `secao-${secao.id}-conteudo`
+        const idTitulo = `secao-${secao.id}-titulo`
+
+        return (
+          <section
+            key={secao.id}
+            className={`${estilos.secao} ${expandida ? estilos.secaoAberta : ''}`}
+          >
+            {/* O título é um `button`, e não um `div` com onClick: só assim ele recebe
+                foco por teclado e é anunciado como controle expansível. `aria-expanded`
+                é o que diz a um leitor de tela se o painel está aberto. */}
+            <h2 className={estilos.cabecalhoSecao}>
+              <button
+                type="button"
+                id={idTitulo}
+                className={estilos.botaoSecao}
+                aria-expanded={expandida}
+                aria-controls={idConteudo}
+                onClick={() => setAberta(expandida ? null : secao.id)}
+              >
+                <span className={estilos.tituloSecao}>{secao.titulo}</span>
+                <ChevronDown
+                  className={`${estilos.chevron} ${expandida ? estilos.chevronAberto : ''}`}
+                  aria-hidden="true"
+                />
+              </button>
+            </h2>
+
+            {/* 🔴 Só o painel ABERTO é montado. Manter os fechados no DOM com
+                `display: none` manteria 60+ controles vivos e a matriz de tabulação
+                cheia de paradas invisíveis; `hidden` no atributo resolve o foco, mas
+                ainda paga o custo de montar tudo a cada tecla que recalcula a tela. */}
+            {expandida && (
+              <div
+                id={idConteudo}
+                role="region"
+                aria-labelledby={idTitulo}
+                className={estilos.corpoSecao}
+              >
+                {secao.aviso && <p className={estilos.aviso}>{secao.aviso}</p>}
+                {secao.descricao && <p className={estilos.descricao}>{secao.descricao}</p>}
+                <fieldset className={estilos.campos} disabled={desabilitado}>
+                  {secao.campos.map((campo) => (
+                    <CampoUnico
+                      key={campo.chave}
+                      campo={campo}
+                      valor={entrada[campo.chave]}
+                      aoMudar={aoMudar}
+                    />
+                  ))}
+                </fieldset>
+              </div>
+            )}
+          </section>
+        )
+      })}
     </div>
   )
 }

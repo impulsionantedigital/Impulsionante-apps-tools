@@ -12,6 +12,7 @@ import type { MotorDecreto, Resultado as ResultadoCalculo, Veredito } from '@/li
 import { VEREDITOS } from '@/lib/indulto-comutacao/tipos'
 import { fmtDias } from '@/lib/indulto-comutacao/tempo'
 import { enquadramentosDe } from '@/lib/indulto-comutacao/enquadramentos'
+import type { EnquadramentoResolvido } from '@/lib/indulto-comutacao/enquadramentos'
 import estilos from './resultado.module.css'
 
 const TOM: Record<Veredito, string> = {
@@ -38,6 +39,108 @@ function Selo({ rotulo, veredito }: { rotulo: string; veredito: Veredito }) {
   )
 }
 
+/**
+ * "Aplicável" = o sentenciado preenche a REGRA GERAL do dispositivo (`geral === 'preenche'`).
+ *
+ * É o mesmo critério de `temAplicavel`/`primeiroAplicavel` (`enquadramentos.ts`), que são
+ * quem decide o que vai para a petição — usar outro aqui faria a tela separar diferente do
+ * que o botão "Petição" entrega. Os demais vereditos (`nao_preenche`, `a_analisar`,
+ * `sem_previsao`) caem em "não aplicáveis": a lista de cima é a que o advogado assina.
+ */
+const ehAplicavel = (e: EnquadramentoResolvido) => e.geral === 'preenche'
+
+/**
+ * O corpo dos cartões de um grupo, já dividido em aplicáveis e não aplicáveis.
+ *
+ * Nas DUAS listas a ordem é a do decreto (`enquadramentosDe` já a preserva) — o que muda
+ * entre elas é só o veredito. Reordenar por veredito dentro do grupo faria o advogado
+ * procurar o Art. 9º, IV fora do lugar; o número do artigo é a chave de leitura dele.
+ */
+function Cartoes({
+  enquadramentos,
+  tipo,
+}: {
+  enquadramentos: EnquadramentoResolvido[]
+  tipo: 'indulto' | 'comutacao'
+}) {
+  return (
+    <div className={estilos.cartoes}>
+      {enquadramentos.map((e) => (
+        <article key={e.id} className={estilos.cartao}>
+          <h4>{e.rotulo}</h4>
+          <p>{e.descricao}</p>
+          {tipo === 'indulto' ? (
+            <>
+              <Selo rotulo="Regra geral" veredito={e.geral} />
+              <Selo rotulo="Regra especial" veredito={e.especial} />
+            </>
+          ) : (
+            /* Comutação não tem regra especial: o motor devolve `especial:
+               'sem_previsao'` nos 5 dispositivos, mas nunca houve selo pra ela
+               na POC. Só "Situação" (= `e.geral`). */
+            <Selo rotulo="Situação" veredito={e.geral} />
+          )}
+          {tipo === 'comutacao' && e.geral === 'preenche' && (
+            <dl className={estilos.quantum}>
+              <dt>Quantum da comutação</dt>
+              <dd>{fmtDias(e.quantum ?? null)}</dd>
+              <dt>Pena total após a comutação</dt>
+              <dd>{fmtDias(e.penaApos ?? null)}</dd>
+            </dl>
+          )}
+        </article>
+      ))}
+    </div>
+  )
+}
+
+/**
+ * Um grupo do decreto (Indulto ou Comutação) em duas seções: o que se aplica ao caso
+ * primeiro, o que não se aplica depois.
+ *
+ * 🔴 A seção de baixo fica SEMPRE visível, mesmo vazia ou com todos os dispositivos dentro.
+ * Esconder a lista de não aplicáveis quando ela está cheia faria o advogado perder de vista,
+ * no meio do preenchimento, justamente os dispositivos que ele ainda pode destravar — que é
+ * o motivo de ele preencher o questionário. Já a de cima SOME quando não há nada aplicável:
+ * uma caixa "Aplicáveis" vazia só ocuparia a tela sem dizer nada.
+ */
+function Grupo({
+  motor,
+  resultado,
+  grupo,
+  titulo,
+}: {
+  motor: MotorDecreto
+  resultado: ResultadoCalculo
+  grupo: 'indulto' | 'comutacao'
+  titulo: string
+}) {
+  const enquadramentos = enquadramentosDe(motor, resultado, grupo)
+  const aplicaveis = enquadramentos.filter(ehAplicavel)
+  const naoAplicaveis = enquadramentos.filter((e) => !ehAplicavel(e))
+  const elemento = grupo === 'indulto' ? 'Indulto' : 'Comutação'
+
+  return (
+    <section className={estilos.grupo} aria-label={titulo}>
+      <h2 className={estilos.titulo}>{titulo}</h2>
+
+      {aplicaveis.length > 0 && (
+        <>
+          <h3 className={estilos.subtitulo}>
+            {elemento} aplicável{aplicaveis.length > 1 ? 's' : ''} ({aplicaveis.length})
+          </h3>
+          <Cartoes enquadramentos={aplicaveis} tipo={grupo} />
+        </>
+      )}
+
+      <h3 className={estilos.subtitulo}>
+        {elemento} não aplicáve{naoAplicaveis.length === 1 ? 'l' : 'is'} ({naoAplicaveis.length})
+      </h3>
+      <Cartoes enquadramentos={naoAplicaveis} tipo={grupo} />
+    </section>
+  )
+}
+
 export default function Resultado({
   motor,
   resultado,
@@ -45,9 +148,6 @@ export default function Resultado({
   motor: MotorDecreto
   resultado: ResultadoCalculo
 }) {
-  const enquadramentosIndulto = enquadramentosDe(motor, resultado, 'indulto')
-  const enquadramentosComutacao = enquadramentosDe(motor, resultado, 'comutacao')
-
   return (
     <div className={estilos.resultado}>
       <section className={estilos.resumo} aria-label="Resumo de tempos">
@@ -65,40 +165,10 @@ export default function Resultado({
       {/* Só "Indulto" e "Comutação": são os dois grupos do CONTRATO
          (`motor.incisos.indulto`/`.comutacao`), não um artigo do decreto de 2025.
          Em que artigo cada dispositivo vive é o que `meta.rotulo` e
-         `meta.descricao` já dizem, por decreto. */}
-      <h2 className={estilos.titulo}>Indulto</h2>
-      <div className={estilos.cartoes}>
-        {enquadramentosIndulto.map((e) => (
-          <article key={e.id} className={estilos.cartao}>
-            <h3>{e.rotulo}</h3>
-            <p>{e.descricao}</p>
-            <Selo rotulo="Regra geral" veredito={e.geral} />
-            <Selo rotulo="Regra especial" veredito={e.especial} />
-          </article>
-        ))}
-      </div>
-
-      <h2 className={estilos.titulo}>Comutação</h2>
-      <div className={estilos.cartoes}>
-        {enquadramentosComutacao.map((e) => (
-          <article key={e.id} className={estilos.cartao}>
-            <h3>{e.rotulo}</h3>
-            <p>{e.descricao}</p>
-            {/* Comutação não tem regra especial: o motor devolve `especial:
-               'sem_previsao'` nos 5 dispositivos, mas nunca houve selo pra ela
-               na POC. Só "Situação" (= `e.geral`). */}
-            <Selo rotulo="Situação" veredito={e.geral} />
-            {e.geral === 'preenche' && (
-              <dl className={estilos.quantum}>
-                <dt>Quantum da comutação</dt>
-                <dd>{fmtDias(e.quantum ?? null)}</dd>
-                <dt>Pena total após a comutação</dt>
-                <dd>{fmtDias(e.penaApos ?? null)}</dd>
-              </dl>
-            )}
-          </article>
-        ))}
-      </div>
+         `meta.descricao` já dizem, por decreto. Cada grupo se desenha em duas
+         listas — aplicáveis e não aplicáveis —, e qual é qual o `Grupo` decide. */}
+      <Grupo motor={motor} resultado={resultado} grupo="indulto" titulo="Indulto" />
+      <Grupo motor={motor} resultado={resultado} grupo="comutacao" titulo="Comutação" />
 
       {/* 🔴 O bloco "Pontos a validar juridicamente" NÃO é renderizado a pedido do
          dono do produto (o card com as cinco interpretações da planilha saiu da
