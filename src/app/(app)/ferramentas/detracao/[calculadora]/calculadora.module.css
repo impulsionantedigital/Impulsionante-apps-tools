@@ -164,6 +164,46 @@
   border-top: 1px solid var(--linha);
 }
 
+/* ── Ajustes do cabeçalho SÓ na tela do cálculo salvo ─────
+ *
+ * Chega pela prop `className` do `CabecalhoPagina` (ver o comentário naquele componente), nunca
+ * por uma regra no kit, que é de TODAS as telas do CRM. É o mesmo ajuste que a calculadora de
+ * indulto já faz, e pelo mesmo motivo — o padrão está em
+ * `src/app/(app)/ferramentas/[calculadora]/calculadora.module.css`. */
+.cabecalhoDoCalculo h1,
+.cabecalhoDoCalculo p {
+  /* (b) O subtítulo ("Tema Repetitivo 1.155/STJ") sobe para o MESMO corpo do título. O kit o
+   * desenha em `--fs-body`/400 — dois terços do título — porque em geral o subtítulo EXPLICA um
+   * título; aqui ele é a IDENTIDADE do tema com que se está calculando.
+   *
+   * 🔴 `--fs-page` é o token que o PRÓPRIO kit usa no título. Igualar os dois por um literal
+   * (`24px`) os desalinharia na próxima revisão do kit, quando o token mudasse. */
+  font-size: var(--fs-page);
+  line-height: var(--lh-page);
+}
+
+.cabecalhoDoCalculo p {
+  /* O peso NÃO sobe junto: a 600 os dois viram o mesmo bloco e o olho perde qual é o título.
+   * A hierarquia passa a ser o peso, não o corpo. */
+  font-weight: 400;
+  letter-spacing: var(--ls-page);
+}
+
+/* (a) O título do cálculo não vai para o PAPEL: é o nome que o membro deu ao registro
+ * ("Caso do João", "Execução 0012345"), não informação do caso. O subtítulo do tema FICA.
+ *
+ * `header h1` (descendente) e não `.titulo`: a classe do kit tem hash e o CSS module do chamador
+ * não a enxerga. O seletor estrutural chega no elemento pelo que ele É.
+ *
+ * 🔴 É `h1` DENTRO do header, e não filho direto: o kit envolve o título numa `.textos` (ele é
+ * irmão do bloco de ações, na mesma `.linha`). Um `>` aqui não casaria com nada, e a regra
+ * sumiria em SILÊNCIO — o título voltaria a sair no anexo sem nenhum teste acusar. */
+@media print {
+  .cabecalhoDoCalculo h1 {
+    display: none;
+  }
+}
+
 /* Lista dos feriados computados. Três colunas de largura fixa para a data e o dia da semana, e o
  *  nome ocupando o resto: assim as três colunas ficam alinhadas entre as linhas e a lista se lê
  *  como tabela, sem `display: table` (que brigaria com o grid do painel). */

@@ -52,6 +52,11 @@ export default async function EditarCalculo({
         }
         titulo={calculo.titulo}
         subtitulo="Tema Repetitivo 1.155/STJ"
+        // 🔴 Duas decisões DESTA tela, as duas vivendo no `calculadora.module.css` — e não no kit
+        // `CabecalhoPagina`, que é de todas as telas do CRM: (a) o TÍTULO do cálculo não sai na
+        // IMPRESSÃO (é o nome que o membro deu ao registro, não informação do caso) e (b) o
+        // subtítulo do tema sobe para o MESMO corpo do título. Ver `.cabecalhoDoCalculo`.
+        className={estilos.cabecalhoDoCalculo}
       />
 
       {mudou && (
