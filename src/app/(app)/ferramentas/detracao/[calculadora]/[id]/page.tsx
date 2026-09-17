@@ -80,6 +80,18 @@ export default async function EditarCalculo({
 
   const desatualizada = estaDesatualizada(calculo.algoritmo_versao)
 
+  // 🔴 `editavel` decide DUAS coisas que andam juntas, e é por isso que é uma variável só:
+  //
+  //   • se o formulário aceita digitação (produto ativo E versão vigente);
+  //   • se a tela mostra o número GRAVADO ou o RECALCULADO.
+  //
+  // Um cálculo de versão anterior é DOCUMENTO: não se edita e não se recalcula — mostrar o número
+  // recalculado esconderia o que foi protocolado. Um cálculo da versão vigente é TRABALHO: mostra o
+  // que se digita, a cada tecla. Tratar os dois como iguais causava o defeito de o formulário
+  // recalcular por dentro enquanto a tela continuava exibindo o número do banco — o total só mudava
+  // ao salvar.
+  const editavel = estado === 'ativo' && !desatualizada
+
   return (
     <div className={estilos.pagina}>
       <CabecalhoPagina
@@ -115,13 +127,16 @@ export default async function EditarCalculo({
         </div>
       )}
 
+      {/* 🔴 O resultado GRAVADO só é exibido quando o cálculo NÃO pode ser editado. É aí que ele é
+         * documento — na versão antiga, que não se recalcula, ou com o produto inativo. Num cálculo
+         * editável da versão vigente, o membro está trabalhando: a tela precisa acompanhar o que
+         * ele digita. Antes isto era passado SEMPRE, e o efeito era o formulário recalcular por
+         * dentro enquanto a tela seguia mostrando o número do banco — o cálculo só mudava ao
+         * salvar. Ver `exibido` em Calculadora.tsx. */}
       <Calculadora
         versao={versao.versao}
-        inicial={calculo.entrada}
-        calculoId={calculo.id}
-        tituloInicial={calculo.titulo}
-        resultadoSalvo={calculo.resultado}
-        somenteLeitura={estado !== 'ativo' || desatualizada}
+        resultadoSalvo={editavel ? undefined : calculo.resultado}
+        somenteLeitura={!editavel}
       />
 
       <ExcluirCalculo id={calculo.id} />
