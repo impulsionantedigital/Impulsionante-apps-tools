@@ -9,6 +9,47 @@
  * 🔴 Sem cor em hexadecimal e sem `--borda` (não existe no kit): só token.
  */
 
+/* Ajustes do cabeçalho SÓ na tela do cálculo salvo — chegam pela prop `className` do
+ * `CabecalhoPagina` (ver o comentário lá), nunca por uma regra no kit, que é de todas as
+ * telas do CRM.
+ *
+ * Os dois ajustes são pedidos do dono do produto, e este módulo é o lugar deles: */
+.cabecalhoDoCalculo h1,
+.cabecalhoDoCalculo p {
+  /* (b) O subtítulo ("Decreto 12.970/2025 — indulto natalino") sobe para o MESMO corpo do
+   * título. O kit o desenha em `--fs-body`/400, dois terços do título, porque em geral o
+   * subtítulo EXPLICA um título; aqui ele é a IDENTIDADE do decreto com que se está
+   * calculando, e o advogado precisa dela do mesmo tamanho que o resto do cabeçalho.
+   *
+   * 🔴 `--fs-page` é o token que o próprio kit usa no título (CabecalhoPagina.module.css).
+   * Igualar os dois por um literal — `24px` — os desalinharia na próxima revisão do kit,
+   * quando `--fs-page` mudasse. */
+  font-size: var(--fs-page);
+  line-height: var(--lh-page);
+}
+
+.cabecalhoDoCalculo p {
+  /* O peso NÃO sobe junto: a 600 os dois viram o mesmo bloco e o olho perde qual é o
+   * título. A hierarquia passa a ser o peso, não o corpo. */
+  font-weight: 400;
+  letter-spacing: var(--ls-page);
+}
+
+/* (a) O título do cálculo salvo não vai para o PAPEL: é o nome que o membro deu ao
+ * registro ("Caso do João"), não informação do caso. O subtítulo do decreto FICA.
+ *
+ * `header h1` (descendente) e não `.titulo`: a classe do kit tem hash e o CSS module do
+ * chamador não a enxerga. O seletor estrutural chega no elemento pelo que ele É.
+ *
+ * 🔴 É `h1` DENTRO do header, não filho direto: o kit envolve o título numa `.textos`
+ * (ele é irmão do bloco de ações, na mesma `.linha`). Um `>` aqui não casaria com nada e a
+ * regra sumiria em silêncio — o defeito que este ajuste veio corrigir voltaria sem aviso. */
+@media print {
+  .cabecalhoDoCalculo h1 {
+    display: none;
+  }
+}
+
 .layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);

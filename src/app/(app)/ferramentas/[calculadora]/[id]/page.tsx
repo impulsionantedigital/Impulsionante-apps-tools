@@ -53,6 +53,10 @@ export default async function CalculoPage({
   const agora = motor.calcular(calculo.entrada)
   const mudou = calculo.motor_versao !== motor.versao && !mesmoResultado(agora, calculo.resultado)
 
+  // 🔴 Duas decisões DESTA tela, as duas vivendo no `calculadora.module.css` — e não no kit
+  // `CabecalhoPagina`, que é de todas as telas do CRM: (a) o TÍTULO do cálculo não sai na
+  // IMPRESSÃO (é o nome que o membro deu ao registro, não informação do caso) e (b) o
+  // subtítulo do decreto sobe para o MESMO corpo do título. Ver `.cabecalhoDoCalculo`.
   return (
     <div className={estilos.pagina}>
       <CabecalhoPagina
@@ -64,6 +68,7 @@ export default async function CalculoPage({
         }
         titulo={calculo.titulo}
         subtitulo={motor.rotulo}
+        className={estilos.cabecalhoDoCalculo}
       />
 
       {mudou && (
