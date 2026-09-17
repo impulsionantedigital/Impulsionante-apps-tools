@@ -11,15 +11,36 @@ import BotaoPeticao from './BotaoPeticao'
 import { versaoPorRotulo, versaoAtual, pacoteTipado } from '@/lib/detracao/recolhimento-noturno/versoes/registro'
 import type { EntradaCalculo, ResultadoCalculo } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-2/tipos'
 import type { EntradaFormulario, SegmentoFormulario } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-2/formulario'
+import type { Weekday } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-2/tipos'
 import estilos from './calculadora.module.css'
 
 /** 🔴 SEM MODO AVANÇADO (RN-2.1): a entrada é UM período, e o formulário tem exatamente os campos
  *  que o motor lê. Não há mais segmentos extras, fuso, monitoramento nem observações — os três
  *  últimos eram metadados de auditoria que nunca entraram na conta, e os múltiplos segmentos eram
  *  o que obrigava o modo avançado a existir. */
+/** 🔴 Os dias que vêm MARCADOS num cálculo novo: segunda a sexta como regra noturna, sábado e
+ *  domingo como folga integral — que é o arranjo da maioria esmagadora dos casos (cautelar com
+ *  recolhimento noturno em dias de expediente e folga nos fins de semana). O membro ajusta o que
+ *  for diferente, em vez de marcar sete caixas a cada cálculo.
+ *
+ *  ⚠️ Isto NÃO é regra de cálculo — é o ponto de partida da TELA. Nenhum cálculo gravado é afetado,
+ *  e a versão do motor não muda por causa disto: `emBranco()` continua devolvendo listas vazias
+ *  (que é o que a versão congelada define), e o preenchimento acontece aqui, na abertura da tela. */
+const DIAS_PADRAO_NOTURNO: Weekday[] = ['MON', 'TUE', 'WED', 'THU', 'FRI']
+const DIAS_PADRAO_FOLGA: Weekday[] = ['SAT', 'SUN']
+
 function entradaInicial(inicial?: EntradaCalculo): EntradaFormulario {
   if (!inicial || inicial.segmentos.length === 0) {
-    return { segmentos: [versaoAtual().formulario.emBranco() as SegmentoFormulario] }
+    const s = versaoAtual().formulario.emBranco() as SegmentoFormulario
+    return {
+      segmentos: [
+        {
+          ...s,
+          diasSemanaNoturno: DIAS_PADRAO_NOTURNO,
+          diasFolgaIntegral: DIAS_PADRAO_FOLGA,
+        },
+      ],
+    }
   }
   // O cálculo salvo pode ter mais de um segmento (gravado quando o modo avançado existia). A tela
   // edita só o primeiro — os outros continuariam contando no total sem aparecer para o membro, que
