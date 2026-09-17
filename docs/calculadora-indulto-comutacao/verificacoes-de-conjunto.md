@@ -16,11 +16,16 @@ doze tarefas estão juntas. Não refaça as revisões por tarefa; procure o que 
 - **POC de origem e planilha:** `validacao/2025/`
 
 ## 🔴 O que NÃO é defeito a corrigir
-
-As oito **decisões do usuário** listadas no fim de `pendencias-revisao-final.md` (o `<` estrito do Art. 13,
-o teto dobrado do Inciso VIII, os dois problemas da planilha e da POC em uso, e as questões de LGPD sobre
-guarda e exclusão). O motor reproduz a planilha de propósito, e as ambiguidades são exibidas ao advogado.
+As **decisões do usuário** listadas no fim de `pendencias-e-roteiro-de-teste.md` (o teto dobrado do Inciso
+VIII, os dois problemas da planilha e da POC em uso, e as questões de LGPD sobre guarda e exclusão). O motor
+reproduz a planilha de propósito, e as ambiguidades são exibidas ao advogado.
 **Não proponha mudar regra jurídica.** Se achar uma ambiguidade nova, relate; não corrija.
+
+> ⚠️ **O `<` estrito do Art. 13 saiu desta lista em 17/09/2026.** Era a oitava decisão, e o dono do produto
+> decidiu mudá-la: o motor passou a aceitar o cumprimento exato da fração. Ao revisar, **não trate o `<=`
+> do `c13` como defeito nem "restaure" o `<`** — e leia
+> [`telas-questionario-e-resultado.md`](telas-questionario-e-resultado.md), §5, antes de tocar nos testes de
+> paridade, que passaram a pular dois cenários de propósito.
 
 ## O que conferir no conjunto
 
@@ -47,8 +52,10 @@ Procure `2025`, `12.970`, `25/12`, `§`, `Art.`, número romano de inciso. O cri
 um decreto, é defeito.
 
 ### 3. Os avisos jurídicos chegam ao advogado
-- As 5 entradas de `motor.avisos.validarJuridicamente` aparecem **sempre** na tela de resultado, na de
-  cálculo novo e na de cálculo salvo.
+- ⚠️ **Mudou em 17/09/2026:** o card "Pontos a validar juridicamente" **saiu da tela** a pedido do dono do
+  produto. As entradas de `motor.avisos.validarJuridicicamente` **continuam no motor** (e também são 4, não
+  5 — o aviso do Art. 13 saiu quando a ambiguidade foi resolvida), mas **não são mais exibidas**.
+  Não "conserte" recolocando o card; ver `telas-questionario-e-resultado.md`, §1.
 - O aviso da seção "data do fato" (responder NÃO veta indulto e comutação) aparece no questionário.
 - A nota de dado pessoal (spec §9) está na tela de novo cálculo, com as três afirmações.
 - A folha de impressão mostra o resultado com os avisos e esconde o questionário e as barras de ação.

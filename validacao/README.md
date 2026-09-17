@@ -100,16 +100,22 @@ Duas são **bugs de fórmula da planilha**, que o motor corrige de propósito:
      planilha avaliou (`Cálculo!P6…P17`). Este lado é **consequência** do `<` estrito do Art. 13
      (ver abaixo): F148 e F149 só divergem assim quando a pena cumprida é exatamente a fração.
 
-Outra é **provável erro da planilha, preservado** (não corrigido, porque a decisão é jurídica):
+Outra era **provável erro da planilha, e o dono do produto decidiu CORRIGIR** (17/09/2026):
 
-- **`Cálculo!H138`, Art. 13**: exige pena cumprida **maior** que 1/5 (1/4 se reincidente), com `<`
-  estrito. Todos os demais dispositivos comparam com `<=`, inclusive o §4º do mesmo artigo
-  (`H141`) e os incisos do Art. 11 (`L129`, `L132`, `L135`). O texto do dispositivo
-  (`Cálculo!C138`) fala em "tenham cumprido […] um quinto da pena", o que inclui o cumprimento
-  exato. Efeito: quem cumpriu **exatamente** a fração tem a comutação do Art. 13 negada. O motor é
-  fiel à planilha, e o ponto é exibido ao advogado em "Pontos a validar juridicamente". O cenário
-  posicionado 4 fica nessa fronteira: ele prova que o motor reproduz a planilha, **não** que o
-  `<` está certo.
+- **`Cálculo!H138`, Art. 13** — ✅ **divergência deliberada do motor hoje.** A planilha exige pena
+  cumprida **maior** que 1/5 (1/4 se reincidente), com `<` estrito. Todos os demais dispositivos
+  comparam com `<=`, inclusive o §4º do mesmo artigo (`H141`) e os incisos do Art. 11 (`L129`,
+  `L132`, `L135`), e o texto do dispositivo (`Cálculo!C138`) fala em "tenham cumprido […] um quinto
+  da pena", o que inclui o cumprimento **exato**. Efeito do `<`: quem cumpriu exatamente a fração
+tinha a comutação **negada**, e um dia a mais a concedia. O motor passou a `<=` — como o texto do
+Decreto — e **por isso ele DIVERGE da planilha aqui, de propósito**.
+
+  🔴 **Não trate essa divergência como erro de porte ao rodar o oráculo.** O desvio está nomeado em
+  `tests/indulto-comutacao/_oraculo.ts` (`CENARIOS_ART13_EXATO` / `…_2024`), os specs pulam esses
+  cenários com o motivo no título, e há um teste que reprova se a lista deixar de bater com a
+  realidade. O cenário posicionado 4 fica exatamente nessa fronteira. Restaurar o `<` para "bater com
+  a planilha" faz o motor voltar a negar a comutação a quem tem direito. O porquê completo está em
+  `docs/calculadora-indulto-comutacao/telas-questionario-e-resultado.md`, §5.
 
 A outra é **arredondamento**. Quantum e pena após saem da planilha como texto
 (`"X anos Y meses Z dias"`, com `ROUNDDOWN`/`ROUND`), e o teste compara em dias com
@@ -123,8 +129,10 @@ A outra é **arredondamento**. Quantum e pena após saem da planilha como texto
 - **Não resolva ambiguidade jurídica sozinho.** Se a planilha divergir do motor por algo que não é
   porte, nem um dos bugs acima, nem erro do harness (célula, prefixo, tipo), é **bug novo da
   planilha**. Pare e leve ao dono do produto. Corrigir a planilha é decisão dos autores do método.
-  As ambiguidades já conhecidas (o teto dobrado do Inciso VIII, o `<` estrito do Art. 13, a base da
-  comutação, a base da pena após) são preservadas no motor e sinalizadas na tela.
+  As ambiguidades ainda em aberto (o teto dobrado do Inciso VIII, a base da comutação, a base da
+  pena após) são preservadas no motor. **O `<` estrito do Art. 13 saiu desta lista em 17/09/2026:**
+  era ambiguidade, o dono do produto decidiu, e o motor hoje diverge da planilha nesse ponto de
+  propósito — ver o item acima.
 - **Não contorne uma fórmula que a `formulas` não entende.** Anote-a, reduza o cenário e trate como
   achado: é exatamente ali que o porte pode estar errado.
 
