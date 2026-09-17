@@ -78,6 +78,7 @@ O que o motor devolve após o processamento:
   totalMinutos:        1440,             // Soma total em minutos (inteiro)
   totalHoras:          "24:00",          // Formatado em H:MM
   diasDetracao:        1,                // floor(totalMinutos / 1440)
+  detracaoEmAnosMesesDias: { anos: 0, meses: 0, dias: 1 },  // 1 ano = 365d, 1 mês = 30d
   saldoMinutos:        0,                // totalMinutos % 1440
   saldoHoras:          "00:00",          // Saldo formatado em HH:MM
 
@@ -139,6 +140,14 @@ precedência:
 1. `totalMinutos = diasIntegrais × 1440 + diasUteis × H_NOTURNO` (inteiros, nunca float).
 2. `diasDetracao = floor(totalMinutos / 1440)`
 3. `saldoMinutos = totalMinutos % 1440`
+4. **Conversão para anos/meses/dias**: `anos = floor(diasDetracao / 365)`, depois
+   `meses = floor(resto / 30)` e `dias = resto % 30`.
+
+> 🔴 **365 e 30 são divisores FIXOS, não o calendário real.** O ano de calendário tem 365 ou 366
+> dias e o mês tem 28 a 31; a conta de execução penal usa o ano de 365 e o mês de 30, igual à
+> planilha de referência. O divisor do ANO tem precedência: 360 dias são "0 anos 12 meses 0 dias",
+> e 365 são "1 ano 0 meses 0 dias". O **saldo abaixo de 24h não entra** nesta conversão — ele é
+> resto, e aparece separado no resumo.
 
 > 🔴 **A conta é contar e multiplicar, e nada mais.** Não há faixas de tempo, não há sobreposição
 > para unir, não há instante para comparar. O resultado (`composicao`) sai da MESMA contagem que

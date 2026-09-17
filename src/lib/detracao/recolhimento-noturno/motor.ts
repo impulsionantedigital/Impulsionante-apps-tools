@@ -58,6 +58,25 @@ function formatarHHMM(totalMinutos: number): string {
   return `${String(Math.floor(totalMinutos / 60)).padStart(2, '0')}:${String(totalMinutos % 60).padStart(2, '0')}`
 }
 
+/** As três casas do tempo de detração, com a convenção da execução penal: **1 ano = 365 dias** e
+ *  **1 mês = 30 dias**, aplicadas sobre os DIAS INTEIROS (o saldo abaixo de 24h não entra — ele é
+ *  resto, e é por isso que ele aparece separado no resumo). */
+export type AnosMesesDias = { anos: number; meses: number; dias: number }
+
+/** Converte dias de detração em anos/meses/dias pela convenção da execução penal.
+ *
+ *  🔴 365 e 30 são DIVISORES FIXOS da conta jurídica, não o calendário real: um ano de calendário
+ *  tem 365 ou 366 dias, e um mês tem 28 a 31. A conta de execução penal não usa o calendário — usa
+ *  o ano de 365 e o mês de 30, que é a mesma convenção da planilha de referência. Trocar por
+ *  diferença de datas reais mudaria o número de cálculos já em uso. */
+export function paraAnosMesesDias(diasDetracao: number): AnosMesesDias {
+  const dias = Math.max(0, Math.floor(diasDetracao))
+  const anos = Math.floor(dias / 365)
+  const restoAposAnos = dias % 365
+  const meses = Math.floor(restoAposAnos / 30)
+  return { anos, meses, dias: restoAposAnos % 30 }
+}
+
 /** `H_NOTURNO` do PASSO 1: duração do turno noturno, em minutos. Quando o fim cai na madrugada
  *  (06:00 ≤ 22:00) a conta dá a volta pela meia-noite. Início igual ao fim é ambíguo e já foi
  *  rejeitado na validação do segmento — aqui não se presume "24 horas". */
@@ -160,6 +179,7 @@ export function calcular(entrada: EntradaCalculo): ResultadoCalculo {
     totalMinutos,
     totalHoras: formatarHoras(totalMinutos),
     diasDetracao: Math.floor(totalMinutos / 1440),
+    detracaoEmAnosMesesDias: paraAnosMesesDias(Math.floor(totalMinutos / 1440)),
     saldoMinutos: totalMinutos % 1440,
     saldoHoras: formatarHHMM(totalMinutos % 1440),
     diasUteis,

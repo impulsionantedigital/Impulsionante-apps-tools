@@ -40,6 +40,7 @@ describe('mesmoResultado', () => {
       algoritmoVersao: r.algoritmoVersao,
       totalMinutos: r.totalMinutos,
       diasDetracao: r.diasDetracao,
+      detracaoEmAnosMesesDias: r.detracaoEmAnosMesesDias,
       saldoMinutos: r.saldoMinutos,
       totalHoras: r.totalHoras,
       saldoHoras: r.saldoHoras,

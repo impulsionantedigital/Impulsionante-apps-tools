@@ -3,6 +3,7 @@
 // Os contratos do domínio de detração por recolhimento noturno. Forma, sem regra de negócio —
 // quem soma e converte é `motor.ts`.
 
+import type { AnosMesesDias } from './motor'
 import type { FeriadoConsiderado } from './feriados'
 
 export const WEEKDAYS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'] as const
@@ -52,6 +53,9 @@ export type ResultadoCalculo = {
   totalMinutos: number
   totalHoras: string
   diasDetracao: number
+  /** Os mesmos `diasDetracao` abertos em anos/meses/dias (1 ano = 365 dias, 1 mês = 30 dias) — a
+   *  leitura que o juízo usa, ao lado dos dias corridos de 24h. */
+  detracaoEmAnosMesesDias: AnosMesesDias
   saldoMinutos: number
   saldoHoras: string
   /** Composição da contagem (PASSO 3 da spec): dias de regra noturna e dias integrais (24h).

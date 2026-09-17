@@ -51,6 +51,11 @@ export default function Resumo({
   // contagem delas serve. Quem conta os dias é o motor, e ele informa abertura por categoria.
   const { composicao } = resultado
   const total = `Você tem ${resultado.diasDetracao} dias de detração`
+  // A conversão para anos/meses/dias, no MESMO formato do CIC (`respostas-anexo.ts`): três casas,
+  // sempre no plural, com os zeros mantidos. "0 anos 6 meses 14 dias" diz a ordem de grandeza de
+  // imediato; "6 meses e 14 dias" faria o leitor procurar se o ano foi omitido ou é zero.
+  const { anos, meses, dias } = resultado.detracaoEmAnosMesesDias
+  const emAnosMesesDias = `${anos} anos ${meses} meses ${dias} dias`
   // 🔴 O rótulo diz a UNIDADE (dias de 24h) porque abaixo, em "Composição por dia de calendário",
   // "dias" significa outra coisa. Sem esta desambiguação o advogado lê os dois como o mesmo número.
   const rotuloTotal =
@@ -69,6 +74,13 @@ export default function Resumo({
         <div className={estilos.resumoLinha}>
           <span>{rotuloTotal}</span>
           <b>{total}</b>
+        </div>
+        {/* 🔴 A conversão fica ao lado do total, e não escondida mais abaixo: é a MESMA grandeza
+         *  dita na unidade do juízo. Os dias de 24h são a conta; anos/meses/dias é como ela se lê
+         *  numa decisão. Separadas, o leitor teria de cruzar dois pontos do resumo. */}
+        <div className={estilos.resumoLinha}>
+          <span>Equivalente em anos, meses e dias</span>
+          <b>{emAnosMesesDias}</b>
         </div>
         <div className={estilos.resumoLinha}>
           <span>Saldo abaixo de 24h (não gera dia a mais)</span>

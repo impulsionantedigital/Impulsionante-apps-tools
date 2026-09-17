@@ -8,6 +8,7 @@ function resultado(parcial: Partial<ResultadoCalculo>): ResultadoCalculo {
     totalMinutos: 0,
     totalHoras: '0:00',
     diasDetracao: 0,
+    detracaoEmAnosMesesDias: { anos: 0, meses: 0, dias: 0 },
     saldoMinutos: 0,
     saldoHoras: '00:00',
     diasUteis: 0,
