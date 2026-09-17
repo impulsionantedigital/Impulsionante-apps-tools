@@ -1,12 +1,16 @@
 // src/lib/detracao/recolhimento-noturno/feriados.ts
 //
-// Os feriados que o checkbox "computar feriados nacionais que caem em dias úteis" usa. A LISTA É DADO,
-// não regra escrita em código: vem de `temp/feriados.json`, que é a fonte da verdade homologada.
+// Os feriados que o checkbox "computar feriados nacionais que caem em dias úteis" usa. A LISTA É
+// DADO, não regra escrita em código — a fonte é `dados/feriados.json`, versionado junto do produto.
 //
-// 🔴 Por que COPIEI o JSON para cá em vez de ler de `temp/` em tempo de execução: `temp/` é pasta de
-// trabalho, fora do empacotamento do produto — em produção ela não existe, e o `import` viraria erro
-// de build. Copiar congela a lista no bundle, que é o que a calculadora precisa: dois cálculos do
-// mesmo período, em máquinas diferentes, têm de dar o mesmo número.
+// 🔴 Por que a lista está TRANSCRITA aqui em vez de o motor ler o JSON em runtime: o motor roda a
+// cada tecla digitada na tela, e abrir/parsear 37 KB de arquivo a cada recálculo é desperdício por
+// nada. Aqui as datas já viram um array de strings que o bundler embute, e o `Set` do motor sai
+// pronto. O JSON continua sendo a fonte da verdade para humanos e para edição — a paridade entre os
+// dois é verificada em `tests/detracao/recolhimento-noturno/feriados.spec.ts`.
+//
+// ⚠️ AJUSTAR UM FERIADO = ajustar os DOIS lugares. O teste de paridade falha se só um mudar, e é
+// isso que impede a transcrição de virar uma segunda verdade silenciosa.
 //
 // ⚠️ COBERTURA: o arquivo de origem vai de 1990 a 2050. Fora dessa faixa NÃO HÁ feriados — o motor
 // não os inventa, e o dia passa como útil. Não estenda a lista "derivando" datas: a origem tem

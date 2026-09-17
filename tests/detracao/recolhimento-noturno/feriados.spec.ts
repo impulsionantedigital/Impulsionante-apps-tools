@@ -1,19 +1,23 @@
 // tests/detracao/recolhimento-noturno/feriados.spec.ts
 //
-// A lista de feriados da calculadora é uma CÓPIA de `temp/feriados.json` (ver o porquê no topo de
-// `feriados.ts`: `temp/` é pasta de trabalho e não vai para produção). Cópia que pode divergir da
-// origem em silêncio é pior do que não ter cópia — este arquivo é o que impede isso.
+// O JSON de feriados (`src/lib/detracao/recolhimento-noturno/dados/feriados.json`) é a FONTE, e
+// `feriados.ts` é a transcrição dele para TypeScript — porque o motor precisa de um `Set` de datas
+// em runtime, sem ler arquivo do disco.
 //
-// 🔴 A paridade só é verificada quando `temp/feriados.json` existe: no checkout do comprador ele
-// pode não estar. Nesse caso o teste de paridade é PULADO, nunca falha — um teste que depende de
-// arquivo ausente não pode virar build vermelho no servidor de ninguém.
+// 🔴 Duas verdades sobre o mesmo dado divergem no primeiro ajuste. O teste de paridade abaixo é o
+// que impede isso: ele compara a lista transcrita com o JSON, entrada por entrada. Erro de
+// transcrição (data digitada errada, linha faltando) deixa a suíte vermelha, e não um cálculo
+// silenciosamente errado na tela de alguém.
 
 import { describe, it, expect } from 'vitest'
-import { existsSync, readFileSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { FERIADOS, DATAS_FERIADOS, feriadosNacionais } from '@/lib/detracao/recolhimento-noturno/feriados'
 
-const CAMINHO_ORIGEM = resolve(process.cwd(), 'temp/feriados.json')
+const CAMINHO_FONTE = resolve(
+  process.cwd(),
+  'src/lib/detracao/recolhimento-noturno/dados/feriados.json',
+)
 
 describe('FERIADOS — forma da lista', () => {
   it('toda data está no formato ISO YYYY-MM-DD', () => {
@@ -81,16 +85,27 @@ describe('cobertura histórica que o arquivo de origem registra', () => {
   })
 })
 
-describe.skipIf(!existsSync(CAMINHO_ORIGEM))('paridade com temp/feriados.json', () => {
-  it('esta lista é idêntica à origem, entrada por entrada', () => {
-    const bruto = JSON.parse(readFileSync(CAMINHO_ORIGEM, 'utf8')) as Array<{ data: string; nome: string }>
-    const origem = bruto.map((f) => `${f.data}|${f.nome}`).sort()
-    const copia = FERIADOS.map((f) => `${f.data}|${f.nome}`).sort()
-    expect(copia).toEqual(origem)
+describe('paridade com o JSON de origem', () => {
+  /** O JSON entregue junto do produto — não é cópia de trabalho: é o dado versionado. */
+  function lerFonte(): Array<{ data: string; nome: string }> {
+    return JSON.parse(readFileSync(CAMINHO_FONTE, 'utf8')) as Array<{ data: string; nome: string }>
+  }
+
+  it('a transcrição é idêntica ao JSON, entrada por entrada', () => {
+    const fonte = lerFonte().map((f) => `${f.data}|${f.nome}`).sort()
+    const transcrito = FERIADOS.map((f) => `${f.data}|${f.nome}`).sort()
+    expect(transcrito).toEqual(fonte)
   })
 
-  it('a contagem bate com a origem', () => {
-    const bruto = JSON.parse(readFileSync(CAMINHO_ORIGEM, 'utf8')) as unknown[]
-    expect(FERIADOS).toHaveLength(bruto.length)
+  it('a contagem bate com o JSON', () => {
+    expect(FERIADOS).toHaveLength(lerFonte().length)
+  })
+
+  it('o JSON está no formato que o motor espera', () => {
+    // A transcrição pode estar certa e o ARQUIVO errado — este teste cobre o lado que o outro não vê.
+    for (const f of lerFonte()) {
+      expect(f.data, JSON.stringify(f)).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+      expect(typeof f.nome).toBe('string')
+    }
   })
 })

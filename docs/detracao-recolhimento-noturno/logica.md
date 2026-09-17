@@ -138,8 +138,9 @@ precedência:
 > ⚠️ A condição de feriado **não exige** que o dia esteja em `diasSemanaNoturno`: o feriado nacional
 > é computado por si. Um dia não marcado em nenhuma lista e que não seja feriado continua valendo 0.
 
-> 📌 **De onde vem a lista de feriados nacionais.** De uma planilha homologada, transcrita em
-> `feriados.ts` (cópia de `temp/feriados.json`, que não vai a produção). Ela cobre **1990-2050** e
+> 📌 **De onde vem a lista de feriados nacionais.** De uma planilha homologada, versionada em
+> `dados/feriados.json` e transcrita em `feriados.ts` (o motor precisa do `Set` pronto em runtime,
+> sem ler arquivo). Ela cobre **1990-2050** e
 > registra o que a lei diz **em cada ano** — a Consciência Negra só entra em 2024, Finados não é
 > feriado em todos os anos, e 1990 e 1994 têm as Eleições gerais. Feriados **móveis** (Carnaval,
 > Sexta-feira Santa, Corpus Christi) **não** estão na lista, e derivá-los por Páscoa reintroduziria

@@ -52,7 +52,7 @@ Quando não há expediente em um dia completo, contam como um dia inteiro (das 0
 ### Feriados nacionais
 Feriados nacionais também podem contar integralmente (24 horas), sem necessidade de especificar o dia da semana — basta marcar o checkbox.
 
-A lista **não é digitada por você**: ela vem de uma planilha homologada de feriados, que cobre **1990 a 2050**.
+A lista **não é digitada por você**: ela vem de uma planilha homologada de feriados, versionada junto do produto, que cobre **1990 a 2050**.
 
 > ⚠️ São feriados **nacionais**. Para um feriado estadual ou municipal, use o campo **"Feriados de recolhimento integral"** no modo avançado.
 
