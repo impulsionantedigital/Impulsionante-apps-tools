@@ -10,8 +10,9 @@ function resultado(parcial: Partial<ResultadoCalculo>): ResultadoCalculo {
     saldoMinutos: 0,
     saldoHoras: '00:00',
     intervalosConsolidados: [],
-    intervalosExcluidos: [],
-    algoritmoVersao: 'RN-1.1',
+    diasUteis: 0,
+    diasIntegrais: 0,
+    algoritmoVersao: 'RN-2.0',
     ...parcial,
   }
 }

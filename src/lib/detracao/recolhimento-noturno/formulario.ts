@@ -6,7 +6,7 @@
 
 import { proximoDia } from './intervalos'
 import { diaSemanaDe } from './motor'
-import type { EntradaCalculo, Intervalo, IntervaloComMotivo, SegmentoRegra, Weekday } from './tipos'
+import type { EntradaCalculo, SegmentoRegra, Weekday } from './tipos'
 
 export type SegmentoFormulario = {
   dataInicio: string
@@ -18,8 +18,7 @@ export type SegmentoFormulario = {
   diasSemanaNoturno: Weekday[]
   diasFolgaIntegral: Weekday[]
   feriadosIntegral: string[]
-  intervalosAdicionais: Intervalo[]
-  intervalosExcluidos: IntervaloComMotivo[]
+  incluirFeriadosUteis: boolean
 }
 
 export type EntradaFormulario = {
@@ -81,8 +80,7 @@ export function segmentoParaRegra(sf: SegmentoFormulario): SegmentoRegra {
     diasSemanaNoturno: sf.diasSemanaNoturno,
     diasFolgaIntegral: sf.diasFolgaIntegral,
     feriadosIntegral: sf.feriadosIntegral,
-    intervalosAdicionais: sf.intervalosAdicionais,
-    intervalosExcluidos: sf.intervalosExcluidos,
+    incluirFeriadosUteis: sf.incluirFeriadosUteis,
   }
 }
 
@@ -104,7 +102,8 @@ export function segmentoFormularioEmBranco(): SegmentoFormulario {
     diasSemanaNoturno: [],
     diasFolgaIntegral: [],
     feriadosIntegral: [],
-    intervalosAdicionais: [],
-    intervalosExcluidos: [],
+    // Desmarcado por padrão: computar feriado como dia integral é uma escolha jurídica do caso,
+    // não um default que o produto presume pelo membro.
+    incluirFeriadosUteis: false,
   }
 }

@@ -16,7 +16,8 @@ export function mesmoResultado(a: ResultadoCalculo, b: ResultadoCalculo): boolea
     a.diasDetracao === b.diasDetracao &&
     a.saldoMinutos === b.saldoMinutos &&
     a.algoritmoVersao === b.algoritmoVersao &&
-    mesmosIntervalos(a.intervalosConsolidados, b.intervalosConsolidados) &&
-    mesmosIntervalos(a.intervalosExcluidos, b.intervalosExcluidos)
+    a.diasUteis === b.diasUteis &&
+    a.diasIntegrais === b.diasIntegrais &&
+    mesmosIntervalos(a.intervalosConsolidados, b.intervalosConsolidados)
   )
 }

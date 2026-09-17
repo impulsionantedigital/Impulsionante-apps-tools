@@ -11,7 +11,7 @@ A Calculadora de Detração por Recolhimento Noturno ajuda você a:
 - **Somar horas de recolhimento noturno** registradas durante um período
 - **Contar dias de folga integral** (quando não há expediente)
 - **Converter para dias de 24 horas** conforme estabelecido na Tema 1.155/STJ
-- **Gerar memória de cálculo auditável** com todos os intervalos registrados, facilitando a análise e comprovação de cálculos
+- **Gerar memória de cálculo auditável** com todos os períodos computados, facilitando a análise e comprovação de cálculos
 
 ---
 
@@ -25,10 +25,12 @@ A Calculadora de Detração por Recolhimento Noturno ajuda você a:
 - **Data de término:** último dia do período a ser calculado
 - **Horários do recolhimento noturno:** hora de início e hora de término (ex.: 22:00 até 06:00)
 - **Dias da semana:** quais dias da semana estava em recolhimento (segunda, terça, etc.)
+- **Feriados nacionais:** marque *"Computar feriados nacionais que caem em dias úteis como dia integral (24h)"* se os feriados nacionais do período devem contar como dia cheio
 
-### 3. (Opcional) Adicionar intervalos e exclusões
-- **Intervalos extras:** se houver dias ou períodos fora do padrão semanal
-- **Exclusões:** registrar dias que não contam (ex.: quando o recolhimento foi suspenso), incluindo o motivo
+### 3. (Modo avançado) Ajustar a regra
+- **Vários segmentos:** quando a regra muda no meio do período (mudança de horário, revogação)
+- **Data/hora exata:** quando a cautelar começa ou termina no meio do dia
+- **Feriados de recolhimento integral:** para um feriado **estadual ou municipal**, ou outro dia que a decisão mande computar inteiro
 
 ### 4. Calcular
 - Clique em **"Calcular"** para processar todos os dados
@@ -48,7 +50,16 @@ Período entre duas horas específicas em um dia de semana definido. Por exemplo
 Quando não há expediente em um dia completo, contam como um dia inteiro (das 00:00 às 23:59).
 
 ### Feriados nacionais
-Feriados nacionais também contam integralmente (24 horas), sem necessidade de especificar o dia da semana.
+Feriados nacionais também podem contar integralmente (24 horas), sem necessidade de especificar o dia da semana — basta marcar o checkbox.
+
+A lista **não é digitada por você**: ela vem de uma planilha homologada de feriados, que cobre **1990 a 2050**.
+
+> ⚠️ São feriados **nacionais**. Para um feriado estadual ou municipal, use o campo **"Feriados de recolhimento integral"** no modo avançado.
+
+> ⚠️ A lista acompanha o que a lei diz **em cada ano**: a Consciência Negra (20/11) só entra a partir de **2024**, e feriados móveis (Carnaval, Sexta-feira Santa, Corpus Christi) **não** estão na lista. Fora da faixa 1990-2050, nenhum feriado é computado.
+
+### Precedência dos dias
+Quando um dia se encaixa em mais de uma regra, vale **nesta ordem**: dia de folga integral → feriado nacional (com o checkbox marcado) → dia de horário noturno. Assim um feriado que cai no sábado vale 24 horas uma vez só, e não 48.
 
 ### Monitoramento eletrônico
 Se houver monitoramento eletrônico durante o recolhimento, isso é registrado como informação apenas. Não altera o cálculo de detração.
@@ -64,7 +75,7 @@ Se houver monitoramento eletrônico durante o recolhimento, isso é registrado c
 ## Documentação técnica
 | Arquivo | Para quê |
 |---|---|
-| [`logica.md`](logica.md) | A regra jurídica e o algoritmo versionados (`RN-1.0`) — é este arquivo que responde "por que este cálculo deu esse número" um ano depois |
+| [`logica.md`](logica.md) | A regra jurídica e a lista de feriados versionados (`RN-2.0`) — é este arquivo que responde "por que este cálculo deu esse número" um ano depois |
 | [`verificacoes-de-conjunto.md`](verificacoes-de-conjunto.md) | **Leia antes de mexer na impressão.** O que a folha de impressão leva ao anexo de petição e por quê, o defeito do total ausente que foi corrigido em 16/09/2026, e como rodar a tela localmente |
 
 Documentos de origem, versionados junto:

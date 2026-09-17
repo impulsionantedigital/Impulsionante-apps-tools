@@ -66,34 +66,9 @@ export function mergeIntervalos(faixas: Faixa[]): Faixa[] {
   return unidas
 }
 
-/** Recorta `excluidas` de `faixas`, inclusive quando a exclusão cai no meio de uma faixa (parte
- *  em dois pedaços) ou cruza a borda dela (corta só o pedaço que sobrepõe). */
-export function subtrairIntervalos(faixas: Faixa[], excluidas: Faixa[]): Faixa[] {
-  if (excluidas.length === 0) return faixas
-  const excluidasUnidas = mergeIntervalos(excluidas)
-  let resultado = faixas
-  for (const exclusao of excluidasUnidas) {
-    const proximo: Faixa[] = []
-    for (const faixa of resultado) {
-      if (exclusao.fim <= faixa.inicio || exclusao.inicio >= faixa.fim) {
-        proximo.push(faixa)
-        continue
-      }
-      if (exclusao.inicio > faixa.inicio) {
-        proximo.push({ inicio: faixa.inicio, fim: Math.min(exclusao.inicio, faixa.fim) })
-      }
-      if (exclusao.fim < faixa.fim) {
-        proximo.push({ inicio: Math.max(exclusao.fim, faixa.inicio), fim: faixa.fim })
-      }
-    }
-    resultado = proximo
-  }
-  return resultado
-}
-
-/** Sempre inteiro: as faixas vêm de horas `HH:MM` (sem segundos), então o total em ms é sempre
- *  múltiplo de 60 000 — o `floor` aqui é exatidão, não arredondamento. */
-export function duracaoMinutos(faixas: Faixa[]): number {
-  const totalMs = faixas.reduce((soma, f) => soma + (f.fim - f.inicio), 0)
-  return Math.floor(totalMs / 60_000)
-}
+// 🔴 `subtrairIntervalos` e `duracaoMinutos` VIVIAM aqui e foram removidas com os intervalos
+// excluídos: a calculadora não subtrai tempo de faixa nenhuma. O total dela é uma contagem de dias
+// (`diasIntegrais × 24h + diasUteis × H_NOTURNO`), e as faixas só MATERIALIZAM essa conta para a
+// memória de cálculo. Manter uma função de subtração por perto convidaria a reintroduzir a exclusão
+// parcial pela porta dos fundos — e ela não teria como descontar de um número que não é soma de
+// faixas.

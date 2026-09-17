@@ -44,8 +44,9 @@ function entradaInicial(inicial?: EntradaCalculo): EntradaFormulario {
       diasSemanaNoturno: s.diasSemanaNoturno,
       diasFolgaIntegral: s.diasFolgaIntegral,
       feriadosIntegral: s.feriadosIntegral,
-      intervalosAdicionais: s.intervalosAdicionais,
-      intervalosExcluidos: s.intervalosExcluidos,
+      // `?? false`: cálculos gravados antes deste campo existir (RN-1.1 e anteriores) não o têm
+      // no jsonb, e reabri-los não pode quebrar a tela.
+      incluirFeriadosUteis: s.incluirFeriadosUteis ?? false,
     })),
   }
 }

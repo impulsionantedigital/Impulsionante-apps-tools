@@ -46,18 +46,6 @@ export default function Resultado({ resultado }: { resultado: ResultadoCalculo }
           </ul>
         )}
 
-        {resultado.intervalosExcluidos.length > 0 && (
-          <>
-            <b className={estilos.tituloSecao}>Intervalos excluídos</b>
-            <ul className={estilos.listaMemoria}>
-              {resultado.intervalosExcluidos.map((iv, i) => (
-                <li key={i}>
-                  {formatarInstanteExibicao(iv.inicio)} — {formatarInstanteExibicao(iv.fim)} · {iv.motivo}
-                </li>
-              ))}
-            </ul>
-          </>
-        )}
       </details>
     </div>
   )

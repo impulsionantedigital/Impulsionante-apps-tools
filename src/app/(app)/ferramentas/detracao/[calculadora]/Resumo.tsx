@@ -1,7 +1,17 @@
 import { calcularResumoDetalhado } from '@/lib/detracao/recolhimento-noturno/resumo'
+import { feriadosNacionais } from '@/lib/detracao/recolhimento-noturno/feriados'
 import type { EntradaFormulario } from '@/lib/detracao/recolhimento-noturno/formulario'
 import type { ResultadoCalculo } from '@/lib/detracao/recolhimento-noturno/tipos'
 import estilos from './calculadora.module.css'
+
+/** Os feriados nacionais que cobrem os segmentos do formulário — mesma janela do motor. */
+function feriadosDoPeriodoDosSegmentos(entrada: EntradaFormulario): string[] {
+  const datas = entrada.segmentos.flatMap((s) => [s.dataInicio, s.dataFim]).filter(Boolean)
+  if (datas.length === 0) return []
+  const anos = datas.map((d) => Number(d.slice(0, 4))).filter(Number.isFinite)
+  if (anos.length === 0) return []
+  return feriadosNacionais(Math.min(...anos), Math.max(...anos))
+}
 
 function formatarDataBR(dataISO: string): string {
   if (!dataISO) return '—'
@@ -39,7 +49,13 @@ export default function Resumo({
   resultado: ResultadoCalculo
   observacoes?: string
 }) {
-  const feriados = entrada.segmentos.flatMap((s) => s.feriadosIntegral).filter(Boolean)
+  // Os feriados que a classificação por categoria conhece: os DECLARADOS à mão em cada segmento e,
+  // quando o checkbox está ligado, também os NACIONAIS do (`feriados.ts`) — sem estes
+  // últimos, um feriado nacional computado a 24h apareceria no resumo como "dia útil".
+  const feriados = [
+    ...entrada.segmentos.flatMap((s) => s.feriadosIntegral),
+    ...(entrada.segmentos.some((s) => s.incluirFeriadosUteis) ? feriadosDoPeriodoDosSegmentos(entrada) : []),
+  ].filter(Boolean)
   const categorias = calcularResumoDetalhado(resultado.intervalosConsolidados, feriados)
   const total = `Você tem ${resultado.diasDetracao} dias de detração`
   // 🔴 O rótulo diz a UNIDADE (dias de 24h) porque abaixo, em "Composição por dia de calendário",

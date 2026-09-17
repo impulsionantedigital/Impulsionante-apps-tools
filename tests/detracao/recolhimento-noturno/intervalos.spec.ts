@@ -8,8 +8,6 @@ import {
   formatarInstante,
   intersectar,
   mergeIntervalos,
-  subtrairIntervalos,
-  duracaoMinutos,
 } from '@/lib/detracao/recolhimento-noturno/intervalos'
 
 describe('intervalos — funções puras', () => {
@@ -49,22 +47,7 @@ describe('intervalos — funções puras', () => {
     ])
   })
 
-  it('subtrairIntervalos recorta dos dois lados e do meio', () => {
-    const base = [{ inicio: 0, fim: 100 }]
-    expect(subtrairIntervalos(base, [{ inicio: -10, fim: 10 }])).toEqual([{ inicio: 10, fim: 100 }])
-    expect(subtrairIntervalos(base, [{ inicio: 90, fim: 200 }])).toEqual([{ inicio: 0, fim: 90 }])
-    expect(subtrairIntervalos(base, [{ inicio: 40, fim: 60 }])).toEqual([
-      { inicio: 0, fim: 40 },
-      { inicio: 60, fim: 100 },
-    ])
-  })
-
-  it('duracaoMinutos soma em minutos inteiros', () => {
-    expect(
-      duracaoMinutos([
-        { inicio: 0, fim: 60_000 },
-        { inicio: 100_000, fim: 160_000 },
-      ]),
-    ).toBe(2)
-  })
+  // 🔴 `subtrairIntervalos` e `duracaoMinutos` foram REMOVIDAS: a calculadora não subtrai tempo de
+  // faixa e não soma faixas — o total dela é contagem de dias (ver `motor.ts`). Se um teste aqui
+  // voltar a existir para elas, alguém reintroduziu a exclusão parcial pela porta dos fundos.
 })

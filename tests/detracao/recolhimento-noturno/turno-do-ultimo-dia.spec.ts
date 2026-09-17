@@ -4,8 +4,10 @@
 // cortado a zero, e o período inteiro saía com 1 dia a menos do que a conta da referência
 // (`dias × horas ÷ 24`).
 //
-// Causa: "Fim da cautelar = 01/01/2026" virava a janela `[..., 02/01/2026T00:00)` — e o turno que
-// começa às 22:00 de 01/01/2026 caía FORA dela. O último dia marcado não gerava turno.
+// 🔴 A janela estendida da RN-1.1 CONTINUA existindo (ver `fimDaJanela` em `formulario.ts`): é ela
+// que faz o último dia do período ser UM dia de calendário tocado, e não meio. A diferença da
+// RN-2.0 é o que o motor FAZ com esse dia — conta-o pela regra (24h ou H_NOTURNO), em vez de somar
+// o pedaço de faixa recortado pela janela. O total deixou de ser a soma das faixas.
 //
 // Regra correta (Tema Repetitivo 1.155/STJ, item 3): as horas de recolhimento noturno e nos dias
 // de folga são computadas. Se o usuário diz que a cautelar vigeu até 01/01/2026, o turno das 22:00
@@ -74,8 +76,11 @@ describe('o turno noturno do último dia conta', () => {
 
   it('o cenário da tela (01/01/2020 a 01/01/2026, todos os dias, 22h–06h) dá 731 dias', () => {
     const r = calcular({ timezone: 'America/Sao_Paulo', segmentos: [regra('2020-01-01', '2026-01-01')] })
-    // 2193 dias tocados × 8h = 17544h = 731 dias exatos — o mesmo número da calculadora de
-    // referência. Antes da correção dava 17538h / 730 dias (6h do último turno eram perdidas).
+    // 2193 dias de calendário com turno dentro da janela × 8h = 17544h = 731 dias exatos — o
+    // MESMO número de referência da RN-1.1. Na RN-2.0 o dia vale a REGRA (8h) em vez do pedaço
+    // de faixa recortado pela janela, e a janela estendida da RN-1.1 (`fimDaJanela`) faz o último
+    // dia entrar como dia cheio — as duas coisas concordam aqui.
+    expect(r.diasUteis).toBe(2193)
     expect(r.totalMinutos).toBe(2193 * 8 * 60)
     expect(r.totalHoras).toBe('17544:00')
     expect(r.diasDetracao).toBe(731)

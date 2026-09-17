@@ -7,11 +7,6 @@ import type { EntradaCalculo, ResultadoCalculo } from '@/lib/detracao/recolhimen
 // Módulo SEM `'use server'` de propósito, mesma razão do `preparar.ts` do CIC: é lógica pura
 // (validação + recálculo), testável direto, sem sessão nem rede.
 
-const Intervalo = z.object({ inicio: z.string().min(1), fim: z.string().min(1) })
-const IntervaloComMotivo = Intervalo.extend({
-  motivo: z.string().trim().min(1, 'Descreva o motivo da exclusão.'),
-})
-
 const Segmento = z.object({
   inicio: z.string().min(1),
   fim: z.string().min(1),
@@ -20,8 +15,9 @@ const Segmento = z.object({
   diasSemanaNoturno: z.array(z.string()),
   diasFolgaIntegral: z.array(z.string()),
   feriadosIntegral: z.array(z.string()),
-  intervalosAdicionais: z.array(Intervalo),
-  intervalosExcluidos: z.array(IntervaloComMotivo),
+  // `.default(false)`: cálculos gravados com RN-1.1 não têm este campo, e sem o default eles
+  // falhariam a validação ao reabrir — o campo novo não pode invalidar o que já está no banco.
+  incluirFeriadosUteis: z.boolean().default(false),
 })
 
 export const Dados = z.object({

@@ -26,8 +26,8 @@ describe('contrato — reconciliação catálogo ↔ motor ↔ rotas', () => {
     expect(produtoPorSlug('recolhimento-noturno')?.id).toBe('detracao-recolhimento-noturno')
   })
 
-  it('Test 4: algoritmoVersao matches RN-1.1', () => {
-    expect(ALGORITMO_VERSAO).toBe('RN-1.1')
+  it('Test 4: algoritmoVersao matches RN-2.0', () => {
+    expect(ALGORITMO_VERSAO).toBe('RN-2.0')
   })
 
   it('Test 5: Motor calcular is importable and callable', () => {
@@ -58,15 +58,14 @@ describe('contrato — reconciliação catálogo ↔ motor ↔ rotas', () => {
           horaInicioNoturno: '22:00',
           horaFimNoturno: '06:00',
           diasSemanaNoturno: [],
-          diasFolgaIntegral: [],
+          diasFolgaIntegral: ['THU'],
           feriadosIntegral: [],
-          intervalosAdicionais: [{ inicio: '2026-01-01T00:00:00', fim: '2026-01-02T00:00:00' }],
-          intervalosExcluidos: [],
+          incluirFeriadosUteis: false,
         },
       ],
     })
     expect(resultado.totalMinutos).toBe(1440)
     expect(resultado.diasDetracao).toBe(1)
-    expect(resultado.algoritmoVersao).toBe('RN-1.1')
+    expect(resultado.algoritmoVersao).toBe('RN-2.0')
   })
 })

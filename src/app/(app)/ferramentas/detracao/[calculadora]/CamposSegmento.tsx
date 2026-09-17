@@ -3,9 +3,8 @@
 import { Plus, Trash2 } from 'lucide-react'
 import Botao from '@/components/ui/Botao'
 import { Campo, Entrada as EntradaControle } from '@/components/ui/Campo'
-import EditorIntervalos from './EditorIntervalos'
 import { ROTULOS_DIA_SEMANA, WEEKDAYS } from '@/lib/detracao/recolhimento-noturno/tipos'
-import type { Intervalo, IntervaloComMotivo, Weekday } from '@/lib/detracao/recolhimento-noturno/tipos'
+import type { Weekday } from '@/lib/detracao/recolhimento-noturno/tipos'
 import type { SegmentoFormulario } from '@/lib/detracao/recolhimento-noturno/formulario'
 import estilos from './calculadora.module.css'
 
@@ -114,6 +113,17 @@ export default function CamposSegmento({
           aoMudar={(v) => set('diasFolgaIntegral', v)}
         />
 
+        {/* 🔴 Fica no modo SIMPLES também, e não só no avançado: é uma escolha jurídica do caso
+         *  (computar feriado nacional como dia cheio), não uma configuração de exceção. */}
+        <label className={estilos.alternadorModo}>
+          <input
+            type="checkbox"
+            checked={segmento.incluirFeriadosUteis}
+            onChange={(e) => set('incluirFeriadosUteis', e.target.checked)}
+          />
+          Computar feriados nacionais que caem em dias úteis como dia integral (24h)
+        </label>
+
         {avancado && (
           <>
             <div className={estilos.editorLista}>
@@ -151,23 +161,6 @@ export default function CamposSegmento({
               ))}
             </div>
 
-            <EditorIntervalos<Intervalo>
-              titulo="Intervalos adicionais"
-              ajuda="Restrições especiais que não seguem o padrão semanal."
-              itens={segmento.intervalosAdicionais}
-              aoMudar={(v) => set('intervalosAdicionais', v)}
-              comMotivo={false}
-              emBranco={{ inicio: '', fim: '' }}
-            />
-
-            <EditorIntervalos<IntervaloComMotivo>
-              titulo="Exclusões (descumprimento, viagem autorizada…)"
-              ajuda="Reduzem o total pela interseção temporal excluída — nunca por falta de monitoramento eletrônico."
-              itens={segmento.intervalosExcluidos}
-              aoMudar={(v) => set('intervalosExcluidos', v)}
-              comMotivo
-              emBranco={{ inicio: '', fim: '', motivo: '' }}
-            />
           </>
         )}
       </div>
