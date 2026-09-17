@@ -137,6 +137,9 @@ export default async function EditarCalculo({
         versao={versao.versao}
         resultadoSalvo={editavel ? undefined : calculo.resultado}
         somenteLeitura={!editavel}
+        inicial={calculo.entrada}
+        calculoId={calculo.id}
+        tituloInicial={calculo.titulo}
       />
 
       <ExcluirCalculo id={calculo.id} />
