@@ -8,13 +8,12 @@ const ENTRADA: EntradaCalculo = {
   timezone: 'America/Sao_Paulo',
   segmentos: [
     {
-      inicio: '2026-01-01T00:00:00',
-      fim: '2026-01-02T00:00:00',
+      dataInicio: '2026-01-01',
+      dataFim: '2026-01-02',
       horaInicioNoturno: '22:00',
       horaFimNoturno: '06:00',
-      diasSemanaNoturno: [],
-      // Quinta 01/01/2026 — um dia de folga integral, para que a entrada tenha total > 0.
-      diasFolgaIntegral: ['THU'],
+      diasSemanaNoturno: ['THU'],
+      diasFolgaIntegral: [],
       feriadosIntegral: [],
       incluirFeriadosUteis: false,
     },
@@ -44,9 +43,9 @@ describe('mesmoResultado', () => {
       saldoMinutos: r.saldoMinutos,
       totalHoras: r.totalHoras,
       saldoHoras: r.saldoHoras,
-      intervalosConsolidados: r.intervalosConsolidados,
       diasUteis: r.diasUteis,
       diasIntegrais: r.diasIntegrais,
+      composicao: r.composicao,
     }
     expect(mesmoResultado(r, outraOrdem)).toBe(true)
     void reordenado // só para não sobrar variável não usada

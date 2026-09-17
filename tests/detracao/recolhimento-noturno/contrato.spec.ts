@@ -53,19 +53,20 @@ describe('contrato — reconciliação catálogo ↔ motor ↔ rotas', () => {
       timezone: 'America/Sao_Paulo',
       segmentos: [
         {
-          inicio: '2026-01-01T00:00:00',
-          fim: '2026-01-02T00:00:00',
+          dataInicio: '2026-01-01',
+          dataFim: '2026-01-02',
           horaInicioNoturno: '22:00',
           horaFimNoturno: '06:00',
-          diasSemanaNoturno: [],
-          diasFolgaIntegral: ['THU'],
+          diasSemanaNoturno: ['THU', 'FRI'],
+          diasFolgaIntegral: [],
           feriadosIntegral: [],
           incluirFeriadosUteis: false,
         },
       ],
     })
-    expect(resultado.totalMinutos).toBe(1440)
-    expect(resultado.diasDetracao).toBe(1)
+    // Dois dias de regra noturna (01/01 quinta e 02/01 sexta) × 8h = 16h.
+    expect(resultado.totalMinutos).toBe(16 * 60)
+    expect(resultado.diasDetracao).toBe(0)
     expect(resultado.algoritmoVersao).toBe('RN-2.0')
   })
 })

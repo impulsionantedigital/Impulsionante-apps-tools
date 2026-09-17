@@ -1,17 +1,6 @@
-import { calcularResumoDetalhado } from '@/lib/detracao/recolhimento-noturno/resumo'
-import { feriadosNacionais } from '@/lib/detracao/recolhimento-noturno/feriados'
 import type { EntradaFormulario } from '@/lib/detracao/recolhimento-noturno/formulario'
 import type { ResultadoCalculo } from '@/lib/detracao/recolhimento-noturno/tipos'
 import estilos from './calculadora.module.css'
-
-/** Os feriados nacionais que cobrem os segmentos do formulário — mesma janela do motor. */
-function feriadosDoPeriodoDosSegmentos(entrada: EntradaFormulario): string[] {
-  const datas = entrada.segmentos.flatMap((s) => [s.dataInicio, s.dataFim]).filter(Boolean)
-  if (datas.length === 0) return []
-  const anos = datas.map((d) => Number(d.slice(0, 4))).filter(Number.isFinite)
-  if (anos.length === 0) return []
-  return feriadosNacionais(Math.min(...anos), Math.max(...anos))
-}
 
 function formatarDataBR(dataISO: string): string {
   if (!dataISO) return '—'
@@ -49,14 +38,11 @@ export default function Resumo({
   resultado: ResultadoCalculo
   observacoes?: string
 }) {
-  // Os feriados que a classificação por categoria conhece: os DECLARADOS à mão em cada segmento e,
-  // quando o checkbox está ligado, também os NACIONAIS do (`feriados.ts`) — sem estes
-  // últimos, um feriado nacional computado a 24h apareceria no resumo como "dia útil".
-  const feriados = [
-    ...entrada.segmentos.flatMap((s) => s.feriadosIntegral),
-    ...(entrada.segmentos.some((s) => s.incluirFeriadosUteis) ? feriadosDoPeriodoDosSegmentos(entrada) : []),
-  ].filter(Boolean)
-  const categorias = calcularResumoDetalhado(resultado.intervalosConsolidados, feriados)
+  // 🔴 A composição vem PRONTA do motor. Reconstruí-la aqui a partir de `intervalosConsolidados`
+  // dava número errado (a versão anterior fatiava cada turno na meia-noite, e um dia útil de
+  // 22:00→06:00 valia 2h em vez de 8h); as faixas ainda se fundem quando se tocam, então nem a
+  // contagem delas serve. Quem conta os dias é o motor, e ele informa abertura por categoria.
+  const { composicao } = resultado
   const total = `Você tem ${resultado.diasDetracao} dias de detração`
   // 🔴 O rótulo diz a UNIDADE (dias de 24h) porque abaixo, em "Composição por dia de calendário",
   // "dias" significa outra coisa. Sem esta desambiguação o advogado lê os dois como o mesmo número.
@@ -104,31 +90,31 @@ export default function Resumo({
         </div>
       ))}
 
-      {/* 🔴 "dias de calendário" aqui, e NÃO "dias de detração" do bloco acima. São métricas
-       *  diferentes e nunca coincidem: acima, `diasDetracao = floor(totalMinutos / 1440)` (dias de
-       *  24h acumulados); aqui, quantos DIAS DO CALENDÁRIO foram tocados por algum recolhimento —
-       *  um turno de 22:00 às 06:00 toca dois dias de calendário e vale 0 dias de detração. Sem
-       *  esta distinção no rótulo, a tela parece contradizer a si mesma. */}
+      {/* 🔴 "dias de cômputo" aqui, e NÃO "dias de detração" do bloco acima. São métricas
+       *  diferentes: acima, `diasDetracao = floor(totalMinutos / 1440)` (dias de 24h acumulados);
+       *  aqui, quantos dias de regra entraram na conta. Cada linha é `dias × valor do dia` — a
+       *  multiplicação que o membro confere de cabeça, e que a soma das três tem de reproduzir o
+       *  "Total computável" do topo. */}
       <div className={estilos.resumoCategorias}>
         <div className={estilos.resumoLinha}>
-          <span className={estilos.resumoSubCategoria}>Composição por dia de calendário (não é o total de detração)</span>
+          <span className={estilos.resumoSubCategoria}>Composição do cômputo (não é o total de detração)</span>
         </div>
         <div className={estilos.resumoLinha}>
-          <span>Dias úteis alcançados</span>
+          <span>Dias de regra noturna</span>
           <b>
-            {categorias.util.dias} dias — {formatarHoras(categorias.util.minutos)} horas
+            {composicao.diasUteis} dias — {formatarHoras(composicao.minutosUteis)} horas
           </b>
         </div>
         <div className={estilos.resumoLinha}>
-          <span>Finais de semana alcançados</span>
+          <span>Feriados de recolhimento integral</span>
           <b>
-            {categorias.fimDeSemana.dias} dias — {formatarHoras(categorias.fimDeSemana.minutos)} horas
+            {composicao.diasFeriados} dias — {formatarHoras(composicao.diasFeriados * 1440)} horas
           </b>
         </div>
         <div className={estilos.resumoLinha}>
-          <span>Feriados alcançados</span>
+          <span>Dias de folga integral (fins de semana)</span>
           <b>
-            {categorias.feriado.dias} dias — {formatarHoras(categorias.feriado.minutos)} horas
+            {composicao.diasFolgaIntegral} dias — {formatarHoras(composicao.diasFolgaIntegral * 1440)} horas
           </b>
         </div>
       </div>

@@ -5,14 +5,20 @@ import { FileText } from 'lucide-react'
 import Botao from '@/components/ui/Botao'
 import PeticaoOverlay from './PeticaoOverlay'
 import { gerarTextoPeticao } from '@/lib/detracao/recolhimento-noturno/peticao'
-import type { ResultadoCalculo } from '@/lib/detracao/recolhimento-noturno/tipos'
+import type { EntradaCalculo, ResultadoCalculo } from '@/lib/detracao/recolhimento-noturno/tipos'
 
-/** Some quando não há intervalo consolidado — nunca promete uma petição que o overlay mostraria
+/** Some quando não há período informado — nunca promete uma petição que o overlay mostraria
  *  em branco (mesmo critério do BotaoPeticao do CIC). */
-export default function BotaoPeticao({ resultado }: { resultado: ResultadoCalculo }) {
+export default function BotaoPeticao({
+  entrada,
+  resultado,
+}: {
+  entrada: EntradaCalculo
+  resultado: ResultadoCalculo
+}) {
   const [aberto, setAberto] = useState(false)
 
-  const texto = gerarTextoPeticao(resultado)
+  const texto = gerarTextoPeticao(entrada, resultado)
   if (texto === '') return null
 
   return (

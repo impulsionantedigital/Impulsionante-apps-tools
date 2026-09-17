@@ -9,18 +9,10 @@ import BarraSalvar from './BarraSalvar'
 import BotaoImprimir from './BotaoImprimir'
 import BotaoPeticao from './BotaoPeticao'
 import { calcular } from '@/lib/detracao/recolhimento-noturno/motor'
-import { paraInstante } from '@/lib/detracao/recolhimento-noturno/intervalos'
 import { entradaFormularioParaCalculo, segmentoFormularioEmBranco } from '@/lib/detracao/recolhimento-noturno/formulario'
 import type { EntradaFormulario } from '@/lib/detracao/recolhimento-noturno/formulario'
 import type { EntradaCalculo, ResultadoCalculo } from '@/lib/detracao/recolhimento-noturno/tipos'
 import estilos from './calculadora.module.css'
-
-/** O `fim` salvo é sempre exclusivo (ex.: "dia seguinte às 00:00" para representar o último dia
- *  inteiro — ver `formulario.ts`). Mostrar essa data direto no campo "Fim da cautelar" adiantaria
- *  um dia na tela; a data exibida é a do ÚLTIMO INSTANTE ainda dentro da janela. */
-function dataFimExibicao(fimISO: string): string {
-  return new Date(paraInstante(fimISO) - 1).toISOString().slice(0, 10)
-}
 
 function entradaInicial(inicial?: EntradaCalculo): EntradaFormulario {
   if (!inicial) {
@@ -30,15 +22,9 @@ function entradaInicial(inicial?: EntradaCalculo): EntradaFormulario {
     timezone: inicial.timezone,
     observacoes: inicial.observacoes,
     monitoramentoEletronico: inicial.monitoramentoEletronico,
-    // O segmento salvo já tem `inicio`/`fim` exatos — reaproveitados como data/hora exata, para
-    // que reabrir um cálculo nunca perca precisão nem recalcule diferente do que foi gravado.
-    // `dataInicio`/`dataFim` só alimentam a EXIBIÇÃO do modo simples; quem manda no recálculo é
-    // sempre `dataHoraInicioExata`/`dataHoraFimExata` (ver `segmentoParaRegra`).
     segmentos: inicial.segmentos.map((s) => ({
-      dataInicio: s.inicio.slice(0, 10),
-      dataFim: dataFimExibicao(s.fim),
-      dataHoraInicioExata: s.inicio,
-      dataHoraFimExata: s.fim,
+      dataInicio: s.dataInicio,
+      dataFim: s.dataFim,
       horaInicioNoturno: s.horaInicioNoturno,
       horaFimNoturno: s.horaFimNoturno,
       diasSemanaNoturno: s.diasSemanaNoturno,
@@ -73,9 +59,10 @@ export default function Calculadora({
     if (!v) setEntrada((e) => ({ ...e, segmentos: e.segmentos.slice(0, 1) }))
   }
 
-  const resultado = useMemo<{ ok: true; valor: ResultadoCalculo } | { ok: false; erro: string }>(() => {
+  const calculo = useMemo<{ ok: true; entrada: EntradaCalculo; valor: ResultadoCalculo } | { ok: false; erro: string }>(() => {
     try {
-      return { ok: true, valor: calcular(entradaFormularioParaCalculo(entrada)) }
+      const e = entradaFormularioParaCalculo(entrada)
+      return { ok: true, entrada: e, valor: calcular(e) }
     } catch (err) {
       return { ok: false, erro: err instanceof Error ? err.message : 'Confira os dados do cálculo.' }
     }
@@ -92,7 +79,7 @@ export default function Calculadora({
         {somenteLeitura ? (
           <div className={estilos.barraImprimir}>
             <BotaoImprimir />
-            {resultado.ok && <BotaoPeticao resultado={resultado.valor} />}
+            {calculo.ok && <BotaoPeticao entrada={calculo.entrada} resultado={calculo.valor} />}
           </div>
         ) : (
           <BarraSalvar
@@ -103,21 +90,21 @@ export default function Calculadora({
             acoesExtras={
               <>
                 <BotaoImprimir />
-                {resultado.ok && <BotaoPeticao resultado={resultado.valor} />}
+                {calculo.ok && <BotaoPeticao entrada={calculo.entrada} resultado={calculo.valor} />}
               </>
             }
           />
         )}
-        {resultado.ok ? (
+        {calculo.ok ? (
           <>
             {/* Só no papel: identifica o caso no anexo. Ver CabecalhoAnexo.tsx. */}
             <CabecalhoAnexo titulo={titulo} calculoId={calculoId} />
-            <Resultado resultado={resultado.valor} />
-            <Resumo entrada={entrada} resultado={resultado.valor} observacoes={entrada.observacoes} />
+            <Resultado resultado={calculo.valor} />
+            <Resumo entrada={entrada} resultado={calculo.valor} observacoes={entrada.observacoes} />
           </>
         ) : (
           <p className={estilos.mensagem} data-tom="erro" role="alert">
-            {resultado.erro}
+            {calculo.erro}
           </p>
         )}
       </div>

@@ -6,8 +6,8 @@ import type { SegmentoRegra, Weekday } from '@/lib/detracao/recolhimento-noturno
 /** `SegmentoRegra` com todos os campos preenchidos — os testes só sobrescrevem o que importa. */
 function segmentoBase(overrides: Partial<SegmentoRegra>): SegmentoRegra {
   return {
-    inicio: '2026-01-01T00:00:00',
-    fim: '2026-01-02T00:00:00',
+    dataInicio: '2026-01-01',
+    dataFim: '2026-01-02',
     horaInicioNoturno: '22:00',
     horaFimNoturno: '06:00',
     diasSemanaNoturno: [],
@@ -23,115 +23,105 @@ const TODOS: Weekday[] = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']
 function calcular1(s: Partial<SegmentoRegra>) {
   return calcular({ timezone: 'America/Sao_Paulo', segmentos: [segmentoBase(s)] })
 }
-describe('motor — contagem de dias (PASSO 3 da spec)', () => {
-  it('dia de regra noturna vale H_NOTURNO, com turno que atravessa a meia-noite', () => {
-    // 22:00 → 06:00 = 8h. Uma segunda-feira (05/01/2026) marcada = 8h = 0 dias, saldo 08:00.
+
+describe('motor — contagem de dias', () => {
+  it('um dia de regra noturna vale o turno inteiro (22:00→06:00 = 8h)', () => {
+    // Segunda 05/01/2026. O turno atravessa a meia-noite, e isso é irrelevante: vale 8h no dia.
     const r = calcular1({
-      inicio: '2026-01-05T00:00:00',
-      fim: '2026-01-06T00:00:00',
+      dataInicio: '2026-01-05',
+      dataFim: '2026-01-05',
       diasSemanaNoturno: ['MON'],
     })
-    expect(r.totalMinutos).toBe(8 * 60)
     expect(r.diasUteis).toBe(1)
-    expect(r.diasIntegrais).toBe(0)
+    expect(r.totalMinutos).toBe(8 * 60)
     expect(r.diasDetracao).toBe(0)
     expect(r.saldoHoras).toBe('08:00')
   })
 
-  it('turno de 8h em duas segundas = 16h = 0 dias (fração não arredonda)', () => {
+  it('mesmo período com N dias marcados: total = N × 8h (é só multiplicar)', () => {
+    // 05/01 (seg), 12/01 (seg), 19/01 (seg) — três segundas.
     const r = calcular1({
-      inicio: '2026-01-05T00:00:00',
-      fim: '2026-01-13T00:00:00',
+      dataInicio: '2026-01-05',
+      dataFim: '2026-01-19',
       diasSemanaNoturno: ['MON'],
     })
-    expect(r.totalMinutos).toBe(16 * 60)
-    expect(r.diasUteis).toBe(2)
-    expect(r.diasDetracao).toBe(0)
+    expect(r.diasUteis).toBe(3)
+    expect(r.totalMinutos).toBe(3 * 8 * 60)
+    expect(r.diasDetracao).toBe(1)
   })
 
-  it('três segundas de 8h = 24h = exatamente 1 dia', () => {
+  it('o último dia do período CONTA — o fim é inclusivo', () => {
+    // 🔴 O que antes exigia estender uma janela até o fim do turno agora é simplesmente o dia
+    // estar no intervalo. "Fim da cautelar = 05/01" significa que 05/01 conta.
     const r = calcular1({
-      inicio: '2026-01-05T00:00:00',
-      fim: '2026-01-20T00:00:00',
+      dataInicio: '2026-01-05',
+      dataFim: '2026-01-05',
       diasSemanaNoturno: ['MON'],
     })
-    expect(r.totalMinutos).toBe(24 * 60)
-    expect(r.diasUteis).toBe(3)
-    expect(r.diasDetracao).toBe(1)
-    expect(r.saldoMinutos).toBe(0)
+    expect(r.diasUteis).toBe(1)
+    expect(r.totalMinutos).toBe(8 * 60)
+  })
+
+  it('o PRIMEIRO dia do período conta — o início é inclusivo', () => {
+    const r = calcular1({
+      dataInicio: '2026-01-05',
+      dataFim: '2026-01-06',
+      diasSemanaNoturno: ['MON'],
+    })
+    expect(r.diasUteis).toBe(1)
   })
 
   it('dia de folga integral vale 24h', () => {
-    // Sábado 03/01/2026 e domingo 04/01: 2 dias integrais = 48h = 2 dias.
+    // Sábado 03/01 e domingo 04/01 de 2026.
     const r = calcular1({
-      inicio: '2026-01-03T00:00:00',
-      fim: '2026-01-05T00:00:00',
+      dataInicio: '2026-01-03',
+      dataFim: '2026-01-04',
       diasFolgaIntegral: ['SAT', 'SUN'],
     })
-    expect(r.totalMinutos).toBe(48 * 60)
-    expect(r.diasIntegrais).toBe(2)
+    expect(r.composicao.diasFolgaIntegral).toBe(2)
+    expect(r.totalMinutos).toBe(2 * 1440)
     expect(r.diasDetracao).toBe(2)
   })
 
-  it('30 dias de turno 22h–05h (7h cada): 210h = 8 dias e 18h de saldo', () => {
+  it('ano inteiro de 2025: 256 dias de regra noturna × 8h', () => {
+    // 2025 tem 365 dias, 104 de fim de semana, 5 feriados em dia útil (com o checkbox).
     const r = calcular1({
-      inicio: '2026-02-01T00:00:00',
-      fim: '2026-03-03T00:00:00',
-      horaInicioNoturno: '22:00',
-      horaFimNoturno: '05:00',
-      diasSemanaNoturno: TODOS,
+      dataInicio: '2025-01-01',
+      dataFim: '2025-12-31',
+      diasSemanaNoturno: ['MON', 'TUE', 'WED', 'THU', 'FRI'],
+      diasFolgaIntegral: ['SAT', 'SUN'],
+      incluirFeriadosUteis: true,
     })
-    expect(r.diasUteis).toBe(30)
-    expect(r.totalMinutos).toBe(30 * 7 * 60)
-    expect(r.diasDetracao).toBe(8)
-    expect(r.saldoHoras).toBe('18:00')
+    // 365 = 104 (fds) + 5 (feriados em dia útil) + 256 (regra noturna).
+    expect(r.diasUteis + r.composicao.diasFeriados + r.composicao.diasFolgaIntegral).toBe(365)
+    expect(r.diasIntegrais).toBe(109)
+    expect(r.composicao.diasFolgaIntegral).toBe(104)
+    expect(r.composicao.diasFeriados).toBe(5)
+    expect(r.diasUteis).toBe(256)
+    // 🔴 As 256 noites valem 256 × 8h = 2048h — era ESTE o número que a tela mostrava como 1718h.
+    expect(r.composicao.minutosUteis).toBe(256 * 8 * 60)
+    expect(r.composicao.minutosUteis / 60).toBe(2048)
+    // O total soma também os 109 dias integrais (104 fins de semana + 5 feriados) × 24h.
+    expect(r.composicao.diasIntegrais).toBe(109)
+    expect(r.composicao.minutosIntegrais).toBe(109 * 1440)
+    expect(r.totalMinutos).toBe(256 * 8 * 60 + 109 * 1440)
+    expect(r.totalHoras).toBe('4664:00')
   })
 
-  it('folga integral tem PRECEDÊNCIA sobre a regra noturna: sábado nos dois grupos vale 24h', () => {
+  it('folga integral tem PRECEDÊNCIA sobre a regra noturna', () => {
     const r = calcular1({
-      inicio: '2026-01-03T00:00:00',
-      fim: '2026-01-04T00:00:00',
-      horaInicioNoturno: '22:00',
-      horaFimNoturno: '06:00',
+      dataInicio: '2026-01-03', // sábado
+      dataFim: '2026-01-03',
       diasSemanaNoturno: ['SAT'],
       diasFolgaIntegral: ['SAT'],
     })
-    expect(r.totalMinutos).toBe(24 * 60)
-    expect(r.diasIntegrais).toBe(1)
+    expect(r.composicao.diasFolgaIntegral).toBe(1)
     expect(r.diasUteis).toBe(0)
-  })
-
-  it('mudança de regra no meio do período: a contagem vale para os dias de cada segmento', () => {
-    const r = calcular({
-      timezone: 'America/Sao_Paulo',
-      segmentos: [
-        segmentoBase({
-          inicio: '2026-01-05T00:00:00', // segunda
-          fim: '2026-01-06T00:00:00',
-          horaInicioNoturno: '22:00',
-          horaFimNoturno: '23:00',
-          diasSemanaNoturno: ['MON'],
-        }),
-        segmentoBase({
-          inicio: '2026-03-02T00:00:00', // segunda
-          fim: '2026-03-03T00:00:00',
-          horaInicioNoturno: '20:00',
-          horaFimNoturno: '22:00',
-          diasSemanaNoturno: ['MON'],
-        }),
-      ],
-    })
-    // Os dois segmentos somam os seus dias úteis: 2 dias × H_NOTURNO do primeiro segmento (1h).
-    expect(r.diasUteis).toBe(2)
-    expect(r.totalMinutos).toBe(2 * 60)
+    expect(r.totalMinutos).toBe(1440)
   })
 
   it('ausência de monitoramento eletrônico não altera o resultado', () => {
-    const s = segmentoBase({
-      inicio: '2026-01-05T00:00:00',
-      fim: '2026-01-06T00:00:00',
-      diasSemanaNoturno: ['MON'],
-    })
+    const s = segmentoBase({ dataInicio: '2026-01-05', dataFim: '2026-01-05', diasSemanaNoturno: ['MON'] })
     const com = calcular({ timezone: 'America/Sao_Paulo', segmentos: [s], monitoramentoEletronico: 'sim' })
     const sem = calcular({ timezone: 'America/Sao_Paulo', segmentos: [s], monitoramentoEletronico: 'nao' })
     expect(sem.totalMinutos).toBe(com.totalMinutos)
@@ -141,156 +131,151 @@ describe('motor — contagem de dias (PASSO 3 da spec)', () => {
 
 describe('motor — feriados nacionais (checkbox `incluirFeriadosUteis`)', () => {
   it('desmarcado: feriado nacional em dia útil cai na regra noturna', () => {
-    // 01/01/2026 é quinta-feira e feriado nacional (Confraternização Universal).
+    // 01/01/2026 é quinta-feira e feriado nacional.
     const r = calcular1({
-      inicio: '2026-01-01T00:00:00',
-      fim: '2026-01-02T00:00:00',
+      dataInicio: '2026-01-01',
+      dataFim: '2026-01-01',
       diasSemanaNoturno: ['THU'],
       incluirFeriadosUteis: false,
     })
     expect(r.totalMinutos).toBe(8 * 60)
     expect(r.diasUteis).toBe(1)
-    expect(r.diasIntegrais).toBe(0)
+    expect(r.composicao.diasFeriados).toBe(0)
   })
 
-  it('marcado: feriado nacional em dia útil vale 24h', () => {
+  it('marcado: feriado nacional vale 24h', () => {
     const r = calcular1({
-      inicio: '2026-01-01T00:00:00',
-      fim: '2026-01-02T00:00:00',
+      dataInicio: '2026-01-01',
+      dataFim: '2026-01-01',
       diasSemanaNoturno: ['THU'],
       incluirFeriadosUteis: true,
     })
-    expect(r.totalMinutos).toBe(24 * 60)
-    expect(r.diasIntegrais).toBe(1)
+    expect(r.totalMinutos).toBe(1440)
+    expect(r.composicao.diasFeriados).toBe(1)
     expect(r.diasUteis).toBe(0)
     expect(r.diasDetracao).toBe(1)
   })
 
-  it('marcado: feriado nacional vale 24h mesmo se o dia da semana não está em `diasSemanaNoturno`', () => {
-    // 🔴 Leitura fiel do PASSO 3: a condição do feriado NÃO exige pertencimento a
-    // `dias_regra_noturna` — ela é independente da regra noturna do dia da semana.
+  it('feriado vale 24h mesmo se o dia da semana não está em `diasSemanaNoturno`', () => {
     const r = calcular1({
-      inicio: '2026-01-01T00:00:00',
-      fim: '2026-01-02T00:00:00',
+      dataInicio: '2026-01-01', // quinta
+      dataFim: '2026-01-01',
       diasSemanaNoturno: ['MON'],
       incluirFeriadosUteis: true,
     })
-    expect(r.totalMinutos).toBe(24 * 60)
-    expect(r.diasIntegrais).toBe(1)
-    expect(r.diasUteis).toBe(0)
+    expect(r.composicao.diasFeriados).toBe(1)
+    expect(r.totalMinutos).toBe(1440)
   })
 
   it('feriado que cai em folga integral computa 24h UMA vez (sem duplicar)', () => {
-    // 25/12/2026 é sexta-feira (Natal). Com sábado e domingo como folga integral e o Natal
-    // feriado: 3 dias integrais, não 4.
+    // 25/12/2026 é sexta (Natal). Com sáb/dom como folga integral: 25, 26 e 27 = 3 dias integrais.
     const r = calcular1({
-      inicio: '2026-12-25T00:00:00',
-      fim: '2026-12-28T00:00:00',
+      dataInicio: '2026-12-25',
+      dataFim: '2026-12-27',
       diasFolgaIntegral: ['SAT', 'SUN'],
       incluirFeriadosUteis: true,
     })
-    expect(r.diasIntegrais).toBe(3)
+    expect(r.composicao.diasFeriados).toBe(1) // só o Natal
+    expect(r.composicao.diasFolgaIntegral).toBe(2) // sábado e domingo
     expect(r.totalMinutos).toBe(3 * 1440)
   })
 
   it('feriado móvel NÃO entra: a lista de origem só tem datas fixas', () => {
-    // 🔴 03/04/2026 é Sexta-feira Santa, e NÃO está em `temp/feriados.json` — o arquivo traz apenas
-    // datas fixas (mais as Eleições gerais de 1990/1994). Quem deriva a Páscoa aqui reintroduz uma
-    // regra que a fonte homologada não tem, e o dia passa a computar 24h que ninguém pediu.
+    // 03/04/2026 é Sexta-feira Santa, e não está na lista homologada.
     const r = calcular1({
-      inicio: '2026-04-03T00:00:00',
-      fim: '2026-04-04T00:00:00',
+      dataInicio: '2026-04-03',
+      dataFim: '2026-04-03',
       incluirFeriadosUteis: true,
     })
-    expect(r.diasIntegrais).toBe(0)
     expect(r.totalMinutos).toBe(0)
   })
 
-  it('feriado de data fixa vale em qualquer ano coberto, pelo arquivo', () => {
-    // 21/04/2026 é Tiradentes, uma terça-feira.
+  it('feriado declarado à mão (`feriadosIntegral`) vale 24h sem o checkbox', () => {
     const r = calcular1({
-      inicio: '2026-04-21T00:00:00',
-      fim: '2026-04-22T00:00:00',
-      incluirFeriadosUteis: true,
-    })
-    expect(r.diasIntegrais).toBe(1)
-    expect(r.totalMinutos).toBe(24 * 60)
-  })
-
-  it('feriado explícito (`feriadosIntegral`) continua valendo 24h sem o checkbox', () => {
-    const r = calcular1({
-      inicio: '2026-07-09T00:00:00', // quinta, feriado estadual de SP — não é nacional
-      fim: '2026-07-10T00:00:00',
+      dataInicio: '2026-07-09', // feriado estadual de SP — não é nacional
+      dataFim: '2026-07-09',
       feriadosIntegral: ['2026-07-09'],
     })
-    expect(r.diasIntegrais).toBe(1)
-    expect(r.totalMinutos).toBe(24 * 60)
+    expect(r.composicao.diasFeriados).toBe(1)
+    expect(r.totalMinutos).toBe(1440)
   })
 })
 
-describe('motor — memória de cálculo e exclusões', () => {
-  it('gera as faixas do dia integral para a memória de cálculo', () => {
+describe('motor — o último dia NÃO vaza para o dia seguinte', () => {
+  it('período de um dia só não computa o dia seguinte', () => {
+    // 🔴 Regressivo: a versão anterior esticava a janela até o fim do turno, e um cálculo de
+    // 31/12/2025 alcançava 01/01/2026 — um dia A MAIS, que ainda por cima era feriado.
     const r = calcular1({
-      inicio: '2026-01-05T00:00:00',
-      fim: '2026-01-06T00:00:00',
-      diasFolgaIntegral: ['MON'],
-    })
-    expect(r.intervalosConsolidados).toEqual([
-      { inicio: '2026-01-05T00:00:00', fim: '2026-01-06T00:00:00' },
-    ])
-  })
-
-  it('gera o turno noturno atravessando a meia-noite quando a janela o alcança', () => {
-    // A janela do formulário (`segmentoParaRegra`) é estendida até o FIM do turno do último dia
-    // — é isso que o caso real produz (ver `turno-do-ultimo-dia.spec.ts`). Aqui a janela já vem
-    // estendida, como viria da tela.
-    const r = calcular1({
-      inicio: '2026-01-05T00:00:00',
-      fim: '2026-01-06T06:00:00',
-      diasSemanaNoturno: ['MON'],
-    })
-    expect(r.intervalosConsolidados).toEqual([
-      { inicio: '2026-01-05T22:00:00', fim: '2026-01-06T06:00:00' },
-    ])
-  })
-
-  it('turno de um dia só, com a janela fechando à meia-noite, é recortado por ela', () => {
-    // A janela é semiaberta e termina em 06/01T00:00 — o turno das 22:00 fica só com as 2h
-    // antes da meia-noite. É o recorte de BORDA, e não contradiz o total: o dia conta 8h pela
-    // regra (PASSO 3), enquanto a memória de cálculo mostra o que a janela alcança.
-    const r = calcular1({
-      inicio: '2026-01-05T00:00:00',
-      fim: '2026-01-06T00:00:00',
-      diasSemanaNoturno: ['MON'],
+      dataInicio: '2025-12-31',
+      dataFim: '2025-12-31',
+      diasSemanaNoturno: ['WED'],
+      incluirFeriadosUteis: true,
     })
     expect(r.diasUteis).toBe(1)
+    expect(r.composicao.diasFeriados).toBe(0)
     expect(r.totalMinutos).toBe(8 * 60)
-    expect(r.intervalosConsolidados).toEqual([
-      { inicio: '2026-01-05T22:00:00', fim: '2026-01-06T00:00:00' },
-    ])
   })
 
-  it('não há intervalos excluídos no resultado — o campo foi removido com a funcionalidade', () => {
+  it('31/12/2025 a 31/12/2025 não inclui 01/01/2026', () => {
     const r = calcular1({
-      inicio: '2026-01-05T00:00:00',
-      fim: '2026-01-06T00:00:00',
-      diasSemanaNoturno: ['MON'],
+      dataInicio: '2025-12-31',
+      dataFim: '2025-12-31',
+      diasSemanaNoturno: TODOS,
+      incluirFeriadosUteis: true,
     })
-    expect('intervalosExcluidos' in r).toBe(false)
+    expect(r.totalMinutos).toBe(8 * 60)
+  })
+
+  it('ano inteiro de 2025 fecha em 365 dias de calendário, sem sobra', () => {
+    const r = calcular1({
+      dataInicio: '2025-01-01',
+      dataFim: '2025-12-31',
+      diasSemanaNoturno: TODOS,
+    })
+    // Todos os dias marcados: 365 dias × 8h, e nenhum dia de 2026.
+    expect(r.diasUteis).toBe(365)
+    expect(r.totalMinutos).toBe(365 * 8 * 60)
   })
 })
 
-describe('motor — casos de borda (§12 do plano)', () => {
+describe('motor — composição e casos de borda', () => {
+  it('a composição fecha com o total', () => {
+    const r = calcular1({
+      dataInicio: '2025-01-01',
+      dataFim: '2025-12-31',
+      diasSemanaNoturno: ['MON', 'TUE', 'WED', 'THU', 'FRI'],
+      diasFolgaIntegral: ['SAT', 'SUN'],
+      incluirFeriadosUteis: true,
+    })
+    const c = r.composicao
+    expect(c.minutosUteis + c.minutosIntegrais).toBe(r.totalMinutos)
+    expect(c.minutosUteis).toBe(c.diasUteis * 8 * 60)
+    expect(c.minutosIntegrais).toBe(c.diasIntegrais * 1440)
+    expect(c.diasIntegrais).toBe(c.diasFeriados + c.diasFolgaIntegral)
+  })
+
   it('rejeita horário noturno com início igual ao fim (ambíguo)', () => {
     expect(() =>
       calcular1({ horaInicioNoturno: '00:00', horaFimNoturno: '00:00', diasSemanaNoturno: ['MON'] }),
     ).toThrow(/ambígu/)
   })
 
+  it('rejeita data final anterior à inicial', () => {
+    expect(() => calcular1({ dataInicio: '2026-01-10', dataFim: '2026-01-01' })).toThrow(/posterior/)
+  })
+
+  it('rejeita data fora do formato', () => {
+    expect(() => calcular1({ dataInicio: '10/01/2026' })).toThrow(/formato/)
+  })
+
+  it('rejeita nenhum segmento informado', () => {
+    expect(() => calcular({ timezone: 'America/Sao_Paulo', segmentos: [] })).toThrow(/segmento/)
+  })
+
   it('nunca produz float: totalMinutos e saldoMinutos são sempre inteiros', () => {
     const r = calcular1({
-      inicio: '2026-01-05T00:00:00',
-      fim: '2026-01-06T00:00:00',
+      dataInicio: '2026-01-05',
+      dataFim: '2026-01-05',
       horaInicioNoturno: '22:00',
       horaFimNoturno: '05:37',
       diasSemanaNoturno: ['MON'],
@@ -299,18 +284,21 @@ describe('motor — casos de borda (§12 do plano)', () => {
     expect(Number.isInteger(r.saldoMinutos)).toBe(true)
   })
 
-  it('rejeita nenhum segmento informado', () => {
-    expect(() => calcular({ timezone: 'America/Sao_Paulo', segmentos: [] })).toThrow(/segmento/)
-  })
-
-  it('rejeita data final anterior à inicial', () => {
-    expect(() =>
-      calcular1({ inicio: '2026-01-02T00:00:00', fim: '2026-01-01T00:00:00' }),
-    ).toThrow(/posterior/)
-  })
-
   it('segmento sem nenhum dia marcado gera zero, sem erro', () => {
-    const r = calcular1({ inicio: '2026-01-05T00:00:00', fim: '2026-01-06T00:00:00' })
+    const r = calcular1({ dataInicio: '2026-01-05', dataFim: '2026-01-05' })
     expect(r.totalMinutos).toBe(0)
+  })
+
+  it('dia de um segmento não é contado duas vezes pelo segmento seguinte', () => {
+    const r = calcular({
+      timezone: 'America/Sao_Paulo',
+      segmentos: [
+        segmentoBase({ dataInicio: '2026-01-05', dataFim: '2026-01-05', diasSemanaNoturno: ['MON'] }),
+        segmentoBase({ dataInicio: '2026-01-05', dataFim: '2026-01-05', diasSemanaNoturno: ['MON'] }),
+      ],
+    })
+    // Dois segmentos que cobrem o mesmo dia somam os dois — é o que o membro pediu ao criá-los.
+    expect(r.diasUteis).toBe(2)
+    expect(r.totalMinutos).toBe(16 * 60)
   })
 })

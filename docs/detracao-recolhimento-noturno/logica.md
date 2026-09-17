@@ -28,27 +28,16 @@ A calculadora de Detração por Recolhimento Noturno funda-se na jurisprudência
 
 A calculadora trabalha com os seguintes tipos de dados:
 
-### Intervalo (`Intervalo`)
-
-Um período de tempo em um calendário específico:
-
-```
-{
-  inicio: "YYYY-MM-DDTHH:MM:SS",  // ISO 8601, sem fuso horário
-  fim:    "YYYY-MM-DDTHH:MM:SS"   // ISO 8601, exclusivo [início, fim)
-}
-```
-
-O fim é **exclusivo**, ou seja, a janela é `[início, fim)`. Isso evita contar o mesmo instante duas vezes quando dois intervalos são contíguos.
-
 ### Segmento de Regra (`SegmentoRegra`)
 
-Agrupa as regras de cômputo válidas durante uma janela de tempo (por exemplo, quando o decreto da cautelar vigora com certos termos):
+Agrupa as regras de cômputo válidas durante um período (por exemplo, quando o decreto da cautelar vigora com certos termos).
+
+> 🔴 **Não há intervalo, instante nem janela semiaberta.** O período é um par de DATAS DE CALENDÁRIO, e as duas pontas contam: "fim da cautelar = 31/12/2025" significa que o dia 31/12 computa. O turno noturno vale `H_NOTURNO` no dia em que a regra o coloca — ninguém precisa saber em que data civil cada hora cai, o que dispensa fatiar turnos na meia-noite e recortá-los por janela.
 
 ```
 {
-  inicio: "YYYY-MM-DDTHH:MM:SS",         // Quando a regra começa
-  fim:    "YYYY-MM-DDTHH:MM:SS",         // Quando a regra termina
+  dataInicio: "YYYY-MM-DD",              // Primeiro dia da cautelar (INCLUSIVE)
+  dataFim:    "YYYY-MM-DD",              // Último dia da cautelar (INCLUSIVE)
 
   horaInicioNoturno: "HH:MM",            // Ex: "22:00"
   horaFimNoturno:    "HH:MM",            // Ex: "06:00"
@@ -146,28 +135,14 @@ precedência:
 > Sexta-feira Santa, Corpus Christi) **não** estão na lista, e derivá-los por Páscoa reintroduziria
 > uma regra que a fonte não tem. Fora da faixa coberta, nenhum feriado é computado.
 
-### Geração de faixas (memória de cálculo, resumo e petição)
-
-A faixa de cada dia tem o **valor da regra** — 24h ou o turno inteiro — e não o pedaço que sobra do
-recorte pela janela. Sem isso a memória de cálculo contradiria o total (o turno `22:00→06:00` com a
-janela fechando à meia-noite apareceria como `22:00→00:00`, 2h, enquanto o total diria 8h). O corte
-pela janela fica só na **borda** (primeiro e último dia), que é onde a data/hora exata do modo
-avançado precisa mandar.
-
-> 🔴 Um dia cuja regra não produz **nada** dentro da janela não conta nem aparece: classificação,
-> faixa e contagem andam juntas, na mesma passada, por construção.
-
-### Consolidação das faixas
-1. **Unificar as faixas válidas**: juntar as faixas geradas (turno noturno, folga integral, feriados, nacionais ou declarados) de todos os segmentos.
-2. **Mesclar sobreposições**: ordenar por início e unir faixas que se tocam ou sobrepõem — é o que faz "sexta 22h–sábado 6h" + "sábado integral" não contarem as 6 primeiras horas de sábado duas vezes na memória de cálculo.
-
 ### PASSO 4 — total, dias e saldo
 1. `totalMinutos = diasIntegrais × 1440 + diasUteis × H_NOTURNO` (inteiros, nunca float).
 2. `diasDetracao = floor(totalMinutos / 1440)`
 3. `saldoMinutos = totalMinutos % 1440`
 
-> 🔴 **O total NÃO é a soma das faixas de tempo.** Ele é a conta de dias acima. As faixas existem para
-> mostrar *como* o número se compõe, não para produzi-lo.
+> 🔴 **A conta é contar e multiplicar, e nada mais.** Não há faixas de tempo, não há sobreposição
+> para unir, não há instante para comparar. O resultado (`composicao`) sai da MESMA contagem que
+> produz o total, então as duas não têm como divergir.
 
 ### Retorno
 
@@ -182,6 +157,9 @@ Devolver o resultado com:
 ## 4. Casos de Borda
 
 O motor trata explicitamente os seguintes cenários:
+
+### O período é inclusivo nas duas pontas
+"Início da cautelar = 01/01/2025" e "Fim da cautelar = 31/12/2025" computam 01/01 **e** 31/12. Não há meia-noite de fronteira nem dia extra no fim: o número de dias de calendário tocados é exatamente `fim − início + 1`.
 
 ### `00:00–00:00` é rejeitado
 
@@ -210,20 +188,10 @@ Se um intervalo gerado tem fim menor ou igual ao início, ele é descartado (nã
 ### Segmento sem dias aplicáveis
 Se um segmento não tem `diasSemanaNoturno` nem `diasFolgaIntegral` nem `feriadosIntegral` (e o checkbox está desmarcado), ele gera zero — sem erro e sem presunção.
 
-### O turno noturno pertence ao dia em que COMEÇA (madrugada inclusa)
+### O turno noturno pertence ao dia em que a regra o coloca
+Um turno `22:00 → 06:00` num dia marcado em `diasSemanaNoturno` vale `H_NOTURNO` (8h) **naquele dia**. As horas que caem na madrugada seguinte não fazem parte de outro dia: cada dia marcado gera o seu próprio turno, e dois dias consecutivos marcam 16h.
 
-Um turno `22:00 → 06:00` que começa num dia marcado em `diasSemanaNoturno` **conta por inteiro**, incluindo as horas que caem na madrugada do dia seguinte. A madrugada **não** é um turno novo: se o dia seguinte também estiver marcado, ele gera o **próprio** turno (`22:00` do dia seguinte `→ 06:00` da madrugada posterior), separado.
-
-É isso que faz dois dias consecutivos marcarem 16h num turno de 8h — e não 8h nem 22h.
-
-### O ÚLTIMO dia do período gera o turno dele
-Quando o último dia do período está marcado em `diasSemanaNoturno`, a janela é estendida até o **fim** do turno daquele dia (`06:00` do dia seguinte, no caso de `22:00 → 06:00`), para que o turno não seja cortado a zero.
-
-**Por que:** "Fim da cautelar = 01/01/2026" significa que a cautelar vigeu **naquele dia**. O turno das 22:00 de 01/01/2026 é o cumprimento daquele dia e conta por inteiro — antes, a janela fechava à meia-noite de 01/01 e o turno era descartado, o que fazia o total sair **1 dia a menos** que a conta `dias × horas ÷ 24`.
-
-A extensão é sempre para o **fim** do turno, nunca para o **início** dele: a janela é semiaberta `[início, fim)`, então parar no instante de início descartaria o turno inteiro (a fronteira encosta e a interseção é vazia).
-
-Quando o último dia **não** está marcado em `diasSemanaNoturno` (por exemplo, só há folga integral), a janela termina à meia-noite seguinte, sem extensão — a folga integral já é um dia completo de 24h e esticá-la criaria um dia espúrio.
+> 🔴 Não há turno para "fatiar" nem meia-noite para recortar. A pergunta que o motor responde é "quantos dias de cada tipo existem no período?", e a resposta disso multiplica o valor do dia.
 
 ---
 
@@ -232,8 +200,8 @@ Quando o último dia **não** está marcado em `diasSemanaNoturno` (por exemplo,
 | Versão | Data | Mudança |
 |--------|------|---------|
 | **RN-1.0** | 15/09/2026 | Versão inicial. Motor de cálculo implementado conforme Tema Repetitivo STJ 1.155 e REsp 1.977.135/SC. Suporta período noturno configurável, dias de folga integral, feriados, intervalos adicionais e exclusões com justificativa. Conversão: `dias = floor(total_minutos / 1440)`. |
-| **RN-1.1** | 16/09/2026 | Correção: o turno noturno do **último dia** do período era descartado (a janela fechava à meia-noite daquele dia, antes das 22:00), e o total saía 1 dia a menos que `dias × horas ÷ 24`. A janela agora é estendida até o **fim** do turno do último dia, quando ele está marcado. Documentados também o pertencimento do turno ao dia em que começa e a fronteira semiaberta. Mesmos dados, antes e depois: `01/01/2020`–`01/01/2026`, todos os dias, `22:00–06:00` — de `17538:00 / 730 dias` para **`17544:00 / 731 dias`**. |
-| **RN-2.0** | Nova especificação do motor | 🔴 **Mudança de fórmula.** O total passa a ser uma **contagem de dias** (PASSO 3), não a soma das faixas de tempo: o período é iterado dia a dia e cada dia vale, por precedência, **24h** (se está em `diasFolgaIntegral`, ou é feriado nacional com o checkbox ligado, ou está em `feriadosIntegral`) ou **H_NOTURNO** (se está em `diasSemanaNoturno`). Total = `diasIntegrais × 1440 + diasUteis × H_NOTURNO`; dias = `floor(total / 1440)`. **Novo checkbox** `incluirFeriadosUteis`: computa os **feriados nacionais** que caem em dia útil como dia integral, a partir da lista homologada de `feriados.ts`. Feriado que caia em dia de folga integral vale 24h **uma vez só** (a precedência resolve). 🔴 **Removidos os intervalos adicionais e excluídos**, do tipo, do motor e da tela: a conta é por dia inteiro, e um desconto de horas não tem onde entrar. As faixas de tempo continuam sendo geradas para a memória de cálculo, o resumo e a petição. |
+| **RN-1.1** | 16/09/2026 | Correção: o turno noturno do **último dia** do período era descartado (a janela fechava à meia-noite daquele dia, antes das 22:00), e o total saía 1 dia a menos que `dias × horas ÷ 24`. A janela passou a ser estendida até o **fim** do turno do último dia, quando ele está marcado. Documentados também o pertencimento do turno ao dia em que começa e a fronteira semiaberta. Mesmos dados, antes e depois: `01/01/2020`–`01/01/2026`, todos os dias, `22:00–06:00` — de `17538:00 / 730 dias` para **`17544:00 / 731 dias`**. (**Superado na RN-2.0**: a extensão da janela não existe mais, e o último dia conta por ser uma data do intervalo.) |
+| **RN-2.0** | Nova especificação do motor | 🔴 **Mudança de fórmula.** O total passa a ser uma **contagem de dias**, e a conta é contar e multiplicar: o período é iterado dia a dia, cada dia é classificado por precedência e vale **24h** (folga integral, feriado nacional com o checkbox ligado, ou feriado declarado) ou **H_NOTURNO** (dia em `diasSemanaNoturno`). Total = `diasIntegrais × 1440 + diasUteis × H_NOTURNO`. **Novo checkbox** `incluirFeriadosUteis`: computa os **feriados nacionais** que caem em dia útil como dia integral, a partir da lista homologada de `feriados.ts`. Feriado que caia em dia de folga integral vale 24h **uma vez só** (a precedência resolve). 🔴 **Removidos os intervalos adicionais e excluídos** (a conta é por dia inteiro, e um desconto de horas não tem onde entrar) e, com eles, **todo o aparato de faixas de tempo**: não há instante, não há janela semiaberta `[início, fim)`, não há turno fatiado na meia-noite, não há `fimDaJanela` esticando o período até o fim do turno do último dia. O período agora é um par de **datas de calendário, inclusivas nas duas pontas**. |
 
 ---
 

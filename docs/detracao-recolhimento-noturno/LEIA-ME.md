@@ -22,14 +22,13 @@ A Calculadora de Detração por Recolhimento Noturno ajuda você a:
 
 ### 2. Preencher as informações básicas
 - **Data de início:** dia em que o recolhimento começou
-- **Data de término:** último dia do período a ser calculado
+- **Data de término:** último dia do período a ser calculado — esse dia **conta** (e não vira uma meia-noite de corte)
 - **Horários do recolhimento noturno:** hora de início e hora de término (ex.: 22:00 até 06:00)
 - **Dias da semana:** quais dias da semana estava em recolhimento (segunda, terça, etc.)
 - **Feriados nacionais:** marque *"Computar feriados nacionais que caem em dias úteis como dia integral (24h)"* se os feriados nacionais do período devem contar como dia cheio
 
 ### 3. (Modo avançado) Ajustar a regra
 - **Vários segmentos:** quando a regra muda no meio do período (mudança de horário, revogação)
-- **Data/hora exata:** quando a cautelar começa ou termina no meio do dia
 - **Feriados de recolhimento integral:** para um feriado **estadual ou municipal**, ou outro dia que a decisão mande computar inteiro
 
 ### 4. Calcular
@@ -45,6 +44,8 @@ A Calculadora de Detração por Recolhimento Noturno ajuda você a:
 
 ### Recolhimento noturno
 Período entre duas horas específicas em um dia de semana definido. Por exemplo: segunda a sexta de 22:00 até 06:00 do dia seguinte.
+
+> Cada dia marcado vale o turno **inteiro** (8h no exemplo), independentemente de parte dessas horas cair na madrugada seguinte. O cálculo conta os DIAS e multiplica pelas horas diárias.
 
 ### Dias de folga integral
 Quando não há expediente em um dia completo, contam como um dia inteiro (das 00:00 às 23:59).

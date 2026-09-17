@@ -8,8 +8,8 @@ import type { EntradaCalculo, ResultadoCalculo } from '@/lib/detracao/recolhimen
 // (validação + recálculo), testável direto, sem sessão nem rede.
 
 const Segmento = z.object({
-  inicio: z.string().min(1),
-  fim: z.string().min(1),
+  dataInicio: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Data inválida.'),
+  dataFim: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Data inválida.'),
   horaInicioNoturno: z.string().regex(/^\d{2}:\d{2}$/, 'Horário inválido.'),
   horaFimNoturno: z.string().regex(/^\d{2}:\d{2}$/, 'Horário inválido.'),
   diasSemanaNoturno: z.array(z.string()),

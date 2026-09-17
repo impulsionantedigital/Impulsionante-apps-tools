@@ -66,34 +66,9 @@ export default function CamposSegmento({
         <Campo rotulo="Início da cautelar" obrigatorio>
           <EntradaControle type="date" value={segmento.dataInicio} onChange={(e) => set('dataInicio', e.target.value)} />
         </Campo>
-        <Campo rotulo="Fim da cautelar" obrigatorio>
+        <Campo rotulo="Fim da cautelar" obrigatorio ajuda="O último dia conta por inteiro.">
           <EntradaControle type="date" value={segmento.dataFim} onChange={(e) => set('dataFim', e.target.value)} />
         </Campo>
-
-        {avancado && (
-          <>
-            <Campo
-              rotulo="Data/hora exata de início (opcional)"
-              ajuda="Use quando a cautelar começa no meio do dia — evita computar horas anteriores."
-            >
-              <EntradaControle
-                type="datetime-local"
-                value={segmento.dataHoraInicioExata ?? ''}
-                onChange={(e) => set('dataHoraInicioExata', e.target.value || undefined)}
-              />
-            </Campo>
-            <Campo
-              rotulo="Data/hora exata de fim (opcional)"
-              ajuda="Use quando a cautelar termina ou é revogada no meio do dia."
-            >
-              <EntradaControle
-                type="datetime-local"
-                value={segmento.dataHoraFimExata ?? ''}
-                onChange={(e) => set('dataHoraFimExata', e.target.value || undefined)}
-              />
-            </Campo>
-          </>
-        )}
 
         <Campo rotulo="Início do horário noturno" obrigatorio>
           <EntradaControle type="time" value={segmento.horaInicioNoturno} onChange={(e) => set('horaInicioNoturno', e.target.value)} />
