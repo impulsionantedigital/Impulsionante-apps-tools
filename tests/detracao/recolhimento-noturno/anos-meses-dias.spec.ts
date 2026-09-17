@@ -10,7 +10,7 @@
 // referência; trocá-la por diferença de datas reais mudaria o número de cálculos já em uso.
 
 import { describe, it, expect } from 'vitest'
-import { paraAnosMesesDias, calcular } from '@/lib/detracao/recolhimento-noturno/motor'
+import { paraAnosMesesDias, calcular } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-0/motor'
 
 describe('paraAnosMesesDias — a convenção da execução penal', () => {
   it('zero dias', () => {

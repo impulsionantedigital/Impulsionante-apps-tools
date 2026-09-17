@@ -10,7 +10,7 @@ import {
   entradaFormularioParaCalculo,
   segmentoFormularioEmBranco,
   segmentoParaRegra,
-} from '@/lib/detracao/recolhimento-noturno/formulario'
+} from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-0/formulario'
 
 describe('conversão do formulário para a entrada do motor', () => {
   it('passa as datas de calendário como o membro digitou, sem acrescentar hora', () => {

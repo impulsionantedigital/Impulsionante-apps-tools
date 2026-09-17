@@ -13,10 +13,10 @@ import { describe, it, expect } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { createElement } from 'react'
 import Resumo from '@/app/(app)/ferramentas/detracao/[calculadora]/Resumo'
-import { calcular } from '@/lib/detracao/recolhimento-noturno/motor'
-import { segmentoParaRegra, segmentoFormularioEmBranco } from '@/lib/detracao/recolhimento-noturno/formulario'
-import type { EntradaFormulario } from '@/lib/detracao/recolhimento-noturno/formulario'
-import type { EntradaCalculo } from '@/lib/detracao/recolhimento-noturno/tipos'
+import { calcular } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-0/motor'
+import { segmentoParaRegra, segmentoFormularioEmBranco } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-0/formulario'
+import type { EntradaFormulario } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-0/formulario'
+import type { EntradaCalculo } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-0/tipos'
 
 function cenarioAnoInteiro(incluirFeriadosUteis: boolean) {
   const segmento = segmentoParaRegra({

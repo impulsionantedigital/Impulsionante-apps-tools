@@ -13,9 +13,9 @@
 // total, então não existe a possibilidade de as duas divergirem.
 
 import { describe, it, expect } from 'vitest'
-import { calcular } from '@/lib/detracao/recolhimento-noturno/motor'
-import { segmentoParaRegra, segmentoFormularioEmBranco } from '@/lib/detracao/recolhimento-noturno/formulario'
-import type { Weekday } from '@/lib/detracao/recolhimento-noturno/tipos'
+import { calcular } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-0/motor'
+import { segmentoParaRegra, segmentoFormularioEmBranco } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-0/formulario'
+import type { Weekday } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-0/tipos'
 
 const SEG_A_SEX: Weekday[] = ['MON', 'TUE', 'WED', 'THU', 'FRI']
 const SABADO_E_DOMINGO: Weekday[] = ['SAT', 'SUN']

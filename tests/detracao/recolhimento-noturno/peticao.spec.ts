@@ -1,7 +1,7 @@
 // tests/detracao/recolhimento-noturno/peticao.spec.ts
 import { describe, expect, it } from 'vitest'
-import { gerarTextoPeticao } from '@/lib/detracao/recolhimento-noturno/peticao'
-import type { EntradaCalculo, ResultadoCalculo } from '@/lib/detracao/recolhimento-noturno/tipos'
+import { gerarTextoPeticao } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-0/peticao'
+import type { EntradaCalculo, ResultadoCalculo } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-0/tipos'
 
 function resultado(parcial: Partial<ResultadoCalculo>): ResultadoCalculo {
   return {

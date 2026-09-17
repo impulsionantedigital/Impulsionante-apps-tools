@@ -3,8 +3,7 @@ import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import CabecalhoPagina from '@/components/ui/CabecalhoPagina'
 import { tituloDaPagina } from '@/server/marca'
-import { calcular } from '@/lib/detracao/recolhimento-noturno/motor'
-import { mesmoResultado } from '@/lib/detracao/recolhimento-noturno/comparar'
+import { versaoPorRotulo, estaDesatualizada, versaoAtual } from '@/lib/detracao/recolhimento-noturno/versoes/registro'
 import { estadoDoProduto } from '@/server/vendas/acesso'
 import { caminhoDoProduto } from '@/lib/produtos/catalogo'
 import ExcluirCalculo from '../ExcluirCalculo'
@@ -15,6 +14,10 @@ import estilos from '../calculadora.module.css'
 const PRODUTO_ID = 'detracao-recolhimento-noturno'
 const SLUG = 'recolhimento-noturno'
 const CALCULO_TIPO = 'recolhimento-noturno'
+
+// 🔴 Cálculo em versão anterior fica SOMENTE LEITURA. Salvar por cima gravaria o número da versão
+// nova sobre o registro da antiga, e o documento que foi protocolado deixaria de existir — a tela
+// nem mostra o que se perderia. Criar um cálculo novo é o caminho, e é o que o aviso diz.
 
 export async function generateMetadata() {
   return { title: await tituloDaPagina('Cálculo salvo') }
@@ -35,11 +38,17 @@ export default async function EditarCalculo({
   const estado = await estadoDoProduto(PRODUTO_ID)
   if (estado === 'nunca') notFound()
 
-  // O cálculo é refeito com o motor ATUAL. Se a fórmula mudou desde que foi salvo, o membro
-  // precisa saber — o número antigo pode já ter virado petição. `mesmoResultado` compara por
-  // estrutura, não por `JSON.stringify` (a coluna é jsonb — ordem de chave não é garantida).
-  const agora = calcular(calculo.entrada)
-  const mudou = calculo.algoritmo_versao !== agora.algoritmoVersao && !mesmoResultado(agora, calculo.resultado)
+  // 🔴 O cálculo é aberto com a VERSÃO QUE O PRODUZIU — não com a atual. Cada versão tem o seu
+  // formulário e o seu motor congelados (`versoes/`), então o membro revê exatamente o documento
+  // que salvou: os mesmos campos, o mesmo número, o mesmo resumo. Recalcular com o motor novo
+  // mostraria um número que aquele cálculo nunca teve, e é justamente o que não se pode fazer com
+  // um documento que pode ter virado petição.
+  const versao = versaoPorRotulo(calculo.algoritmo_versao)
+  // Versão desconhecida: cálculo gravado por uma versão que não existe mais neste build. Não há
+  // como renderizar nem recalcular — 404 é melhor do que mostrar um número errado sem avisar.
+  if (!versao) notFound()
+
+  const desatualizada = estaDesatualizada(calculo.algoritmo_versao)
 
   return (
     <div className={estilos.pagina}>
@@ -59,20 +68,30 @@ export default async function EditarCalculo({
         className={estilos.cabecalhoDoCalculo}
       />
 
-      {mudou && (
+      {/* 🔴 O aviso INFORMA, e não recalcula. O que aparece abaixo é o cálculo como ele foi
+       *  salvo — número, formulário e resumo da versão {calculo.algoritmo_versao}. Recalcular
+       *  aqui mostraria um número que este documento nunca teve, e ele pode ter virado petição.
+       *  Quem quer o número da regra nova cria um cálculo novo, que é o único caminho que deixa
+       *  claro qual fórmula produziu qual número. */}
+      {desatualizada && (
         <div className={estilos.avisoVersao} role="alert">
-          <b>Este cálculo mudou.</b> Ele foi salvo com o algoritmo versão {calculo.algoritmo_versao};
-          a versão atual é a {agora.algoritmoVersao} e produz um resultado diferente. O que
-          aparece abaixo é o cálculo <b>refeito agora</b>. Salve de novo para gravar o resultado
-          atualizado.
+          <b>Há uma versão nova do motor de cálculo.</b> Este cálculo foi feito na versão{' '}
+          {calculo.algoritmo_versao} e está mostrado exatamente como foi salvo — número, formulário
+          e resumo daquela versão, para o documento continuar conferindo com o que foi protocolado.
+          <br />
+          A versão atual é a <b>{versaoAtual().versao}</b>, que {versaoAtual().resumo.toLowerCase()}.
+          Para aplicar a regra nova, <b>crie um cálculo novo</b> — este registro não é recalculado,
+          e salvar por cima não converte a versão dele.
         </div>
       )}
 
       <Calculadora
+        versao={versao.versao}
         inicial={calculo.entrada}
         calculoId={calculo.id}
         tituloInicial={calculo.titulo}
-        somenteLeitura={estado !== 'ativo'}
+        resultadoSalvo={calculo.resultado}
+        somenteLeitura={estado !== 'ativo' || desatualizada}
       />
 
       <ExcluirCalculo id={calculo.id} />

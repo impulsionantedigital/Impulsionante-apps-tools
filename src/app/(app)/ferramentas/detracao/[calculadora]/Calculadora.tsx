@@ -8,15 +8,14 @@ import CabecalhoAnexo from './CabecalhoAnexo'
 import BarraSalvar from './BarraSalvar'
 import BotaoImprimir from './BotaoImprimir'
 import BotaoPeticao from './BotaoPeticao'
-import { calcular } from '@/lib/detracao/recolhimento-noturno/motor'
-import { entradaFormularioParaCalculo, segmentoFormularioEmBranco } from '@/lib/detracao/recolhimento-noturno/formulario'
-import type { EntradaFormulario } from '@/lib/detracao/recolhimento-noturno/formulario'
-import type { EntradaCalculo, ResultadoCalculo } from '@/lib/detracao/recolhimento-noturno/tipos'
+import { versaoPorRotulo, versaoAtual } from '@/lib/detracao/recolhimento-noturno/versoes/registro'
+import type { EntradaFormulario } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-0/formulario'
+import type { EntradaCalculo, ResultadoCalculo } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-0/tipos'
 import estilos from './calculadora.module.css'
 
 function entradaInicial(inicial?: EntradaCalculo): EntradaFormulario {
   if (!inicial) {
-    return { timezone: 'America/Sao_Paulo', segmentos: [segmentoFormularioEmBranco()] }
+    return { timezone: 'America/Sao_Paulo', segmentos: [versaoAtual().formulario.emBranco()] }
   }
   return {
     timezone: inicial.timezone,
@@ -38,16 +37,29 @@ function entradaInicial(inicial?: EntradaCalculo): EntradaFormulario {
 }
 
 export default function Calculadora({
+  /** 🔴 A versão do MOTOR com que este cálculo é feito. Ausente em cálculo NOVO — aí vale a
+   *  versão atual do registro. Num cálculo salvo, é a versão GRAVADA (`algoritmo_versao`), e é ela
+   *  que decide o motor, o formulário e o resumo exibidos (ver `versoes/registro.ts`). */
+  versao: rotulo = versaoAtual().versao,
+  /** O resultado GRAVADO, num cálculo salvo. Presente = a tela exibe ESTE número, e não um
+   *  recalculado: é o documento como ele foi salvo. Ausente = recalcula a cada tecla. */
+  resultadoSalvo,
   inicial,
   calculoId,
   tituloInicial,
   somenteLeitura,
 }: {
+  versao?: string
+  resultadoSalvo?: ResultadoCalculo
   inicial?: EntradaCalculo
   calculoId?: string
   tituloInicial?: string
   somenteLeitura?: boolean
 }) {
+  // 🔴 A versão vem do RÓTULO gravado e é resolvida aqui, não recebida pronta: assim o pacote
+  // (motor + formulário + resumo) é sempre o mesmo objeto, e não há como a tela receber o motor de
+  // uma versão com o formulário de outra.
+  const pacote = versaoPorRotulo(rotulo) ?? versaoAtual()
   const [entrada, setEntrada] = useState<EntradaFormulario>(() => entradaInicial(inicial))
   const [avancado, setAvancado] = useState(() => Boolean(inicial && inicial.segmentos.length > 1))
   const [titulo, setTitulo] = useState(tituloInicial ?? '')
@@ -61,25 +73,36 @@ export default function Calculadora({
 
   const calculo = useMemo<{ ok: true; entrada: EntradaCalculo; valor: ResultadoCalculo } | { ok: false; erro: string }>(() => {
     try {
-      const e = entradaFormularioParaCalculo(entrada)
-      return { ok: true, entrada: e, valor: calcular(e) }
+      const e = pacote.formulario.paraCalculo(entrada)
+      return { ok: true, entrada: e, valor: pacote.calcular(e) }
     } catch (err) {
       return { ok: false, erro: err instanceof Error ? err.message : 'Confira os dados do cálculo.' }
     }
-  }, [entrada])
+  }, [entrada, pacote])
+
+  // 🔴 O número que a tela mostra. Num cálculo SALVO é o GRAVADO — o documento como foi salvo, na
+  // versão que o produziu. Recalcular e exibir o novo apagaria da tela o número que pode ter virado
+  // petição, sem que ninguém percebesse. Num cálculo NOVO não há gravado, e aí sim recalcula.
+  const exibido = resultadoSalvo ?? (calculo.ok ? calculo.valor : null)
 
   return (
     <div className={estilos.layout}>
       <div className={estilos.coluna}>
         <fieldset disabled={somenteLeitura} className={estilos.fieldsetSemBorda}>
-          <Formulario entrada={entrada} aoMudar={setEntrada} avancado={avancado} aoMudarAvancado={mudarAvancado} />
+          <Formulario
+            versao={pacote.versao}
+            entrada={entrada}
+            aoMudar={setEntrada}
+            avancado={avancado}
+            aoMudarAvancado={mudarAvancado}
+          />
         </fieldset>
       </div>
       <div className={estilos.coluna}>
         {somenteLeitura ? (
           <div className={estilos.barraImprimir}>
             <BotaoImprimir />
-            {calculo.ok && <BotaoPeticao entrada={calculo.entrada} resultado={calculo.valor} />}
+            {exibido && calculo.ok && <BotaoPeticao entrada={calculo.entrada} resultado={exibido} />}
           </div>
         ) : (
           <BarraSalvar
@@ -90,21 +113,21 @@ export default function Calculadora({
             acoesExtras={
               <>
                 <BotaoImprimir />
-                {calculo.ok && <BotaoPeticao entrada={calculo.entrada} resultado={calculo.valor} />}
+                {exibido && calculo.ok && <BotaoPeticao entrada={calculo.entrada} resultado={exibido} />}
               </>
             }
           />
         )}
-        {calculo.ok ? (
+        {exibido ? (
           <>
             {/* Só no papel: identifica o caso no anexo. Ver CabecalhoAnexo.tsx. */}
             <CabecalhoAnexo titulo={titulo} calculoId={calculoId} />
-            <Resultado resultado={calculo.valor} />
-            <Resumo entrada={entrada} resultado={calculo.valor} observacoes={entrada.observacoes} />
+            <Resultado resultado={exibido} />
+            <Resumo entrada={entrada} resultado={exibido} observacoes={entrada.observacoes} />
           </>
         ) : (
           <p className={estilos.mensagem} data-tom="erro" role="alert">
-            {calculo.erro}
+            {calculo.ok ? 'Confira os dados do cálculo.' : calculo.erro}
           </p>
         )}
       </div>

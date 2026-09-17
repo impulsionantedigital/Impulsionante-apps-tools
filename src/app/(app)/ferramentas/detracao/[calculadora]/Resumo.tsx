@@ -1,5 +1,5 @@
-import type { EntradaFormulario } from '@/lib/detracao/recolhimento-noturno/formulario'
-import type { ResultadoCalculo } from '@/lib/detracao/recolhimento-noturno/tipos'
+import type { EntradaFormulario } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-0/formulario'
+import type { ResultadoCalculo } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-0/tipos'
 import estilos from './calculadora.module.css'
 
 function formatarDataBR(dataISO: string): string {

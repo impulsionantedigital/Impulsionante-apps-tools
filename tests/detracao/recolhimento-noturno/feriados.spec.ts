@@ -12,11 +12,13 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { FERIADOS, DATAS_FERIADOS, feriadosNacionais } from '@/lib/detracao/recolhimento-noturno/feriados'
+import { FERIADOS, DATAS_FERIADOS, feriadosNacionais } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-0/feriados'
 
+// O JSON vive DENTRO da versão congelada: a lista de feriados é parte do que a RN-2.0 computa, e
+// uma versão futura pode ter outra (feriado novo por lei, correção de data).
 const CAMINHO_FONTE = resolve(
   process.cwd(),
-  'src/lib/detracao/recolhimento-noturno/dados/feriados.json',
+  'src/lib/detracao/recolhimento-noturno/versoes/rn-2-0/dados/feriados.json',
 )
 
 describe('FERIADOS — forma da lista', () => {

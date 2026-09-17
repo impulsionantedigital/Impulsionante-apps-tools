@@ -1,8 +1,8 @@
 // src/app/(app)/ferramentas/detracao/[calculadora]/preparar.ts
 import { z } from 'zod'
 import { detalheSeguro } from '@/lib/sanitizar-erro'
-import { calcular } from '@/lib/detracao/recolhimento-noturno/motor'
-import type { EntradaCalculo, ResultadoCalculo } from '@/lib/detracao/recolhimento-noturno/tipos'
+import { versaoAtual } from '@/lib/detracao/recolhimento-noturno/versoes/registro'
+import type { EntradaCalculo, ResultadoCalculo } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-0/tipos'
 
 // Módulo SEM `'use server'` de propósito, mesma razão do `preparar.ts` do CIC: é lógica pura
 // (validação + recálculo), testável direto, sem sessão nem rede.
@@ -15,8 +15,6 @@ const Segmento = z.object({
   diasSemanaNoturno: z.array(z.string()),
   diasFolgaIntegral: z.array(z.string()),
   feriadosIntegral: z.array(z.string()),
-  // `.default(false)`: cálculos gravados com RN-1.1 não têm este campo, e sem o default eles
-  // falhariam a validação ao reabrir — o campo novo não pode invalidar o que já está no banco.
   incluirFeriadosUteis: z.boolean().default(false),
 })
 
@@ -37,6 +35,10 @@ export const Dados = z.object({
 /** Valida, e RECALCULA — nunca lança. O cliente manda a entrada, nunca o resultado (ver Global
  *  Constraints do plano): o que fica gravado é sempre produto do motor desta versão.
  *
+ *  🔴 O motor usado aqui é o da versão ATUAL do registro, e o resultado é gravado junto do rótulo
+ *  dela (`acoes.ts`). É o par (rótulo, resultado) que, mais tarde, permite reabrir o cálculo com o
+ *  motor que o produziu — ver `versoes/registro.ts`.
+ *
  *  🔴 `calcular` roda dentro do `try`: uma entrada forjada (data fora do formato, horário
  *  inválido) faz o motor lançar, e uma action nunca pode lançar. */
 export function preparar(
@@ -48,10 +50,10 @@ export function preparar(
   }
   try {
     const entrada = r.data.entrada as EntradaCalculo
-    const resultado = calcular(entrada)
+    const resultado = versaoAtual().calcular(entrada)
     return { titulo: r.data.titulo, entrada, resultado }
   } catch (err) {
     console.error('[detracao] preparar', detalheSeguro(err))
-    return { erro: 'Confira os dados do cálculo — datas, horários e intervalos.' }
+    return { erro: 'Confira os dados do cálculo — datas e horários.' }
   }
 }

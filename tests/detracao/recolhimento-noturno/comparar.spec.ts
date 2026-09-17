@@ -1,8 +1,8 @@
 // tests/detracao/recolhimento-noturno/comparar.spec.ts
 import { describe, it, expect } from 'vitest'
-import { calcular } from '@/lib/detracao/recolhimento-noturno/motor'
-import { mesmoResultado } from '@/lib/detracao/recolhimento-noturno/comparar'
-import type { EntradaCalculo } from '@/lib/detracao/recolhimento-noturno/tipos'
+import { calcular } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-0/motor'
+import { mesmoResultado } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-0/comparar'
+import type { EntradaCalculo } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-0/tipos'
 
 const ENTRADA: EntradaCalculo = {
   timezone: 'America/Sao_Paulo',

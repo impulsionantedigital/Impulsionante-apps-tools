@@ -1,8 +1,8 @@
 // tests/detracao/recolhimento-noturno/contrato.spec.ts
 import { describe, it, expect } from 'vitest'
 import { PRODUTOS, caminhoDoProduto, produtoPorSlug } from '@/lib/produtos/catalogo'
-import { ALGORITMO_VERSAO } from '@/lib/detracao/recolhimento-noturno/tipos'
-import { calcular } from '@/lib/detracao/recolhimento-noturno/motor'
+import { ALGORITMO_VERSAO } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-0/tipos'
+import { calcular } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-0/motor'
 import { preparar } from '@/app/(app)/ferramentas/[calculadora]/preparar'
 
 describe('contrato — reconciliação catálogo ↔ motor ↔ rotas', () => {

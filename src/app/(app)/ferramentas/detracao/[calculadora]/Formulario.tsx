@@ -3,16 +3,20 @@
 import Botao from '@/components/ui/Botao'
 import { Campo, Entrada as EntradaControle, AreaTexto, Selecao } from '@/components/ui/Campo'
 import CamposSegmento from './CamposSegmento'
-import { segmentoFormularioEmBranco } from '@/lib/detracao/recolhimento-noturno/formulario'
-import type { EntradaFormulario, SegmentoFormulario } from '@/lib/detracao/recolhimento-noturno/formulario'
+import { versaoAtual, versaoPorRotulo } from '@/lib/detracao/recolhimento-noturno/versoes/registro'
+import type { EntradaFormulario, SegmentoFormulario } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-0/formulario'
 import estilos from './calculadora.module.css'
 
 export default function Formulario({
+  versao,
   entrada,
   aoMudar,
   avancado,
   aoMudarAvancado,
 }: {
+  /** 🔴 O rótulo da versão em uso — é ele que decide o `emBranco` de um segmento novo. Vem do
+   *  pacote resolvido na `Calculadora` (ver `versoes/registro.ts`). */
+  versao?: string
   entrada: EntradaFormulario
   aoMudar: (e: EntradaFormulario) => void
   avancado: boolean
@@ -23,7 +27,10 @@ export default function Formulario({
   }
 
   function adicionarSegmento() {
-    aoMudar({ ...entrada, segmentos: [...entrada.segmentos, segmentoFormularioEmBranco()] })
+    // 🔴 O segmento em branco vem do PACOTE da versão em uso, e não de um import direto: uma versão
+    // nova pode ter campos que a atual não tem, e é o formulário DELA que tem de aparecer.
+    const pacote = versaoPorRotulo(versao ?? '') ?? versaoAtual()
+    aoMudar({ ...entrada, segmentos: [...entrada.segmentos, pacote.formulario.emBranco()] })
   }
 
   function removerSegmento(indice: number) {

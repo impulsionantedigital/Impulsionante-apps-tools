@@ -4,8 +4,7 @@ import { criarClienteServidor } from '@/server/supabase-session'
 import { resolverWorkspaceAtivo } from '@/server/auth/workspace-ativo'
 import { codigoDeBanco } from '@/lib/erro-de-banco'
 import { detalheSeguro } from '@/lib/sanitizar-erro'
-import { migrarEntrada } from '@/lib/detracao/recolhimento-noturno/migrar'
-import type { EntradaCalculo, ResultadoCalculo } from '@/lib/detracao/recolhimento-noturno/tipos'
+import type { EntradaCalculo, ResultadoCalculo } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-0/tipos'
 
 export type CalculoSalvo = {
   id: string
@@ -71,13 +70,9 @@ export async function lerCalculo(id: string): Promise<CalculoSalvo | null> {
     console.error('[detracao] lerCalculo', detalheSeguro(error))
     throw new Error(ERRO_LEITURA)
   }
-  const calculo = (data as CalculoSalvo | null) ?? null
-  if (!calculo) return null
-  // 🔴 A migração acontece AQUI, no único ponto por onde toda entrada gravada passa — e não nas
-  // telas, que são três e esqueceriam. Cálculo anterior à RN-2.0 guarda a janela de instantes
-  // (`inicio`/`fim`) e quebrava o motor novo: a página chamava `calcular(entrada)` para conferir
-  // se o número mudou, o motor lia `dataInicio` de um objeto antigo, recebia `undefined`, e a tela
-  // respondia erro 500 — o membro perdia acesso ao próprio histórico. Idempotente: entrada nova
-  // passa intacta.
-  return { ...calculo, entrada: migrarEntrada(calculo.entrada) }
+  // 🔴 NÃO se converte a entrada. Cada versão tem o seu próprio formulário e motor congelados, e
+  // quem escolhe qual usar é a versão gravada (`algoritmo_versao`) — ver `versoes/registro.ts`.
+  // Converter aqui era o caminho antigo, e ele PERDIA o documento: o número que aparecia passava a
+  // ser o da fórmula nova, e o antigo só sobrevivia como JSON, sem como ser reconstruído.
+  return (data as CalculoSalvo | null) ?? null
 }

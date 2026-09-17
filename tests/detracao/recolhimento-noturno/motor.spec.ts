@@ -1,7 +1,7 @@
 // tests/detracao/recolhimento-noturno/motor.spec.ts
 import { describe, it, expect } from 'vitest'
-import { calcular } from '@/lib/detracao/recolhimento-noturno/motor'
-import type { SegmentoRegra, Weekday } from '@/lib/detracao/recolhimento-noturno/tipos'
+import { calcular } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-0/motor'
+import type { SegmentoRegra, Weekday } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-0/tipos'
 
 
 /** `SegmentoRegra` com todos os campos preenchidos — os testes só sobrescrevem o que importa. */

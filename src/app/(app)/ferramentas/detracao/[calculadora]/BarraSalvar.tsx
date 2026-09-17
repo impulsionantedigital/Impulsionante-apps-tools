@@ -5,8 +5,8 @@ import { useRouter } from 'next/navigation'
 import Botao from '@/components/ui/Botao'
 import { Campo as CampoUI, Entrada as EntradaControle } from '@/components/ui/Campo'
 import { caminhoDoProduto } from '@/lib/produtos/catalogo'
-import { entradaFormularioParaCalculo } from '@/lib/detracao/recolhimento-noturno/formulario'
-import type { EntradaFormulario } from '@/lib/detracao/recolhimento-noturno/formulario'
+import { versaoAtual } from '@/lib/detracao/recolhimento-noturno/versoes/registro'
+import type { EntradaFormulario } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-0/formulario'
 import { atualizarCalculo, salvarCalculo } from './acoes'
 import estilos from './calculadora.module.css'
 
@@ -40,7 +40,9 @@ export default function BarraSalvar({
   function salvar() {
     let entradaCalculo
     try {
-      entradaCalculo = entradaFormularioParaCalculo(entrada)
+      // 🔴 Converte com o formulário da versão ATUAL, e o servidor grava o rótulo dela: um cálculo
+      // novo nasce sempre na versão vigente, e nunca herda a de um cálculo aberto.
+      entradaCalculo = versaoAtual().formulario.paraCalculo(entrada)
     } catch (err) {
       avisar('erro', err instanceof Error ? err.message : 'Confira os dados do cálculo antes de salvar.')
       return

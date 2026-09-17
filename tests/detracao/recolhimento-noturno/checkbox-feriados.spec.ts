@@ -14,8 +14,8 @@ import { describe, it, expect } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { createElement } from 'react'
 import CamposSegmento from '@/app/(app)/ferramentas/detracao/[calculadora]/CamposSegmento'
-import { segmentoFormularioEmBranco } from '@/lib/detracao/recolhimento-noturno/formulario'
-import type { SegmentoFormulario } from '@/lib/detracao/recolhimento-noturno/formulario'
+import { segmentoFormularioEmBranco } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-0/formulario'
+import type { SegmentoFormulario } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-0/formulario'
 
 function renderCampos(segmento: SegmentoFormulario, avancado = false): string {
   return renderToStaticMarkup(

@@ -207,7 +207,35 @@ Um turno `22:00 → 06:00` num dia marcado em `diasSemanaNoturno` vale `H_NOTURN
 
 ---
 
-## 5. Histórico de Versões
+## 5. Versionamento do motor
+🔴 **Cada versão é um PACOTE FECHADO e CONGELADO**: formulário, motor, tipos, feriados e resumo de
+uma regra, vivendo em `src/lib/detracao/recolhimento-noturno/versoes/<rotulo>/`. O registro
+(`versoes/registro.ts`) lista as versões da mais recente para a mais antiga.
+
+**Como um cálculo se comporta:**
+
+| Situação | O que acontece |
+|---|---|
+| Cálculo **novo** | Usa sempre a versão mais recente do registro, e grava o rótulo dela. |
+| Cálculo **salvo** | É aberto com a versão GRAVADA (`algoritmo_versao`): o formulário e o motor daquela versão, e o resultado **como foi salvo**. |
+| Cálculo de versão **anterior** | Abre somente-leitura, com aviso de que há versão nova. Para aplicar a regra atual, **cria-se um cálculo novo** — o registro antigo não é recalculado nem convertido. |
+
+**Por que congelar em vez de converter a entrada.** Um cálculo salvo é DOCUMENTO, e pode ter virado
+petição protocolada. Se a fórmula muda e a entrada é convertida para o formato novo, o número que
+passa a aparecer é o da fórmula NOVA — o documento que foi juntado aos autos deixa de existir na
+tela, e o antigo só sobrevive como JSON, sem como ser reconstruído. Com a versão congelada, nada se
+converte: carrega-se o pacote que produziu o documento.
+
+⚠️ **Depois que uma versão entra em uso, o que está na pasta dela NÃO MUDE.** Nem correção de bug,
+nem ajuste de mensagem. Se a regra precisa mudar, nasce uma versão nova e esta fica como está.
+
+**Adicionar uma versão:** crie `versoes/<rotulo>/` copiando a estrutura da anterior, ajuste o que a
+regra nova exige, e acrescente UMA linha no array de `registro.ts` (no topo). Nada mais — a escolha
+do motor passa a ser pela versão gravada em cada cálculo.
+
+---
+
+## 6. Histórico de Versões
 
 | Versão | Data | Mudança |
 |--------|------|---------|

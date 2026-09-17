@@ -3,9 +3,9 @@
 import { Plus, Trash2 } from 'lucide-react'
 import Botao from '@/components/ui/Botao'
 import { Campo, Entrada as EntradaControle } from '@/components/ui/Campo'
-import { ROTULOS_DIA_SEMANA, WEEKDAYS } from '@/lib/detracao/recolhimento-noturno/tipos'
-import type { Weekday } from '@/lib/detracao/recolhimento-noturno/tipos'
-import type { SegmentoFormulario } from '@/lib/detracao/recolhimento-noturno/formulario'
+import { ROTULOS_DIA_SEMANA, WEEKDAYS } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-0/tipos'
+import type { Weekday } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-0/tipos'
+import type { SegmentoFormulario } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-0/formulario'
 import estilos from './calculadora.module.css'
 
 function SeletorDiasSemana({
