@@ -1,9 +1,9 @@
 # As telas do resultado e do questionário — decisões de 17/09/2026
 
-> Leia antes de mexer em `Resultado.tsx`, `Questionario.tsx`, `resultado.module.css` ou
-> `calculadora.module.css`. **Quatro coisas aqui contrariam o que o plano e os documentos
-> anteriores diziam**, e todas foram pedidas pelo dono do produto olhando a tela no ar. Quem
-> revisar sem saber disto vai "corrigir" de volta — foi o que aconteceu antes, com a folha de
+> Leia antes de mexer em `Resultado.tsx`, `Questionario.tsx`, `CabecalhoAnexo.tsx`,
+> `resultado.module.css` ou `calculadora.module.css`. **Sete coisas aqui contrariam o que o plano e
+> os documentos anteriores diziam**, e todas foram pedidas pelo dono do produto olhando a tela no ar.
+> Quem revisar sem saber disto vai "corrigir" de volta — foi o que aconteceu antes, com a folha de
 > impressão (ver `verificacoes-de-conjunto.md`).
 
 Nada aqui muda **regra jurídica**. É layout e apresentação; os vereditos, quantum e tempos
@@ -68,10 +68,11 @@ Três decisões que parecem detalhe e não são:
 
 1. **A ordem dentro de cada lista é a do decreto** (Art. 9º I, II, III…). O que separa as listas
    é o veredito, não a posição — reordenar por veredito faria o Art. 9º, IV se perder no meio.
-2. **A lista de baixo fica sempre visível**, mesmo cheia ou vazia. É dela que os cartões saem
-   conforme o questionário é preenchido; escondê-la tiraria de vista exatamente o que o advogado
-   está tentando destravar. A de cima **some quando vazia** (uma caixa "Aplicáveis" vazia só
-   ocuparia a tela).
+2. **A lista de baixo fica sempre visível NA TELA**, mesmo cheia ou vazia. É dela que os cartões
+   saem conforme o questionário é preenchido; escondê-la tiraria de vista exatamente o que o
+   advogado está tentando destravar. A de cima **some quando vazia** (uma caixa "Aplicáveis" vazia
+   só ocuparia a tela). **No PAPEL é o contrário** — a lista de baixo não sai, e a de cima sim.
+   Ver §6.
 3. **O título do cartão é `h4`** (era `h3`). A hierarquia virou h2 (grupo), h3 (lista),
    h4 (dispositivo). Não é preciosismo: leitor de tela navega por cabeçalho, e dois níveis
    iguais achatam a leitura.
@@ -123,6 +124,33 @@ O desvio está **registrado, não escondido**. Hoje a suíte termina em `1657 pa
 
 Se alguém "arrumar" a paridade removendo o skip, a suíte fica verde e o motor volta a negar a
 comutação a quem tem direito. O teste que confere a lista contra a realidade existe para isso.
+
+## 6. O que NÃO sai na impressão (17/09/2026)
+
+O anexo de petição mudou de novo, a pedido do dono do produto. A classe é `.soNaTela`
+(`resultado.module.css`): `display: contents` na tela, `display: none` em `@media print`. É o
+**inverso** do `.anexo`, que existe no papel e não na tela.
+
+| O que some no papel | Por quê |
+|---|---|
+| **Título do cálculo salvo** (`CabecalhoAnexo`) | É o nome que o membro deu ao registro, não informação do caso. A data de impressão continua saindo |
+| **Lista de dispositivos NÃO aplicáveis**, Indulto e Comutação | O anexo vai ao juiz com o que se aplica ao caso; a lista do que não se aplica só daria o que contestar sem motivo |
+
+E as **cinco frações de referência saíram do resumo** — da tela **e** do papel. Ver §7.
+
+**Por que CSS e não um `if (isPrinting)`:** com a regra no CSS, o React não precisa saber que está
+imprimindo, então não existe um estado de impressão para dessincronizar do que o CSS decidiu.
+Mantenha assim.
+
+## 7. As cinco frações saíram do resumo
+O resumo de tempos mostra **quatro totais** (total imposto, total cumprido, cumprido computável nos
+impeditivos, remanescente). As cinco frações de referência — `2/3 dos impeditivos`, `1/5`, `1/4`,
+`1/3`, `1/2 da pena não impeditiva` — saíram da tela.
+
+🔴 **As frações continuam sendo CALCULADAS pelo motor** (`resultado.resumo.fracoes`), e continuam nos
+testes. Não as remova para "limpar": a régua de **1/5** é a que o Art. 13 exige (é a comparação que o
+§5 descreve) e o **2/3 dos impeditivos** é requisito de outros dispositivos. Apagá-las do motor
+quebraria teste e petição sem mudar nada na tela. Para voltar a exibi-las, bastam cinco linhas no JSX.
 
 ## Como verificar sem banco
 

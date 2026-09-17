@@ -163,6 +163,27 @@
   .proveniencia { opacity: 1; }
 }
 
+/* ── O INVERSO do `.anexo`: existe na TELA e some no PAPEL ─────────────────
+ *
+ * Usado em dois lugares, os dois por pedido do dono do produto:
+ *  - a lista de dispositivos NÃO aplicáveis (Indulto e Comutação): o anexo vai ao juiz com o
+ *    que se aplica ao caso, não com o que não se aplica;
+ *  - o título do cálculo salvo, no `CabecalhoAnexo`: é o nome que o membro deu ao registro,
+ *    e não informação do caso.
+ *
+ * 🔴 `display: none` SÓ na impressão, e nenhuma regra fora dela. Na tela a classe não faz
+ * nada, e é isso que se quer: o React não precisa saber que está imprimindo, então não há
+ * estado de impressão para dessincronizar do que o CSS decidiu. Não troque por `if (isPrinting)`
+ * no componente. */
+.soNaTela {
+  display: contents;
+}
+@media print {
+  .soNaTela {
+    display: none;
+  }
+}
+
 /* ── O anexo de petição (só no papel) ─────────────────────────────────────
  *
  * 🔴 `display: none` fora da impressão. Na tela o advogado tem o questionário ao lado, cheio;

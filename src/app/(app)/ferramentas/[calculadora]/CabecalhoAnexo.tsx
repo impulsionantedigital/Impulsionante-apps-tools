@@ -34,9 +34,16 @@ export default function CabecalhoAnexo({
   return (
     <section className={estilos.anexo} aria-hidden="true">
       <h1 className={estilos.anexoTitulo}>Cálculo de indulto e comutação</h1>
+      {/* 🔴 O TÍTULO do cálculo salvo NÃO vai para o papel, a pedido do dono do produto —
+         era o nome que o membro dá ao registro, e não tem valor para o juiz. Fica a data de
+         impressão, que situa o anexo.
+
+         A prop `titulo` continua sendo recebida e usada: quem manda no que sai é o CSS
+         (`.soNaTela`), não um `if` no JSX — a `Calculadora` também depende dela para a
+         `BarraSalvar`, e tirar a prop daqui quebraria a assinatura sem necessidade. */}
       <p className={estilos.anexoMeta}>
-        {titulo.trim() || 'Cálculo sem identificação'}
-        {impressoEm ? ` · impresso em ${impressoEm}` : ''}
+        <span className={estilos.soNaTela}>{titulo.trim() || 'Cálculo sem identificação'}</span>
+        {impressoEm ? `impresso em ${impressoEm}` : ''}
       </p>
 
       <h2 className={estilos.anexoSecao}>Respostas informadas</h2>

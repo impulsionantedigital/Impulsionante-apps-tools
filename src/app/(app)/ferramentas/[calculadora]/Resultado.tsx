@@ -133,10 +133,19 @@ function Grupo({
         </>
       )}
 
-      <h3 className={estilos.subtitulo}>
-        {elemento} não aplicáve{naoAplicaveis.length === 1 ? 'l' : 'is'} ({naoAplicaveis.length})
-      </h3>
-      <Cartoes enquadramentos={naoAplicaveis} tipo={grupo} />
+      {/* 🔴 O bloco dos não aplicáveis é `soNaTela`: some na IMPRESSÃO, a pedido do dono do
+         produto — o anexo de petição leva só o que se aplica ao caso, e uma lista de
+         dispositivos que NÃO se aplicam só daria ao juiz o que contestar sem motivo.
+
+         Na tela ele fica: é de onde os cartões saem conforme o questionário é preenchido.
+         Esconder só no CSS (e não com um `if` que dependa de mídia) mantém o React sem
+         saber se está imprimindo — não há estado de impressão para dessincronizar. */}
+      <div className={estilos.soNaTela}>
+        <h3 className={estilos.subtitulo}>
+          {elemento} não aplicáve{naoAplicaveis.length === 1 ? 'l' : 'is'} ({naoAplicaveis.length})
+        </h3>
+        <Cartoes enquadramentos={naoAplicaveis} tipo={grupo} />
+      </div>
     </section>
   )
 }
@@ -150,16 +159,20 @@ export default function Resultado({
 }) {
   return (
     <div className={estilos.resultado}>
+      {/* 🔴 O resumo mostra os QUATRO totais do caso, e não mais as cinco frações de
+         referência (2/3 dos impeditivos, 1/5, 1/4, 1/3 e 1/2 da pena não impeditiva) —
+         pedido do dono do produto.
+
+         As frações continuam sendo CALCULADAS pelo motor (`resultado.resumo.fracoes`) e
+         continuam nos testes; o que mudou foi só quem as exibe. Não "limpe" o motor
+         removendo-as: a régua de 1/5 é a que o Art. 13 exige, e o 2/3 dos impeditivos é
+         requisito de outros dispositivos. Apagá-las do motor quebraria teste e a petição,
+         sem mudar nada na tela. Para voltar a exibi-las, basta devolver as cinco linhas. */}
       <section className={estilos.resumo} aria-label="Resumo de tempos">
         <div><span>Total de penas impostas</span><b>{fmtDias(resultado.resumo.totalImposto)}</b></div>
         <div><span>Total de pena cumprida</span><b>{fmtDias(resultado.resumo.totalCumprido)}</b></div>
         <div><span>Cumprido computável nos impeditivos</span><b>{fmtDias(resultado.resumo.penaCumpridaImpeditivos)}</b></div>
         <div><span>Pena remanescente</span><b>{fmtDias(resultado.resumo.remanescente)}</b></div>
-        <div><span>2/3 dos impeditivos</span><b>{fmtDias(resultado.resumo.fracoes.doisTercosImpeditivos)}</b></div>
-        <div><span>1/5 da pena não impeditiva</span><b>{fmtDias(resultado.resumo.fracoes.umQuinto)}</b></div>
-        <div><span>1/4 da pena não impeditiva</span><b>{fmtDias(resultado.resumo.fracoes.umQuarto)}</b></div>
-        <div><span>1/3 da pena não impeditiva</span><b>{fmtDias(resultado.resumo.fracoes.umTerco)}</b></div>
-        <div><span>1/2 da pena não impeditiva</span><b>{fmtDias(resultado.resumo.fracoes.metade)}</b></div>
       </section>
 
       {/* Só "Indulto" e "Comutação": são os dois grupos do CONTRATO
