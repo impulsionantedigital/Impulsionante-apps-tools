@@ -683,6 +683,20 @@ a:hover {
   color: var(--acento-hover);
 }
 
+/* 🔴 O `Botao` do kit vira `<a>` quando recebe `href`, e as duas regras acima ganhavam dele no
+ *  hover: `.primario:hover` pinta o FUNDO com `--acento-hover`, e o `a:hover` global pintava o
+ *  TEXTO com a mesma cor — texto e fundo iguais, e o rótulo sumia. Acontecia só em botão com
+ *  destino ("Novo cálculo", "Voltar"), nunca em `<button>`, que não é alcançado por `a:hover`.
+ *
+ *  O `:not([class])` NÃO resolve: a classe do CSS module tem hash e o seletor global não a vê.
+ *  O que resolve é o botão declarar a própria cor em TODOS os estados — assim a regra de elemento
+ *  perde para a de classe, que é mais específica. */
+.botaoDoKit,
+.botaoDoKit:hover,
+.botaoDoKit:visited {
+  color: inherit;
+}
+
 /* ── Controles nativos: <select> e campos de data ──────────────────────────────
  * REGRA ÚNICA E GLOBAL (não repetir por tela). Sem isto o navegador desenha o
  * chevron/calendário nativos, com altura e raio fora do kit, ao lado dos nossos
