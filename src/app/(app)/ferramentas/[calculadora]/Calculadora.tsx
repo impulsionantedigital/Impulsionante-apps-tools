@@ -97,12 +97,13 @@ export default function Calculadora({
         <Questionario secoes={motor.questionario} entrada={entrada} aoMudar={aoMudar} desabilitado={somenteLeitura} />
       </div>
       <div className={estilos.coluna}>
+        {/*
+          Sem aviso de acesso aqui: ele agora vive no topo da tela (`AvisoAcesso`), que é o único
+          lugar que conhece o prazo, a degustação e o endereço de venda. Repetir aqui daria a mesma
+          notícia duas vezes, e a versão daqui é a pior das duas — não tem o botão de renovar.
+        */}
         {somenteLeitura ? (
           <>
-            <div className={estilos.avisoVersao} role="status">
-              <b>Acesso encerrado.</b> Você pode consultar e excluir os seus cálculos, mas criar e
-              editar exige renovar o acesso.
-            </div>
             <div className={estilos.barraImprimir}>
               <BotaoImprimir />
               <BotaoPeticao motor={motor} entrada={entrada} resultado={resultado} titulo={titulo} />

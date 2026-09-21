@@ -12,7 +12,7 @@ import { duracaoDaOferta, ehDiasDegustacao } from '@/lib/vendas/degustacao'
 import { decidirEmails } from '@/lib/vendas/emails'
 import { formatarValor, formatarVencimento, vencimentoMaisTardio } from '@/lib/vendas/formatos'
 import { lerEventoHotmart, statusInicialDaVenda, type EventoHotmart, type StatusEncerramento } from '@/lib/vendas/hotmart'
-import { calcularPeriodos, calcularBonus, vendaVigente, type PeriodoExistente, type PeriodoNovo, type Prazo } from '@/lib/vendas/periodos'
+import { calcularPeriodos, calcularBonus, periodosDeBrinde, vendaVigente, type PeriodoExistente, type PeriodoNovo, type Prazo } from '@/lib/vendas/periodos'
 
 type Aprovada = Extract<EventoHotmart, { tipo: 'aprovada' }>
 type Encerrada = Extract<EventoHotmart, { tipo: 'encerrada' }>
@@ -26,6 +26,7 @@ type LinhaVenda = {
   id: string
   workspace_id: string
   membro_id: string
+  oferta_id: string
   status: string
   produtos: string[]
   duracao: string
@@ -35,7 +36,7 @@ type LinhaVenda = {
   notificacao_pendente: boolean
 }
 
-const COLUNAS_VENDA = 'id, workspace_id, membro_id, status, produtos, duracao, dias_degustacao, aprovada_em, notificacao_pendente'
+const COLUNAS_VENDA = 'id, workspace_id, membro_id, oferta_id, status, produtos, duracao, dias_degustacao, aprovada_em, notificacao_pendente'
 
 function juntar(...partes: (string | null | undefined)[]): string | null {
   const texto = partes.filter(Boolean).join(' · ')
@@ -154,6 +155,15 @@ async function aprovar(auditId: string, evento: Aprovada): Promise<Desfecho> {
     return { resultado: 'oferta_invalida', detalhe: 'sem produto conhecido, ou tempo de acesso inválido', workspaceId: ws }
   }
 
+  // 🔴 Uma oferta de degustação é uma REGRA DE CONCESSÃO, não um fato comercial: ela não vende,
+  // não cria venda e nem alcança este caminho em uso normal — o código dela nunca existe na
+  // Hotmart (é escolhido à mão pelo dono). Esta guarda existe para o caso de alguém cadastrar o
+  // código de uma filha igual ao de uma oferta real: sem ela, a compra criaria uma venda de
+  // degustação, e a venda existe para ser o registro do que foi PAGO.
+  if (typeof prazo === 'number') {
+    return { resultado: 'oferta_de_degustacao_sem_venda', detalhe: 'oferta de degustação não processa venda direta', workspaceId: ws }
+  }
+
   // A transação já virou venda? Então é reenvio — completa o que tiver faltado.
   const { data: existente, error: erroExistente } = await cli
     .from('vendas')
@@ -185,7 +195,7 @@ async function aprovar(auditId: string, evento: Aprovada): Promise<Desfecho> {
       produtos,
       produtos_novos: novos,
       duracao,
-      dias_degustacao: typeof prazo === 'number' ? prazo : null,
+      dias_degustacao: null,
       aprovada_em: evento.aprovadaEm.toISOString(),
       valor: evento.valor,
       moeda: evento.moeda,
@@ -230,11 +240,86 @@ async function aprovar(auditId: string, evento: Aprovada): Promise<Desfecho> {
     aprovadaEm: evento.aprovadaEm,
     existentes,
   }))
+
+  // 🔴 As filhas vêm DEPOIS da venda: `vendas_periodos` aponta para ela por chave estrangeira, e o
+  // brinde não tem venda própria (uma transação = uma venda).
+  const brindes = await concederBrindes({ ws, ofertaId: oferta.id, membroId: membro.membroId, vendaId: gravada.id })
+
   // 🔴 Falha ao enfileirar os e-mails LANÇA: o evento fica `falhou`, a rota devolve 500 e a Hotmart
   // reenvia — o reenvio cai em `retomar`, que completa sem duplicar. Devolver só um aviso deixaria
   // o comprador sem a senha até alguém reparar.
   await notificarOuFalhar(gravada.id)
-  return { resultado: 'venda_criada', workspaceId: ws, detalhe: membro.observacao }
+  return {
+    resultado: 'venda_criada',
+    workspaceId: ws,
+    detalhe: juntar(membro.observacao, brindes > 0 ? `${brindes} brinde(s) concedido(s)` : null),
+  }
+}
+
+/**
+ * Concede os brindes das ofertas filhas desta principal (§7.4).
+ *
+ * 🔴 Uma falha na filha NÃO derruba a venda: o membro pagou, o acesso pago já está gravado, e
+ * derrubar tudo o deixaria sem nada por causa de um brinde. A venda já foi persistida e o evento
+ * fica `ok` — o caminho de reparo é o reprocessamento da oferta, que reencontra a venda e concede
+ * o que faltava. O motivo exato vive no `detalhe` da auditoria.
+ *
+ * 🔴 E o brinde não empilha: `periodosDeBrinde` sempre nasce em `agora`, e a gravação é protegida
+ * pela chave (venda, produto) — reprocessar duas vezes não concede duas vezes.
+ */
+async function concederBrindes(args: {
+  ws: string
+  ofertaId: string
+  membroId: string
+  vendaId: string
+}): Promise<number> {
+  const cli = admin()
+  const { data, error } = await cli
+    .from('ofertas_filhas')
+    .select('oferta_filha_id, ofertas!ofertas_filhas_oferta_filha_id_fkey(produtos, duracao, dias_degustacao, ativa)')
+    .eq('oferta_pai_id', args.ofertaId)
+  if (error) throw error
+  type ConfigFilha = { produtos: string[]; duracao: string; dias_degustacao: number | null; ativa: boolean }
+  const filhas = (data ?? []) as unknown as Array<{ ofertas: ConfigFilha | ConfigFilha[] | null }>
+  /** A relação é 1-para-1, mas o cliente devolve array em algumas versões — aceita as duas formas. */
+  const configDaFilha = (ofertas: ConfigFilha | ConfigFilha[] | null): ConfigFilha | null =>
+    Array.isArray(ofertas) ? (ofertas[0] ?? null) : ofertas
+
+  let concedidos = 0
+  // `agora` é lido UMA vez: dois brindes da mesma compra começam no mesmo instante, e a diferença
+  // entre as duas concessões fica igual para os dois.
+  const concedidoEm = new Date()
+
+  // 🔴 A regra do brinde: NUNCA RENOVA NEM EMPILHA. A pergunta abaixo é pelo MEMBRO, e não pela
+  // venda: a Hotmart manda uma transação nova a cada ciclo de assinatura, então cada ciclo entraria
+  // como uma venda nova e o brinde seria concedido de novo, para sempre. Quem quiser um segundo
+  // período de degustação cria outra oferta filha — é o que torna o brinde uma ação deliberada.
+  const { data: jaConcedidos, error: erroConcedidos } = await cli
+    .from('vendas_periodos')
+    .select('produto_id')
+    .eq('workspace_id', args.ws)
+    .eq('membro_id', args.membroId)
+    .eq('origem', 'degustacao')
+  if (erroConcedidos) throw erroConcedidos
+  const comBrinde = new Set(((jaConcedidos ?? []) as Array<{ produto_id: string }>).map((p) => p.produto_id))
+
+  for (const { ofertas } of filhas) {
+    const filha = configDaFilha(ofertas)
+    // Filha inativa desliga o brinde para vendas NOVAS, sem mexer nas concedidas.
+    if (!filha?.ativa) continue
+    const prazo = duracaoDaOferta({ duracao: filha.duracao, diasDegustacao: filha.dias_degustacao })
+    // Filha que não é degustação não é brinde — é configuração errada, e passa em silêncio.
+    if (typeof prazo !== 'number') continue
+    const produtos = filha.produtos.filter(ehProdutoConhecido).filter((p) => !comBrinde.has(p))
+    if (produtos.length === 0) continue
+    concedidos += await gravarPeriodos(
+      args.ws,
+      args.membroId,
+      args.vendaId,
+      periodosDeBrinde({ produtos, dias: prazo, concedidoEm }),
+    )
+  }
+  return concedidos
 }
 
 async function encerramentoRegistrado(transacao: string, excluirAuditId: string): Promise<StatusEncerramento | null> {
@@ -263,26 +348,53 @@ async function retomar(venda: LinhaVenda): Promise<Desfecho> {
   return { resultado: 'venda_existente', workspaceId: venda.workspace_id }
 }
 
+/**
+ * Completa o que faltar para a venda dar TODO o acesso que ela deve dar.
+ *
+ * 🔴 Antes, esta função perguntava "a venda já tem algum período?" e desistia se tivesse. Isso
+ * deixava um buraco silencioso: um processamento que caísse depois de gravar os períodos dos
+ * produtos vendidos e ANTES de conceder os brindes das filhas ficava assim para sempre — o reenvio
+ * da Hotmart encontrava um período, desistia, e o brinde nunca nascia. O membro pagava e não
+ * recebia o brinde, sem erro em lugar nenhum.
+ *
+ * Agora a pergunta é pelo que FALTA: o período de cada produto esperado. Como a chave única é
+ * (venda, produto), a gravação é naturalmente idempotente — o que já existe é ignorado pelo banco,
+ * e o que falta entra.
+ */
 async function garantirPeriodos(venda: LinhaVenda): Promise<void> {
   const prazo = prazoDaVenda(venda)
   if (venda.status !== 'ativa' || prazo === null) return
-  const { count, error } = await admin()
+  const { data, error } = await admin()
     .from('vendas_periodos')
-    .select('id', { count: 'exact', head: true })
+    .select('produto_id')
     .eq('venda_id', venda.id)
   if (error) throw error
-  if ((count ?? 0) > 0) return
-  const { existentes } = await historicoDoMembro(venda.workspace_id, venda.membro_id, venda.id)
-  await gravarPeriodos(venda.workspace_id, venda.membro_id, venda.id, calcularPeriodos({
-    produtos: venda.produtos.filter(ehProdutoConhecido),
-    duracao: prazo,
-    aprovadaEm: new Date(venda.aprovada_em),
-    existentes,
-  }))
+  const jaTem = new Set(((data ?? []) as Array<{ produto_id: string }>).map((p) => p.produto_id))
+
+  const produtosEsperados = venda.produtos.filter(ehProdutoConhecido)
+  const faltando = produtosEsperados.filter((p) => !jaTem.has(p))
+  if (faltando.length > 0) {
+    const { existentes } = await historicoDoMembro(venda.workspace_id, venda.membro_id, venda.id)
+    await gravarPeriodos(venda.workspace_id, venda.membro_id, venda.id, calcularPeriodos({
+      produtos: faltando,
+      duracao: prazo,
+      aprovadaEm: new Date(venda.aprovada_em),
+      existentes,
+    }))
+  }
+
+  // Os brindes das filhas entram na mesma completação: o que já foi concedido a chave do banco
+  // descarta, e o que faltou nasce agora.
+  await concederBrindes({
+    ws: venda.workspace_id,
+    ofertaId: venda.oferta_id,
+    membroId: venda.membro_id,
+    vendaId: venda.id,
+  })
 }
 
-async function gravarPeriodos(ws: string, membroId: string, vendaId: string, periodos: PeriodoNovo[]): Promise<void> {
-  if (periodos.length === 0) return
+async function gravarPeriodos(ws: string, membroId: string, vendaId: string, periodos: PeriodoNovo[]): Promise<number> {
+  if (periodos.length === 0) return 0
   const { error } = await admin()
     .from('vendas_periodos')
     .insert(periodos.map((p) => ({
@@ -292,9 +404,14 @@ async function gravarPeriodos(ws: string, membroId: string, vendaId: string, per
       produto_id: p.produtoId,
       inicia_em: p.iniciaEm.toISOString(),
       expira_em: p.expiraEm ? p.expiraEm.toISOString() : null,
+      origem: p.origem,
     })))
   // Chave (venda, produto) repetida: outro processamento da mesma venda gravou primeiro.
-  if (error && error.code !== '23505') throw error
+  if (error) {
+    if (error.code !== '23505') throw error
+    return 0
+  }
+  return periodos.length
 }
 
 async function historicoDoMembro(
@@ -423,51 +540,64 @@ export async function bonificarVendasDaOferta(ws: string, ofertaId: string): Pro
     periodosPorVenda.set(p.venda_id, lista)
   }
 
-  const agora = new Date()
-  let vendasAtualizadas = 0
-  let periodosNovos = 0
+    const agora = new Date()
+    let vendasAtualizadas = 0
+    let periodosNovos = 0
+    for (const venda of listaVendas) {
+      // O prazo é o da VENDA, não o da oferta de hoje: quem comprou uma degustação recebe o bônus
+      // com os dias que comprou, mesmo que a oferta já tenha voltado a ser anual.
+      const prazo = prazoDaVenda(venda)
+      if (prazo === null) continue
+      const vigente = vendaVigente({ status: venda.status, periodos: periodosPorVenda.get(venda.id) ?? [], agora })
+      if (!vigente) continue
+      const produtosDaVenda = venda.produtos.filter(ehProdutoConhecido)
+      const bonus = calcularBonus({
+        produtosDaOferta,
+        produtosDaVenda,
+        duracao: prazo,
+        aprovadaEm: new Date(venda.aprovada_em),
+      })
+      // 🔴 O brinde novo entra no MESMO acerto, mas com outra régua: começa agora, e não na data da
+      // compra (é o que `periodosDeBrinde` documenta). Sem ele aqui, adicionar uma filha a uma oferta
+      // já vendida não chegaria a ninguém — e é exatamente para isso que o reprocessamento existe.
+      const brindes = await concederBrindes({
+        ws,
+        ofertaId,
+        membroId: venda.membro_id,
+        vendaId: venda.id,
+      })
+      if (bonus.length === 0 && brindes === 0) continue
+      const { error: erroInsert } = await cli.from('vendas_periodos').insert(
+        bonus.map((p) => ({
+          workspace_id: ws,
+          membro_id: venda.membro_id,
+          venda_id: venda.id,
+          produto_id: p.produtoId,
+          inicia_em: p.iniciaEm.toISOString(),
+          expira_em: p.expiraEm ? p.expiraEm.toISOString() : null,
+          origem: p.origem,
+        })),
+      )
+      // Chave (venda, produto) repetida: outro reprocessamento já bonificou esta venda primeiro.
+      if (erroInsert && erroInsert.code !== '23505') throw erroInsert
+      // 🔴 O `produtos` da venda só ganha os BÔNUS, nunca os brindes: ele é a lista do que a venda
+      // concede como produto vendido, e o brinde é acesso de outra natureza — com prazo próprio, que
+      // não empilha. Somar os dois aqui faria a renovação seguinte tratar o brinde como produto
+      // comprado, e ele passaria a empilhar e a renovar.
+      if (bonus.length > 0) {
+        const { error: erroUpdate } = await cli
+          .from('vendas')
+          .update({ produtos: [...produtosDaVenda, ...bonus.map((p) => p.produtoId)] })
+          .eq('id', venda.id)
+        if (erroUpdate) throw erroUpdate
+      }
 
-  for (const venda of listaVendas) {
-    // O prazo é o da VENDA, não o da oferta de hoje: quem comprou uma degustação recebe o bônus
-    // com os dias que comprou, mesmo que a oferta já tenha voltado a ser anual.
-    const prazo = prazoDaVenda(venda)
-    if (prazo === null) continue
-    const vigente = vendaVigente({ status: venda.status, periodos: periodosPorVenda.get(venda.id) ?? [], agora })
-    if (!vigente) continue
-    const produtosDaVenda = venda.produtos.filter(ehProdutoConhecido)
-    const bonus = calcularBonus({
-      produtosDaOferta,
-      produtosDaVenda,
-      duracao: prazo,
-      aprovadaEm: new Date(venda.aprovada_em),
-    })
-    if (bonus.length === 0) continue
+      vendasAtualizadas += 1
+      periodosNovos += bonus.length + brindes
+    }
 
-    const { error: erroInsert } = await cli.from('vendas_periodos').insert(
-      bonus.map((p) => ({
-        workspace_id: ws,
-        membro_id: venda.membro_id,
-        venda_id: venda.id,
-        produto_id: p.produtoId,
-        inicia_em: p.iniciaEm.toISOString(),
-        expira_em: p.expiraEm ? p.expiraEm.toISOString() : null,
-      })),
-    )
-    // Chave (venda, produto) repetida: outro reprocessamento já bonificou esta venda primeiro.
-    if (erroInsert && erroInsert.code !== '23505') throw erroInsert
-
-    const { error: erroUpdate } = await cli
-      .from('vendas')
-      .update({ produtos: [...produtosDaVenda, ...bonus.map((p) => p.produtoId)] })
-      .eq('id', venda.id)
-    if (erroUpdate) throw erroUpdate
-
-    vendasAtualizadas += 1
-    periodosNovos += bonus.length
+    return { vendasAtualizadas, periodosNovos }
   }
-
-  return { vendasAtualizadas, periodosNovos }
-}
 
 // ── e-mails ──────────────────────────────────────────────────────────────────────────────────
 

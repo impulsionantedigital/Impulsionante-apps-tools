@@ -7,6 +7,11 @@ O resto da árvore é o contrário: qualquer arquivo do produto que você editar
 sobrescrito** na próxima atualização, sem aviso. Se você precisa mudar algo, o caminho é
 colocar a mudança aqui.
 
+> ⚠️ **Este servidor tem uma exceção aberta e registrada.** Alterações em arquivos do produto
+> foram feitas de propósito, com o custo conhecido. Antes de atualizar o CRM, leia
+> [Divergências conscientes do produto](#-divergências-conscientes-do-produto-este-servidor)
+> no fim deste arquivo — é a lista do que sai na atualização e precisa ser reaplicado.
+
 ## O que dá pra fazer aqui
 
 | Pasta | O que você põe | O que acontece | Detalhes |
@@ -179,8 +184,116 @@ Em página e em bloco existe sessão, então use `clienteDaSessao()`: lá o isol
 automático e você não precisa lembrar de nada. Por isso `clienteSemIsolamento` **nem é
 exportado** por `@awave/custom` — só por `@awave/custom/servidor`.
 
-## O que NÃO fazer aqui
+## 🔴 Divergências conscientes do produto (este servidor)
 
+O CRM foi feito para ser **atualizável em 1 clique**: a atualização substitui os arquivos do
+produto e preserva esta pasta. As mudanças listadas abaixo **saíram desse contrato de propósito**
+— foram edições em arquivos do produto, feitas com o custo conhecido. Leia esta seção antes de
+atualizar o CRM.
+
+### O que foi alterado fora de `custom/`
+
+| Arquivo do produto | O que mudou | Por quê |
+|---|---|---|
+| `supabase/migrations/0069_oferta_degustacao.sql` | coluna `dias_degustacao` em `ofertas` e `vendas` | oferta de degustação: o prazo vem de um número de dias, não de um nome de duração |
+| `supabase/migrations/0070_ofertas_filhas_e_origem_do_periodo.sql` | tabela `ofertas_filhas`; coluna `origem` em `vendas_periodos` | vínculo de brinde entre ofertas; e o que permite responder "este acesso é trial?" sem perguntar à oferta |
+| `src/lib/vendas/degustacao.ts` | arquivo novo | regra da degustação: teto de dias, leitura do campo, recusa de valor inválido |
+| `src/lib/vendas/periodos.ts` | `periodosDeBrinde()`; `Prazo = Duracao \| number`; `origem` no período | o brinde nasce na data da concessão e não empilha |
+| `src/lib/vendas/acesso.ts` | `detalheDeAcesso()` — campo `trial` **ao lado** do estado | trial é rótulo, não permissão (ver abaixo) |
+| `src/server/vendas/processar.ts` | guarda de oferta de degustação; `concederBrindes()`; `garantirPeriodos` completa o que falta | processar as ofertas filhas e não perder brinde em reenvio |
+| `src/server/vendas/acesso.ts` | `estadoEDetalheDoProduto()` | leva o rótulo de trial até a tela do membro |
+| `src/app/(app)/config/acoes-comercial.ts` | vínculo de filhas, com as três recusas | é onde a oferta principal escolhe os brindes |
+| `src/app/(app)/config/ComercialCard.tsx` | seleção de ofertas filhas; campo de dias na degustação | tela do admin |
+| `src/app/(app)/ferramentas/page.tsx` | mostra "Degustação — N dia(s) restante(s)" | o membro enxerga que o acesso é trial |
+| `src/app/(app)/ferramentas/[calculadora]/AvisoAcesso.tsx` | **arquivo novo** | o aviso de vencimento/degust/a/expirado no topo da tela do produto |
+| `src/app/(app)/ferramentas/[calculadora]/Calculadora.tsx` | removido o bloco "Acesso encerrado" | passou a ser o `AvisoAcesso`, que é a versão completa (tem prazo, trial e botão) |
+| `src/lib/vendas/aviso-acesso.ts` | **arquivo novo** | qual recado sai em cada situação, e o texto de cada um |
+| `src/lib/produtos/catalogo.ts` | `checkoutDoProduto` + `nomeDaVariavelDeCheckout` | o endereço de venda vem do ambiente, por produto |
+| `.env.example` | bloco `CHECKOUT_URL_*` | as variáveis que você configura no painel |
+
+### As variáveis de ambiente que este fork acrescentou
+Um endereço de venda (checkout) por produto, para o botão do aviso de acesso. **Todas opcionais:**
+
+| Variável | Produto |
+|---|---|
+| `CHECKOUT_URL_CIC_2025` | Calculadora de Indulto e Comutação — Decreto 12.970/2025 |
+| `CHECKOUT_URL_CIC_2024` | Calculadora de Indulto e Comutação — Decreto 12.338/2024 |
+| `CHECKOUT_URL_RECOLHIMENTO_NOTURNO` | Detração por Recolhimento Noturno |
+
+A regra do nome: `CHECKOUT_URL_` + o **slug** da rota, em maiúsculas, com o hífen trocado por
+sublinhado (nome de variável de ambiente não aceita hífen). Ao criar um produto novo no catálogo,
+o nome da variável dele sai daí — e o teste `tests/produtos/checkout.spec.ts` cobra que todo slug
+gere um nome válido e único.
+
+🔴 **NÃO use o prefixo `NEXT_PUBLIC_`.** Ele é embutido no bundle em tempo de **build**; como o CRM
+roda em Docker, o valor do painel só entraria no bundle se estivesse presente durante o `pnpm build`
+dentro da imagem — trocar o link no painel **não** mudaria nada. Sem o prefixo, a variável é lida em
+tempo de execução, e trocar o link vale com um restart, sem reconstruir a imagem.
+
+**Se a variável não existe ou está em branco, o botão NÃO aparece** — o aviso sai só com o texto. É
+de propósito: melhor não oferecer botão do que mandar o membro a um endereço que não existe.
+
+> ✅ **As três já estão configuradas no EasyPanel.** Como a leitura é em runtime, o que for
+trocado lá vale com um **restart do serviço** — sem reconstruir a imagem. E atenção: se o valor for
+definido e o container **não** for reiniciado, o botão continua ausente **sem erro nenhum** (é
+o mesmo sintoma de "variável não configurada").
+
+### As mensagens que o membro vê, e quando
+
+Na tela de cada produto, no topo. A regra vive em `src/lib/vendas/aviso-acesso.ts` e está fixada em
+`tests/vendas/aviso-acesso.spec.ts` — 23 testes cobrem as cinco situações.
+
+| Situação | Mensagem | Botão de checkout |
+|---|---|---|
+| Acesso comprado, faltando mais de 7 dias | **nada** — a tela fica limpa | — |
+| Acesso comprado, faltando até 7 dias | Lembrete: cartão ativo / Pix antes do vencimento / renovar na Hotmart | — |
+| Acesso em degustação (sempre, desde o 1º dia) | "Você recebeu acesso Bônus… degustação de N dia(s)… escolha um dos planos disponíveis" | **sim** |
+| Acesso comprado que expirou | "Seu acesso expirou" + cálculos guardados | **sim** |
+| Degustação que expirou | "Sua degustação terminou" + convite a assinar | **sim** |
+
+O limiar de 7 dias (`DIAS_DE_AVISO_DE_VENCIMENTO`) **não se aplica ao trial**, que avisa desde o
+primeiro dia: o prazo dele é curto por definição, e "faltam 7 dias" num trial de 3 nunca apareceria.
+
+🔴 **O aviso de vencimento NÃO leva botão**, de propósito: quem ainda tem acesso renova na Hotmart
+por conta própria, e um botão ali competiria com o trabalho da pessoa. O botão é para quem **perdeu**
+o acesso ou está experimentando — aí é conversão, e não renovação.
+
+### O que isso custa, na prática
+- **A atualização em 1 clique passa a avisar divergência** nesses arquivos, e no próximo update
+  eles voltam à versão do produto — a mudança some, e sobra só o backup no branch
+  `awave-backup/pre-<versão>`.
+- **Não é mais customização: é fork.** Atualizar o CRM exige, a partir de agora, reaplicar estas
+  mudanças à mão (ou apontar o git para este repositório e assumir a manutenção do merge).
+- **A migration 0070 precisa rodar ANTES do código novo.** O insert de `vendas_periodos` passou a
+  mandar a coluna `origem`; com o banco antigo e o código novo, ele falha por coluna desconhecida.
+
+### As regras de negócio que não estão em `custom/`
+
+Se algum dia estas mudanças forem promovidas para `custom/`, é isto que precisa sobreviver:
+
+1. **A degustação nunca vende.** O código de uma oferta de degustação é escolhido à mão e **não
+   existe na Hotmart**. Se uma compra chegar com ele, ela é recusada (`oferta_de_degustacao_sem_venda`),
+   e não vira venda.
+2. **Uma transação = uma venda.** As ofertas filhas **não** criam venda própria; elas só
+   contribuem com períodos de acesso. Quem manda nisso é o índice único
+   `vendas_plataforma_transacao_key`.
+3. **O brinde nunca renova nem empilha.** A concessão é por **membro e produto**, não por
+   transação: como a Hotmart manda uma transação nova a cada ciclo de assinatura, o filtro por
+   transação concederia o brinde de novo a cada pagamento. Quem quiser um segundo período de
+   degustação cria **outra** oferta filha.
+4. **O brinde nasce na data da concessão**, e não na data da compra. É a única concessão do
+   sistema que não é retroativa — as demais nascem na data da venda, "como se o produto sempre
+   tivesse feito parte da compra".
+5. **`trial` é um campo ao lado do estado, e nunca um valor dentro dele.** Se `'trial'` virasse um
+   quarto valor de `EstadoAcesso`, os pontos que hoje perguntam `=== 'ativo'` passariam a recusá-lo,
+   e **o membro em degustação não conseguiria criar nem editar cálculo** — a tela apareceria e a
+   gravação seria recusada, sem erro visível.
+6. **Produto do brinde não pode ser produto que a principal já vende.** As duas linhas brigariam na
+   chave `(venda, produto)` e o brinde sumiria em silêncio.
+7. **Profundidade de vínculo é 1.** Filha de filha nunca seria percorrida: a concessão lê um nível
+   só, e o resto desapareceria sem erro.
+
+## O que NÃO fazer aqui
 - **Não apague esta pasta.** Sem ela, o CRM ainda sobe, mas você perde a zona protegida.
 - **Não coloque segredo em arquivo.** Chaves e senhas ficam nas variáveis de ambiente do
   painel, nunca no repositório.

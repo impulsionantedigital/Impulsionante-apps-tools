@@ -7,6 +7,7 @@ import { tituloDaPagina } from '@/server/marca'
 import { listarCalculos } from './calculos'
 import { estadoDoProduto } from '@/server/vendas/acesso'
 import { produtoPorSlug, caminhoDoProduto } from '@/lib/produtos/catalogo'
+import AvisoAcesso from './AvisoAcesso'
 import ListaCalculos from './ListaCalculos'
 import estilos from './calculadora.module.css'
 
@@ -47,12 +48,12 @@ export default async function ListaPage({ params }: { params: Promise<{ calculad
         acoes={novo}
       />
 
-      {!ativo && (
-        <div className={estilos.avisoVersao} role="status">
-          <b>Acesso encerrado.</b> Os seus cálculos continuam aqui para consulta. Para criar ou
-          editar, renove o acesso.
-        </div>
-      )}
+      {/*
+        🔴 O aviso decide sozinho o que dizer e quando se calar: acesso comprado e folgado não gera
+        bloco nenhum, para a tela continuar limpa para quem está trabalhando. As regras de qual
+        recado sai em cada situação vivem em `@/lib/vendas/aviso-acesso`, testadas sem render.
+      */}
+      <AvisoAcesso produto={produto} />
 
       {calculos.length === 0 ? (
         <EstadoVazio

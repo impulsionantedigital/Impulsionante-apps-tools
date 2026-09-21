@@ -154,10 +154,14 @@ type Formulario = {
   duracao: string
   /** Texto, e não número: enquanto a pessoa digita, o campo precisa aceitar o que ela digitou. */
   diasDegustacao: string
+  /** As filhas escolhidas — só faz sentido na principal. Uma filha não tem filha. */
+  filhas: string[]
+  /** A principal desta oferta, quando ela é filha. Não é editável aqui: é derivado do vínculo. */
+  pai: string | null
   ativa: boolean
   reprocessarVendas: boolean
 }
-const FORMULARIO_VAZIO: Formulario = { codigo: '', nome: '', produtos: [], duracao: 'mensal', diasDegustacao: '', ativa: true, reprocessarVendas: false }
+const FORMULARIO_VAZIO: Formulario = { codigo: '', nome: '', produtos: [], duracao: 'mensal', diasDegustacao: '', filhas: [], pai: null, ativa: true, reprocessarVendas: false }
 
 /** Do item da lista para o formulário: os dias só aparecem quando a oferta é de degustação. */
 function formularioDe(o: OfertaItem): Formulario {
@@ -168,6 +172,8 @@ function formularioDe(o: OfertaItem): Formulario {
     produtos: o.produtos,
     duracao: o.duracao,
     diasDegustacao: o.diasDegustacao === null ? '' : String(o.diasDegustacao),
+    filhas: o.filhas,
+    pai: o.pai,
     ativa: o.ativa,
     // Sempre desmarcado: reprocessar é uma ação pontual, não um estado da oferta.
     reprocessarVendas: false,
@@ -187,6 +193,7 @@ function dadosDaOferta(form: Formulario) {
     produtos: form.produtos,
     duracao: form.duracao,
     diasDegustacao: form.diasDegustacao.trim() ? diasDeDegustacao(form.diasDegustacao) : null,
+    filhas: form.filhas,
     ativa: form.ativa,
     reprocessarVendas: form.reprocessarVendas,
   }
@@ -201,6 +208,10 @@ function OfertasBloco({ vista, executar, pendente }: PropsBloco) {
 
   function alternarProduto(id: string) {
     setForm((f) => (f ? { ...f, produtos: f.produtos.includes(id) ? f.produtos.filter((p) => p !== id) : [...f.produtos, id] } : f))
+  }
+
+  function alternarFilha(id: string) {
+    setForm((f) => (f ? { ...f, filhas: f.filhas.includes(id) ? f.filhas.filter((x) => x !== id) : [...f.filhas, id] } : f))
   }
 
   return (
@@ -225,6 +236,8 @@ function OfertasBloco({ vista, executar, pendente }: PropsBloco) {
                 <span className={estilos.itemRotulo}>{o.nome}</span>
                 <code className={estilos.campoTag}>{o.codigo}</code>
                 <span className={`${estilos.selo} ${estilos.selo_neutro}`}>{rotuloDaDuracao(o.duracao, o.diasDegustacao)}</span>
+                {o.filhas.length > 0 && <span className={`${estilos.selo} ${estilos.selo_neutro}`}>{o.filhas.length} brinde(s)</span>}
+                {o.pai && <span className={`${estilos.selo} ${estilos.selo_neutro}`}>filha</span>}
                 {!o.ativa && <span className={`${estilos.selo} ${estilos.selo_neutro}`}>desativada</span>}
               </span>
               <span className={estilos.acoes}>
@@ -263,6 +276,12 @@ function OfertasBloco({ vista, executar, pendente }: PropsBloco) {
               ))}
             </Selecao>
           </div>
+
+          {/*
+            🔴 A escolha entre venda e degustação é EXCLUSIVA e vive aqui, e não em duas colunas de
+            checkbox. Com dois booleanos por produto, o estado (true, true) existiria no tipo e
+            caberia a todo consumidor recusá-lo; com um seletor por produto, ele não existe.
+          */}
           {form.duracao === DEGUSTACAO ? (
             <div className={estilos.campo}>
               <label className={estilos.rotulo} htmlFor="oferta-degustacao-dias">Dias de degustação</label>
@@ -275,12 +294,34 @@ function OfertasBloco({ vista, executar, pendente }: PropsBloco) {
                 autoComplete="off"
               />
               <p className={estilos.ajuda}>
-                A compra desta oferta libera os produtos por estes dias corridos, contados da aprovação do
-                pagamento. A duração acima volta a valer se a degustação for desligada — as vendas que já
-                existem guardam os dias que compraram.
+                O brinde nasce na data em que é concedido e <strong>não renova nem empilha</strong>: quem já
+                recebeu uma degustação deste produto não recebe outra por esta oferta. O código precisa ser
+                livre — a oferta de degustação nunca processa uma venda.
               </p>
             </div>
-          ) : null}
+          ) : (
+            <div className={estilos.campo}>
+              <span className={estilos.rotulo}>Ofertas de brinde (degustação)</span>
+              <p className={estilos.ajuda}>
+                Quem comprar esta oferta ganha também os produtos das ofertas abaixo, por quanto tempo elas
+                definirem. O brinde começa na data da concessão, não na data da compra.
+              </p>
+              {form.pai ? (
+                <p className={estilos.ajuda}>Esta oferta é filha de outra — uma filha não recebe brindes nem vendas.</p>
+              ) : vista.candidatasAFilha.length === 0 ? (
+                <p className={estilos.ajuda}>
+                  Nenhuma oferta de degustação disponível. Crie uma oferta com o tempo de acesso em
+                  “Dias de degustação” para poder vinculá-la aqui.
+                </p>
+              ) : (
+                vista.candidatasAFilha.map((f) => (
+                  <label key={f.id} className={estilos.ajuda}>
+                    <input type="checkbox" checked={form.filhas.includes(f.id)} onChange={() => alternarFilha(f.id)} /> {f.rotulo}
+                  </label>
+                ))
+              )}
+            </div>
+          )}
           <label className={estilos.ajuda}>
             <input type="checkbox" checked={form.ativa} onChange={(e) => setForm({ ...form, ativa: e.target.checked })} /> Oferta ativa
           </label>
