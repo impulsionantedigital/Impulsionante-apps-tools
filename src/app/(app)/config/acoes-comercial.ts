@@ -13,6 +13,13 @@ import { bonificarVendasDaOferta, encerrarVendaManual, reenviarNotificacoes, rep
 import { esquecerTokenHotmart } from '@/server/vendas/token-hotmart'
 import { CHAVE_URL_PUBLICA } from '@/lib/canais/url-publica'
 import { PRODUTOS, ehProdutoConhecido, rotuloDoProduto } from '@/lib/produtos/catalogo'
+import {
+  DEGUSTACAO,
+  MAX_DIAS_DEGUSTACAO,
+  OPCOES_TEMPO_DE_ACESSO,
+  ehDiasDegustacao,
+  rotuloDaDuracao,
+} from '@/lib/vendas/degustacao'
 import { DURACOES } from '@/lib/vendas/duracao'
 import { CHAVE_HOTTOK_HOTMART } from '@/lib/vendas/hotmart'
 import { formatarValor, formatarVencimento, vencimentoMaisTardio } from '@/lib/vendas/formatos'
@@ -26,6 +33,8 @@ export interface OfertaItem {
   nome: string
   produtos: string[]
   duracao: string
+  /** Só vale quando `duracao` é a degustação — é o prazo, em dias, que a compra concede. */
+  diasDegustacao: number | null
   ativa: boolean
 }
 
@@ -34,6 +43,8 @@ export interface VendaItem {
   membro: string
   transacao: string
   status: string
+  /** O prazo que ESTA compra concedeu, já em forma de rótulo — degustação mostra os dias. */
+  duracao: string
   produtos: string
   aprovadaEm: string
   vencimento: string
@@ -56,7 +67,9 @@ export interface VistaComercial {
   vendas: VendaItem[]
   eventos: EventoItem[]
   produtos: Array<{ id: string; rotulo: string }>
-  duracoes: string[]
+  temposDeAcesso: Array<{ valor: string; rotulo: string }>
+  /** O teto do campo de dias — a tela não repete o número, pergunta a quem manda nele. */
+  maxDiasDegustacao: number
   souDonoDoDeploy: boolean
   temToken: boolean
   urlPublica: string | null
@@ -93,6 +106,8 @@ type LinhaVenda = {
   membro_id: string
   transacao: string
   status: string
+  duracao: string
+  dias_degustacao: number | null
   produtos: string[]
   aprovada_em: string
   valor: number | string | null
@@ -110,14 +125,14 @@ export async function lerComercial(): Promise<VistaComercial | { erro: string }>
 
     const { data: ofertas, error: erroOfertas } = await db
       .from('ofertas')
-      .select('id, codigo, nome, produtos, duracao, ativa')
+      .select('id, codigo, nome, produtos, duracao, dias_degustacao, ativa')
       .eq('workspace_id', ws)
       .order('criado_em', { ascending: false })
     if (erroOfertas) throw erroOfertas
 
     const { data: vendas, error: erroVendas } = await db
       .from('vendas')
-      .select('id, membro_id, transacao, status, produtos, aprovada_em, valor, moeda, notificacao_pendente, observacao')
+      .select('id, membro_id, transacao, status, duracao, dias_degustacao, produtos, aprovada_em, valor, moeda, notificacao_pendente, observacao')
       .eq('workspace_id', ws)
       .order('criado_em', { ascending: false })
       .limit(50)
@@ -163,7 +178,10 @@ export async function lerComercial(): Promise<VistaComercial | { erro: string }>
     }
 
     return {
-      ofertas: (ofertas ?? []) as OfertaItem[],
+      ofertas: ((ofertas ?? []) as Array<Omit<OfertaItem, 'diasDegustacao'> & { dias_degustacao: number | null }>).map((o) => ({
+        ...o,
+        diasDegustacao: o.dias_degustacao,
+      })),
       vendas: listaVendas.map((v) => {
         const vencimentos = periodos
           .filter((p) => p.venda_id === v.id)
@@ -174,6 +192,7 @@ export async function lerComercial(): Promise<VistaComercial | { erro: string }>
           membro: nomes.get(v.membro_id) ?? 'membro removido',
           transacao: v.transacao,
           status: v.status,
+          duracao: rotuloDaDuracao(v.duracao, v.dias_degustacao),
           produtos: conhecidos.length > 0 ? conhecidos.map(rotuloDoProduto).join(', ') : v.produtos.join(', '),
           aprovadaEm: v.aprovada_em,
           vencimento: vencimentos.length > 0 ? formatarVencimento(vencimentoMaisTardio(vencimentos)) : '—',
@@ -198,7 +217,8 @@ export async function lerComercial(): Promise<VistaComercial | { erro: string }>
         detalhe: e.detalhe,
       })),
       produtos: PRODUTOS.map((p) => ({ id: p.id, rotulo: p.rotulo })),
-      duracoes: [...DURACOES],
+      temposDeAcesso: OPCOES_TEMPO_DE_ACESSO.map((valor) => ({ valor, rotulo: rotuloDaDuracao(valor, null) })),
+      maxDiasDegustacao: MAX_DIAS_DEGUSTACAO,
       souDonoDoDeploy,
       temToken: souDonoDoDeploy ? Boolean(await getSecret(CHAVE_HOTTOK_HOTMART)) : false,
       urlPublica: await lerConfig(CHAVE_URL_PUBLICA),
@@ -209,27 +229,45 @@ export async function lerComercial(): Promise<VistaComercial | { erro: string }>
   }
 }
 
-const OfertaSchema = z.object({
-  id: Uuid.optional(),
-  codigo: z.string().trim().min(1).max(200),
-  nome: z.string().trim().min(1).max(200),
-  produtos: z.array(z.string().refine(ehProdutoConhecido)).min(1).max(50),
-  duracao: z.enum(DURACOES),
-  ativa: z.boolean(),
-  // Não é coluna da oferta — é um gatilho de uma ação (bônus retroativo), só faz sentido ao
-  // editar (por isso não entra em `campos`/`dados` abaixo).
-  reprocessarVendas: z.boolean().optional(),
-})
+const OfertaSchema = z
+  .object({
+    id: Uuid.optional(),
+    codigo: z.string().trim().min(1).max(200),
+    nome: z.string().trim().min(1).max(200),
+    produtos: z.array(z.string().refine(ehProdutoConhecido)).min(1).max(50),
+    // Aceita `degustacao` além das sete durações: é a opção do seletor "Tempo de acesso", e o
+    // prazo dela vem dos dias abaixo, não do nome.
+    duracao: z.enum([...DURACOES, DEGUSTACAO]),
+    /** Sem sentido fora da degustação: a coluna fica nula e é assim que a compra a lê. */
+    diasDegustacao: z.number().int().min(1).max(MAX_DIAS_DEGUSTACAO).nullable().optional(),
+    ativa: z.boolean(),
+    // Não é coluna da oferta — é um gatilho de uma ação (bônus retroativo), só faz sentido ao
+    // editar (por isso não entra em `campos`/`dados` abaixo).
+    reprocessarVendas: z.boolean().optional(),
+  })
+  // 🔴 A degustação não tem prazo de reserva: sem dias válidos a oferta é recusada aqui, e não
+  // gravada para virar `oferta_invalida` na primeira compra.
+  .refine((o) => o.duracao !== DEGUSTACAO || ehDiasDegustacao(o.diasDegustacao), {
+    path: ['diasDegustacao'],
+    message: 'Informe o número de dias da degustação.',
+  })
 
 export async function salvarOferta(entrada: unknown): Promise<Resposta> {
   await exigirEngineLiberado()
   const ws = await workspaceDoOwner()
   if (!ws) return { erro: NAO_AUTORIZADO }
   const r = OfertaSchema.safeParse(entrada)
-  if (!r.success) return { erro: 'Confira o código, o nome, os produtos e a duração da oferta.' }
+  if (!r.success) return { erro: 'Confira o código, o nome, os produtos e o tempo de acesso da oferta.' }
 
-  const { id, reprocessarVendas, ...campos } = r.data
-  const dados = { ...campos, produtos: [...new Set(campos.produtos)], plataforma: 'hotmart' }
+  const { id, reprocessarVendas, diasDegustacao, ...campos } = r.data
+  const dados = {
+    ...campos,
+    plataforma: 'hotmart',
+    produtos: [...new Set(campos.produtos)],
+    // O prazo em dias só existe na degustação; nas outras durações a coluna volta a nulo, para
+    // uma oferta que deixou de ser degustação não guardar um número que ninguém mais lê.
+    dias_degustacao: campos.duracao === DEGUSTACAO ? (diasDegustacao as number) : null,
+  }
   const db = admin()
   const { data, error } = id
     ? await db.from('ofertas').update(dados).eq('workspace_id', ws).eq('id', id).select('id')

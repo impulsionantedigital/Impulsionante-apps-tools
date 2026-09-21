@@ -13,6 +13,15 @@ function diasNoMes(ano: number, mesZeroBase: number): number {
   return new Date(Date.UTC(ano, mesZeroBase + 1, 0)).getUTCDate()
 }
 
+const MS_POR_DIA = 86_400_000
+/**
+ * Soma DIAS CORRIDOS a uma data — o que vale para `semanal`, `quinzenal` e para a degustação, cuja
+ * duração é um número de dias escolhido na oferta, e não um nome.
+ */
+export function somarDias(inicio: Date, dias: number): Date {
+  return new Date(inicio.getTime() + dias * MS_POR_DIA)
+}
+
 /**
  * Soma a duração ao início, em calendário UTC. Meses são de calendário, com fecho no último dia
  * do mês: 31/01 + 1 mês = 28/02 (29 em ano bissexto) — a mesma regra do `interval` do Postgres.
@@ -21,7 +30,7 @@ function diasNoMes(ano: number, mesZeroBase: number): number {
 export function somarDuracao(inicio: Date, duracao: Duracao): Date | null {
   if (duracao === 'vitalicio') return null
   const dias = DIAS[duracao]
-  if (dias !== undefined) return new Date(inicio.getTime() + dias * 86_400_000)
+  if (dias !== undefined) return somarDias(inicio, dias)
 
   const total = inicio.getUTCMonth() + (MESES[duracao] as number)
   const ano = inicio.getUTCFullYear() + Math.floor(total / 12)

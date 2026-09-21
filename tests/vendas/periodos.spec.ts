@@ -5,6 +5,11 @@ const d = (iso: string) => new Date(iso)
 const A = 'indulto-comutacao-2025'
 const B = 'indulto-comutacao-2024'
 
+/** O mesmo de `calcular` para o prazo em DIAS — a degustação, que não tem nome de duração. */
+function calcularDias(produtos: string[], dias: number, aprovadaEm: string, existentes: PeriodoExistente[] = []) {
+  return calcularPeriodos({ produtos, duracao: dias, aprovadaEm: d(aprovadaEm), existentes })
+}
+
 function calcular(produtos: string[], aprovadaEm: string, existentes: PeriodoExistente[] = [], duracao: 'mensal' | 'vitalicio' = 'mensal') {
   return calcularPeriodos({ produtos, duracao, aprovadaEm: d(aprovadaEm), existentes })
 }
@@ -80,6 +85,38 @@ describe('calcularPeriodos — travas de regressão', () => {
       { produtoId: A, expiraEm: d('2027-02-01T00:00:00Z'), vendaAtiva: true },
     ]
     expect(calcular([A], '2027-01-20T00:00:00Z', existentes)[0].iniciaEm).toEqual(d('2027-03-01T00:00:00Z'))
+  })
+})
+
+describe('calcularPeriodos — degustação (prazo em dias)', () => {
+  it('sete dias de degustação vencem sete dias corridos depois da aprovação', () => {
+    expect(calcularDias([A], 7, '2027-01-01T12:00:00Z')).toEqual([
+      { produtoId: A, iniciaEm: d('2027-01-01T12:00:00Z'), expiraEm: d('2027-01-08T12:00:00Z') },
+    ])
+  })
+
+  it('dias são corridos: atravessam mês e ano sem regra de calendário', () => {
+    expect(calcularDias([A], 45, '2027-12-20T09:00:00Z')[0].expiraEm).toEqual(d('2028-02-03T09:00:00Z'))
+  })
+
+  it('degustação VENCE — nunca devolve período vitalício', () => {
+    expect(calcularDias([A], 1, '2027-01-01T00:00:00Z')[0].expiraEm).not.toBeNull()
+  })
+
+  it('renovação dentro da degustação empilha sobre o vencimento dela', () => {
+    const existentes = [{ produtoId: A, expiraEm: d('2027-01-08T00:00:00Z'), vendaAtiva: true }]
+    expect(calcularDias([A], 7, '2027-01-05T00:00:00Z', existentes)[0]).toEqual({
+      produtoId: A,
+      iniciaEm: d('2027-01-08T00:00:00Z'),
+      expiraEm: d('2027-01-15T00:00:00Z'),
+    })
+  })
+})
+
+describe('calcularBonus — degustação (prazo em dias)', () => {
+  it('o bônus usa os dias da VENDA de degustação, e não a duração da oferta de hoje', () => {
+    const r = calcularBonus({ produtosDaOferta: [B], produtosDaVenda: [], duracao: 15, aprovadaEm: d('2027-01-10T00:00:00Z') })
+    expect(r).toEqual([{ produtoId: B, iniciaEm: d('2027-01-10T00:00:00Z'), expiraEm: d('2027-01-25T00:00:00Z') }])
   })
 })
 

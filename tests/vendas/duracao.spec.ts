@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { DURACOES, ehDuracao, somarDuracao } from '@/lib/vendas/duracao'
+import { DURACOES, ehDuracao, somarDias, somarDuracao } from '@/lib/vendas/duracao'
 
 const d = (iso: string) => new Date(iso)
 
@@ -31,6 +31,17 @@ describe('somarDuracao', () => {
 
   it('vitalício não vence', () => {
     expect(somarDuracao(d('2027-01-01T00:00:00Z'), 'vitalicio')).toBeNull()
+  })
+})
+
+describe('somarDias', () => {
+  it('soma dias corridos, preservando a hora', () => {
+    expect(somarDias(d('2027-01-01T12:00:00Z'), 7)).toEqual(d('2027-01-08T12:00:00Z'))
+    expect(somarDias(d('2027-01-01T12:00:00Z'), 1)).toEqual(d('2027-01-02T12:00:00Z'))
+  })
+
+  it('atravessa mês e ano sem regra de calendário — é o que uma degustação de N dias é', () => {
+    expect(somarDias(d('2027-12-20T09:00:00Z'), 45)).toEqual(d('2028-02-03T09:00:00Z'))
   })
 })
 

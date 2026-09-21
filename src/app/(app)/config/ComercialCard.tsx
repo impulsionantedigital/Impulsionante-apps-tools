@@ -15,17 +15,8 @@ import {
   type VistaComercial,
 } from './acoes-comercial'
 import { salvarUrlPublica } from './acoes-canais'
+import { DEGUSTACAO, diasDeDegustacao, rotuloDaDuracao } from '@/lib/vendas/degustacao'
 import estilos from './config.module.css'
-
-const ROTULO_DURACAO: Record<string, string> = {
-  semanal: 'Semanal',
-  quinzenal: 'Quinzenal',
-  mensal: 'Mensal',
-  trimestral: 'Trimestral',
-  semestral: 'Semestral',
-  anual: 'Anual',
-  vitalicio: 'Vitalício',
-}
 
 type Resposta = { ok: true; detalhe?: string } | { erro: string }
 
@@ -161,17 +152,51 @@ type Formulario = {
   nome: string
   produtos: string[]
   duracao: string
+  /** Texto, e não número: enquanto a pessoa digita, o campo precisa aceitar o que ela digitou. */
+  diasDegustacao: string
   ativa: boolean
   reprocessarVendas: boolean
 }
-const FORMULARIO_VAZIO: Formulario = { codigo: '', nome: '', produtos: [], duracao: 'mensal', ativa: true, reprocessarVendas: false }
+const FORMULARIO_VAZIO: Formulario = { codigo: '', nome: '', produtos: [], duracao: 'mensal', diasDegustacao: '', ativa: true, reprocessarVendas: false }
+
+/** Do item da lista para o formulário: os dias só aparecem quando a oferta é de degustação. */
+function formularioDe(o: OfertaItem): Formulario {
+  return {
+    id: o.id,
+    codigo: o.codigo,
+    nome: o.nome,
+    produtos: o.produtos,
+    duracao: o.duracao,
+    diasDegustacao: o.diasDegustacao === null ? '' : String(o.diasDegustacao),
+    ativa: o.ativa,
+    // Sempre desmarcado: reprocessar é uma ação pontual, não um estado da oferta.
+    reprocessarVendas: false,
+  }
+}
+
+/**
+ * O que a ação do servidor recebe. `diasDegustacao` é convertido aqui, no clique de salvar, e não
+ * a cada tecla: o campo em branco vale nulo — quem decide se ele é obrigatório é a regra da oferta,
+ * não a digitação.
+ */
+function dadosDaOferta(form: Formulario) {
+  return {
+    id: form.id,
+    codigo: form.codigo,
+    nome: form.nome,
+    produtos: form.produtos,
+    duracao: form.duracao,
+    diasDegustacao: form.diasDegustacao.trim() ? diasDeDegustacao(form.diasDegustacao) : null,
+    ativa: form.ativa,
+    reprocessarVendas: form.reprocessarVendas,
+  }
+}
 
 function OfertasBloco({ vista, executar, pendente }: PropsBloco) {
   const [form, setForm] = useState<Formulario | null>(null)
 
   function editar(o: OfertaItem) {
-    // Sempre desmarcado: reprocessar é uma ação pontual, não um estado da oferta.
-    setForm({ id: o.id, codigo: o.codigo, nome: o.nome, produtos: o.produtos, duracao: o.duracao, ativa: o.ativa, reprocessarVendas: false })
+    setForm(formularioDe(o))
   }
 
   function alternarProduto(id: string) {
@@ -199,7 +224,7 @@ function OfertasBloco({ vista, executar, pendente }: PropsBloco) {
               <span className={estilos.itemInfo}>
                 <span className={estilos.itemRotulo}>{o.nome}</span>
                 <code className={estilos.campoTag}>{o.codigo}</code>
-                <span className={`${estilos.selo} ${estilos.selo_neutro}`}>{ROTULO_DURACAO[o.duracao] ?? o.duracao}</span>
+                <span className={`${estilos.selo} ${estilos.selo_neutro}`}>{rotuloDaDuracao(o.duracao, o.diasDegustacao)}</span>
                 {!o.ativa && <span className={`${estilos.selo} ${estilos.selo_neutro}`}>desativada</span>}
               </span>
               <span className={estilos.acoes}>
@@ -233,11 +258,29 @@ function OfertasBloco({ vista, executar, pendente }: PropsBloco) {
           <div className={estilos.campo}>
             <label className={estilos.rotulo} htmlFor="oferta-duracao">Tempo de acesso</label>
             <Selecao id="oferta-duracao" value={form.duracao} onChange={(e) => setForm({ ...form, duracao: e.target.value })}>
-              {vista.duracoes.map((d) => (
-                <option key={d} value={d}>{ROTULO_DURACAO[d] ?? d}</option>
+              {vista.temposDeAcesso.map((t) => (
+                <option key={t.valor} value={t.valor}>{t.rotulo}</option>
               ))}
             </Selecao>
           </div>
+          {form.duracao === DEGUSTACAO ? (
+            <div className={estilos.campo}>
+              <label className={estilos.rotulo} htmlFor="oferta-degustacao-dias">Dias de degustação</label>
+              <Entrada
+                id="oferta-degustacao-dias"
+                inputMode="numeric"
+                value={form.diasDegustacao}
+                onChange={(e) => setForm({ ...form, diasDegustacao: e.target.value })}
+                placeholder={`ex.: 7 (de 1 a ${vista.maxDiasDegustacao})`}
+                autoComplete="off"
+              />
+              <p className={estilos.ajuda}>
+                A compra desta oferta libera os produtos por estes dias corridos, contados da aprovação do
+                pagamento. A duração acima volta a valer se a degustação for desligada — as vendas que já
+                existem guardam os dias que compraram.
+              </p>
+            </div>
+          ) : null}
           <label className={estilos.ajuda}>
             <input type="checkbox" checked={form.ativa} onChange={(e) => setForm({ ...form, ativa: e.target.checked })} /> Oferta ativa
           </label>
@@ -258,7 +301,7 @@ function OfertasBloco({ vista, executar, pendente }: PropsBloco) {
               carregando={pendente}
               onClick={() =>
                 executar(async () => {
-                  const r = await salvarOferta(form)
+                  const r = await salvarOferta(dadosDaOferta(form))
                   if ('ok' in r) setForm(null)
                   return r
                 }, 'Oferta salva.')
@@ -297,6 +340,7 @@ function VendasBloco({ vista, executar, pendente }: PropsBloco) {
               <span className={estilos.itemInfo}>
                 <span className={estilos.itemRotulo}>{v.membro}</span>
                 <span className={`${estilos.selo} ${estilos.selo_neutro}`}>{v.status}</span>
+                <span className={`${estilos.selo} ${estilos.selo_neutro}`}>{v.duracao}</span>
                 <span className={estilos.ajuda}>
                   {v.produtos} · {v.valor} · aprovada em {new Date(v.aprovadaEm).toLocaleDateString('pt-BR')} · vence {v.vencimento}
                 </span>

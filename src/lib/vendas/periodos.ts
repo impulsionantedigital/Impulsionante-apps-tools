@@ -1,4 +1,4 @@
-import { somarDuracao, type Duracao } from './duracao'
+import { somarDias, somarDuracao, type Duracao } from './duracao'
 
 export interface PeriodoExistente {
   produtoId: string
@@ -11,6 +11,17 @@ export interface PeriodoNovo {
   produtoId: string
   iniciaEm: Date
   expiraEm: Date | null
+}
+
+/**
+ * O prazo que uma compra concede. É a duração NORMAL (nome) ou um número de DIAS CORRIDOS — a
+ * degustação, cujo prazo é escolhido na oferta. `null` em `expiraEm` continua significando
+ * vitalício, e só a duração `vitalicio` produz isso: dias sempre vencem.
+ */
+export type Prazo = Duracao | number
+
+function expiracao(inicio: Date, prazo: Prazo): Date | null {
+  return typeof prazo === 'number' ? somarDias(inicio, prazo) : somarDuracao(inicio, prazo)
 }
 
 /**
@@ -45,12 +56,12 @@ export function vendaVigente(args: {
 export function calcularBonus(args: {
   produtosDaOferta: readonly string[]
   produtosDaVenda: readonly string[]
-  duracao: Duracao
+  duracao: Prazo
   aprovadaEm: Date
 }): PeriodoNovo[] {
   const existentes = new Set(args.produtosDaVenda)
   const faltantes = [...new Set(args.produtosDaOferta)].filter((p) => !existentes.has(p))
-  const expiraEm = somarDuracao(args.aprovadaEm, args.duracao)
+  const expiraEm = expiracao(args.aprovadaEm, args.duracao)
   return faltantes.map((produtoId) => ({ produtoId, iniciaEm: args.aprovadaEm, expiraEm }))
 }
 
@@ -66,7 +77,7 @@ export function calcularBonus(args: {
  */
 export function calcularPeriodos(args: {
   produtos: readonly string[]
-  duracao: Duracao
+  duracao: Prazo
   aprovadaEm: Date
   existentes: readonly PeriodoExistente[]
 }): PeriodoNovo[] {
@@ -78,6 +89,6 @@ export function calcularPeriodos(args: {
         if (p.expiraEm && p.expiraEm.getTime() > base.getTime()) base = p.expiraEm
       }
     }
-    return { produtoId, iniciaEm: new Date(base.getTime()), expiraEm: somarDuracao(base, args.duracao) }
+    return { produtoId, iniciaEm: new Date(base.getTime()), expiraEm: expiracao(base, args.duracao) }
   })
 }

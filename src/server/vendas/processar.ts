@@ -7,11 +7,12 @@ import { resolverMembro } from '@/server/vendas/identidade'
 import { CHAVE_URL_PUBLICA } from '@/lib/canais/url-publica'
 import { detalheSeguro } from '@/lib/sanitizar-erro'
 import { PRODUTOS, ehProdutoConhecido, rotuloDoProduto, caminhoDoProduto } from '@/lib/produtos/catalogo'
-import { ehDuracao, type Duracao } from '@/lib/vendas/duracao'
+import { ehDuracao } from '@/lib/vendas/duracao'
+import { duracaoDaOferta, ehDiasDegustacao } from '@/lib/vendas/degustacao'
 import { decidirEmails } from '@/lib/vendas/emails'
 import { formatarValor, formatarVencimento, vencimentoMaisTardio } from '@/lib/vendas/formatos'
 import { lerEventoHotmart, statusInicialDaVenda, type EventoHotmart, type StatusEncerramento } from '@/lib/vendas/hotmart'
-import { calcularPeriodos, calcularBonus, vendaVigente, type PeriodoExistente, type PeriodoNovo } from '@/lib/vendas/periodos'
+import { calcularPeriodos, calcularBonus, vendaVigente, type PeriodoExistente, type PeriodoNovo, type Prazo } from '@/lib/vendas/periodos'
 
 type Aprovada = Extract<EventoHotmart, { tipo: 'aprovada' }>
 type Encerrada = Extract<EventoHotmart, { tipo: 'encerrada' }>
@@ -28,15 +29,27 @@ type LinhaVenda = {
   status: string
   produtos: string[]
   duracao: string
+  /** Só preenchido quando a compra foi de degustação: são os dias que ela concedeu. */
+  dias_degustacao: number | null
   aprovada_em: string
   notificacao_pendente: boolean
 }
 
-const COLUNAS_VENDA = 'id, workspace_id, membro_id, status, produtos, duracao, aprovada_em, notificacao_pendente'
+const COLUNAS_VENDA = 'id, workspace_id, membro_id, status, produtos, duracao, dias_degustacao, aprovada_em, notificacao_pendente'
 
 function juntar(...partes: (string | null | undefined)[]): string | null {
   const texto = partes.filter(Boolean).join(' · ')
   return texto || null
+}
+
+/**
+ * O prazo de uma venda JÁ GRAVADA: os dias da degustação quando ela os tem, e o nome da duração
+ * quando não tem. A venda guarda a fotografia do que foi comprado, então este é o único caminho
+ * para reenviar e-mail e bônus sem depender da oferta — que o dono pode ter editado depois.
+ */
+function prazoDaVenda(venda: Pick<LinhaVenda, 'duracao' | 'dias_degustacao'>): Prazo | null {
+  if (ehDiasDegustacao(venda.dias_degustacao)) return venda.dias_degustacao
+  return ehDuracao(venda.duracao) ? venda.duracao : null
 }
 
 // ── recebimento ──────────────────────────────────────────────────────────────────────────────
@@ -123,7 +136,7 @@ async function aprovar(auditId: string, evento: Aprovada): Promise<Desfecho> {
 
   const { data: oferta, error: erroOferta } = await cli
     .from('ofertas')
-    .select('id, workspace_id, produtos, duracao, ativa')
+    .select('id, workspace_id, produtos, duracao, dias_degustacao, ativa')
     .eq('plataforma', 'hotmart')
     .eq('codigo', evento.codigoOferta)
     .maybeSingle()
@@ -135,8 +148,10 @@ async function aprovar(auditId: string, evento: Aprovada): Promise<Desfecho> {
 
   const produtos = (oferta.produtos as string[]).filter(ehProdutoConhecido)
   const duracao = oferta.duracao as string
-  if (produtos.length === 0 || !ehDuracao(duracao)) {
-    return { resultado: 'oferta_invalida', detalhe: 'sem produto conhecido, ou duração inválida', workspaceId: ws }
+  // A degustação troca o prazo: em vez do nome da duração, o que vale é o número de dias dela.
+  const prazo = duracaoDaOferta({ duracao, diasDegustacao: oferta.dias_degustacao as number | null })
+  if (produtos.length === 0 || prazo === null) {
+    return { resultado: 'oferta_invalida', detalhe: 'sem produto conhecido, ou tempo de acesso inválido', workspaceId: ws }
   }
 
   // A transação já virou venda? Então é reenvio — completa o que tiver faltado.
@@ -170,6 +185,7 @@ async function aprovar(auditId: string, evento: Aprovada): Promise<Desfecho> {
       produtos,
       produtos_novos: novos,
       duracao,
+      dias_degustacao: typeof prazo === 'number' ? prazo : null,
       aprovada_em: evento.aprovadaEm.toISOString(),
       valor: evento.valor,
       moeda: evento.moeda,
@@ -210,7 +226,7 @@ async function aprovar(auditId: string, evento: Aprovada): Promise<Desfecho> {
 
   await gravarPeriodos(ws, membro.membroId, gravada.id, calcularPeriodos({
     produtos,
-    duracao,
+    duracao: prazo,
     aprovadaEm: evento.aprovadaEm,
     existentes,
   }))
@@ -248,8 +264,8 @@ async function retomar(venda: LinhaVenda): Promise<Desfecho> {
 }
 
 async function garantirPeriodos(venda: LinhaVenda): Promise<void> {
-  const duracao = venda.duracao
-  if (venda.status !== 'ativa' || !ehDuracao(duracao)) return
+  const prazo = prazoDaVenda(venda)
+  if (venda.status !== 'ativa' || prazo === null) return
   const { count, error } = await admin()
     .from('vendas_periodos')
     .select('id', { count: 'exact', head: true })
@@ -259,7 +275,7 @@ async function garantirPeriodos(venda: LinhaVenda): Promise<void> {
   const { existentes } = await historicoDoMembro(venda.workspace_id, venda.membro_id, venda.id)
   await gravarPeriodos(venda.workspace_id, venda.membro_id, venda.id, calcularPeriodos({
     produtos: venda.produtos.filter(ehProdutoConhecido),
-    duracao: duracao as Duracao,
+    duracao: prazo,
     aprovadaEm: new Date(venda.aprovada_em),
     existentes,
   }))
@@ -354,6 +370,10 @@ export async function encerrarVendaManual(workspaceId: string, vendaId: string):
  * daquela oferta ganha os produtos que a oferta tem agora e ela ainda não tem — como bônus, não
  * como renovação (`calcularBonus`/`vendaVigente` em `@/lib/vendas/periodos` documentam o porquê).
  *
+ * 🟢 O prazo é o DA VENDA, não o da oferta: quem comprou uma degustação recebe o bônus com os dias
+ * que comprou, mesmo que a oferta tenha voltado a ser anual depois — a venda é a fotografia do que
+ * foi comprado (§7.4), e o bônus não é a ocasião de recalculá-la.
+ *
  * 🔴 Só ADICIONA produto: uma venda nunca perde o que já tinha, mesmo que a oferta tenha perdido
  * aquele produto depois. Simetria com a cópia da §16.1: alterar uma oferta nunca revoga o que uma
  * venda passada já concedeu.
@@ -365,6 +385,7 @@ export async function bonificarVendasDaOferta(ws: string, ofertaId: string): Pro
   const { data: oferta, error: erroOferta } = await cli
     .from('ofertas')
     .select('produtos')
+    // O prazo do bônus NÃO vem daqui: vem de cada venda, que guardou o que comprou (§7.4).
     .eq('workspace_id', ws)
     .eq('id', ofertaId)
     .maybeSingle()
@@ -374,7 +395,7 @@ export async function bonificarVendasDaOferta(ws: string, ofertaId: string): Pro
 
   const { data: vendas, error: erroVendas } = await cli
     .from('vendas')
-    .select('id, membro_id, produtos, duracao, aprovada_em, status')
+    .select('id, membro_id, produtos, duracao, dias_degustacao, aprovada_em, status')
     .eq('workspace_id', ws)
     .eq('oferta_id', ofertaId)
   if (erroVendas) throw erroVendas
@@ -383,6 +404,7 @@ export async function bonificarVendasDaOferta(ws: string, ofertaId: string): Pro
     membro_id: string
     produtos: string[]
     duracao: string
+    dias_degustacao: number | null
     aprovada_em: string
     status: string
   }>
@@ -406,15 +428,17 @@ export async function bonificarVendasDaOferta(ws: string, ofertaId: string): Pro
   let periodosNovos = 0
 
   for (const venda of listaVendas) {
-    if (!ehDuracao(venda.duracao)) continue
+    // O prazo é o da VENDA, não o da oferta de hoje: quem comprou uma degustação recebe o bônus
+    // com os dias que comprou, mesmo que a oferta já tenha voltado a ser anual.
+    const prazo = prazoDaVenda(venda)
+    if (prazo === null) continue
     const vigente = vendaVigente({ status: venda.status, periodos: periodosPorVenda.get(venda.id) ?? [], agora })
     if (!vigente) continue
-
     const produtosDaVenda = venda.produtos.filter(ehProdutoConhecido)
     const bonus = calcularBonus({
       produtosDaOferta,
       produtosDaVenda,
-      duracao: venda.duracao,
+      duracao: prazo,
       aprovadaEm: new Date(venda.aprovada_em),
     })
     if (bonus.length === 0) continue
