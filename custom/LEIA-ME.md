@@ -197,13 +197,13 @@ atualizar o CRM.
 |---|---|---|
 | `supabase/migrations/0069_oferta_degustacao.sql` | coluna `dias_degustacao` em `ofertas` e `vendas` | oferta de degustação: o prazo vem de um número de dias, não de um nome de duração |
 | `supabase/migrations/0070_ofertas_filhas_e_origem_do_periodo.sql` | tabela `ofertas_filhas`; coluna `origem` em `vendas_periodos` | vínculo de brinde entre ofertas; e o que permite responder "este acesso é trial?" sem perguntar à oferta |
-| `src/lib/vendas/degustacao.ts` | arquivo novo | regra da degustação: teto de dias, leitura do campo, recusa de valor inválido |
+| `src/lib/vendas/degustacao.ts` | arquivo novo | regra da degustação: prazos fixos (7 e 15), leitura do par do seletor, recusa de valor fora da lista |
 | `src/lib/vendas/periodos.ts` | `periodosDeBrinde()`; `Prazo = Duracao \| number`; `origem` no período | o brinde nasce na data da concessão e não empilha |
 | `src/lib/vendas/acesso.ts` | `detalheDeAcesso()` — campo `trial` **ao lado** do estado | trial é rótulo, não permissão (ver abaixo) |
 | `src/server/vendas/processar.ts` | guarda de oferta de degustação; `concederBrindes()`; `garantirPeriodos` completa o que falta | processar as ofertas filhas e não perder brinde em reenvio |
 | `src/server/vendas/acesso.ts` | `estadoEDetalheDoProduto()` | leva o rótulo de trial até a tela do membro |
-| `src/app/(app)/config/acoes-comercial.ts` | vínculo de filhas, com as três recusas | é onde a oferta principal escolhe os brindes |
-| `src/app/(app)/config/ComercialCard.tsx` | seleção de ofertas filhas; campo de dias na degustação | tela do admin |
+| `src/app/(app)/config/acoes-comercial.ts` | vínculo de filhas, com as três recusas; gravação do tempo de acesso | é onde a oferta principal escolhe os brindes, e onde a degustação é gravada sem tocar no domínio de `duracao` |
+| `src/app/(app)/config/ComercialCard.tsx` | seleção de ofertas filhas; seletor de tempo de acesso | tela do admin |
 | `src/app/(app)/ferramentas/page.tsx` | mostra "Degustação — N dia(s) restante(s)" | o membro enxerga que o acesso é trial |
 | `src/app/(app)/ferramentas/[calculadora]/AvisoAcesso.tsx` | **arquivo novo** | o aviso de vencimento/degust/a/expirado no topo da tela do produto |
 | `src/app/(app)/ferramentas/[calculadora]/Calculadora.tsx` | removido o bloco "Acesso encerrado" | passou a ser o `AvisoAcesso`, que é a versão completa (tem prazo, trial e botão) |
@@ -238,6 +238,25 @@ trocado lá vale com um **restart do serviço** — sem reconstruir a imagem. E 
 definido e o container **não** for reiniciado, o botão continua ausente **sem erro nenhum** (é
 o mesmo sintoma de "variável não configurada").
 
+### O seletor "Tempo de acesso" da oferta
+
+Na tela **Configurações → Comercial → Ofertas**, o seletor tem estes valores:
+
+```
+Semanal · Quinzenal · Mensal · Trimestral · Semestral · Anual · Vitalício
+Degustação — 7 dias
+Degustação — 15 dias
+```
+
+A degustação é uma **oferta marcada com número de dias**, e não um prazo digitado: não existe
+campo de texto, e os prazos são uma **lista fechada** (7 e 15 dias), em `PRAZOS_DE_DEGUSTACAO`.
+Acrescentar um prazo novo é acrescentar um item naquela lista — o seletor, a gravação e os testes
+acompanham sozinhos.
+
+Uma oferta de degustação **nunca recebe venda**: o código dela é escolhido à mão e não existe na
+Hotmart. Ela serve para ser **filha** de uma oferta que vende, concedendo os produtos dela como
+brinde (ver a seção de regras de negócio).
+
 ### As mensagens que o membro vê, e quando
 
 Na tela de cada produto, no topo. A regra vive em `src/lib/vendas/aviso-acesso.ts` e está fixada em
@@ -264,8 +283,15 @@ o acesso ou está experimentando — aí é conversão, e não renovação.
   `awave-backup/pre-<versão>`.
 - **Não é mais customização: é fork.** Atualizar o CRM exige, a partir de agora, reaplicar estas
   mudanças à mão (ou apontar o git para este repositório e assumir a manutenção do merge).
-- **A migration 0070 precisa rodar ANTES do código novo.** O insert de `vendas_periodos` passou a
-  mandar a coluna `origem`; com o banco antigo e o código novo, ele falha por coluna desconhecida.
+- **As migrations 0069 e 0070 precisam rodar ANTES do código novo.** O insert de `vendas_periodos`
+  passou a mandar a coluna `origem`, e o de `ofertas` manda `dias_degustacao`; com o banco antigo e o
+  código novo, os dois falham por coluna desconhecida.
+
+> ✅ **Estado verificado neste servidor** (consulta direta ao banco): as migrations **0069 e 0070
+> estão aplicadas**, as colunas `dias_degustacao` (em `ofertas` e `vendas`) e `origem` (em
+> `vendas_periodos`) existem, e a tabela `ofertas_filhas` existe. Não há pendência de banco.
+> Se um dia surgir erro de coluna inexistente (`42703`), o CRM agora diz isso na tela — antes a
+> mensagem era genérica e mandava procurar o problema no lugar errado.
 
 ### As regras de negócio que não estão em `custom/`
 
@@ -292,6 +318,40 @@ Se algum dia estas mudanças forem promovidas para `custom/`, é isto que precis
    chave `(venda, produto)` e o brinde sumiria em silêncio.
 7. **Profundidade de vínculo é 1.** Filha de filha nunca seria percorrida: a concessão lê um nível
    só, e o resto desapareceria sem erro.
+8. 🔴 **A degustação NÃO grava `'degustacao'` na coluna `ofertas.duracao`.** Aquela coluna tem o
+   CHECK `ofertas_duracao_dominio_check`, que aceita **só os sete nomes** — o banco recusa qualquer
+   outro valor com `23514`, e a oferta não salva. Quem identifica a degustação é **`dias_degustacao`,
+   e só ele**: `duracao` guarda `'mensal'` (o prazo de reserva, que volta a valer se a degustação for
+   desligada), e `duracaoDaOferta` lê os **dias primeiro**. Gravar `'degustacao'` ali, ou procurar a
+   degustação no nome, quebra toda oferta de trial com uma mensagem genérica de falha ao salvar.
+   > A migration 0069 **não** alarga aquele domínio, de propósito: alargar trocaria uma restrição do
+   > produto por uma linha de código, e o produto derruba essa restrição na próxima atualização
+   > (com aviso no log). Guardar os dias é suficiente e não depende disso.
+
+### Como diagnosticar um erro neste fork
+
+A mensagem genérica que o CRM mostra em caso de falha **não diz a causa** — o log do container diz.
+Os prefixos de log que este fork acrescentou:
+
+| No log | Significa |
+|---|---|
+| `[comercial] salvar oferta falhou:` | insert/update de oferta recusado pelo banco; o `code` do Postgres vem junto |
+| `[comercial] oferta recusada por coluna inexistente:` | `42703` — o banco está sem uma coluna de migration |
+| `[comercial] gravar vínculos falhou:` / `limpar vínculos falhou:` | erro em `ofertas_filhas` |
+| `[migrate] Aplicando <arquivo>…` | migration aplicada neste boot |
+| `[migrate] Nenhuma migration pendente.` | banco em dia |
+
+Códigos do Postgres que valem conhecer, porque cada um tem uma causa diferente:
+
+- **`23505`** — chave duplicada (código de oferta já cadastrado).
+- **`23514`** — violou um CHECK. Foi a causa de "não consegui salvar a oferta de trial": a coluna
+  `ofertas.duracao` recusa qualquer valor fora dos sete nomes (ver a regra 8 abaixo).
+- **`42703`** — coluna inexistente: migration não aplicada.
+
+> **Antes de supor, consulte o banco.** Cinco minutos de consulta direta (`select` nas colunas e nas
+> migrations aplicadas) valem mais que qualquer teoria: no defeito da regra 8, três ciclos de deploy
+> foram gastos em teorias de banco atrasado quando as migrations **estavam** aplicadas, e a causa real
+> era uma restrição que o próprio CRM não conseguia satisfazer.
 
 ## O que NÃO fazer aqui
 - **Não apague esta pasta.** Sem ela, o CRM ainda sobe, mas você perde a zona protegida.
