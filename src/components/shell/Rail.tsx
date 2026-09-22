@@ -9,12 +9,13 @@ import { lerMenuCustom } from '@/server/custom/menu'
 import { ICONE_PADRAO, type IconePermitido } from '@/lib/menu-custom'
 import estilos from './Rail.module.css'
 import ItemNav from './ItemNav'
-import SeletorWorkspace, { type WorkspaceOpcao } from './SeletorWorkspace'
+import type { WorkspaceOpcao } from './SeletorWorkspace'
 import MenuUsuario, { type UsuarioResumo } from './MenuUsuario'
-import MarcaLockup from '@/components/MarcaLockup'
 import { lerMarca } from '@/server/marca'
 import { temaDaRequisicao } from '@/server/tema'
 import { souDonoDeAlgumWorkspace } from '@/server/auth/comprador'
+import { PRODUTOS, caminhoDoProduto } from '@/lib/produtos/catalogo'
+import { estadoDoProduto } from '@/server/vendas/acesso'
 
 
 
@@ -65,24 +66,50 @@ export default async function Rail({ user, wsAtivo, workspaces, avisoAtualizacao
   // Comprador vê só Ferramentas. As rotas já são recusadas no proxy; isto é só o menu.
   const soFerramentas = !(await souDonoDeAlgumWorkspace())
 
+  // As calculadoras entram direto no menu, uma por decreto — sem vitrine intermediária em
+  // /ferramentas. "Não existe vitrine do que o membro não tem" vale aqui também: filtra fora
+  // quem nunca teve acesso, do mesmo jeito que a página de /ferramentas já fazia.
+  const produtosNoMenu = (
+    await Promise.all(PRODUTOS.map(async (produto) => ({ produto, estado: await estadoDoProduto(produto.id) })))
+  ).filter((p) => p.estado !== 'nunca')
+
+  // Group products by familia in the specified order
+  const familiaOrder = ['indulto-comutacao', 'detracao'] as const
+  const familiaLabels: Record<string, string> = {
+    'indulto-comutacao': 'Indulto e Comutação',
+    'detracao': 'Detração',
+  }
+
+  const produtosPorFamilia = new Map<string, typeof produtosNoMenu>()
+  for (const item of produtosNoMenu) {
+    const familia = item.produto.familia
+    const lista = produtosPorFamilia.get(familia) ?? []
+    lista.push(item)
+    produtosPorFamilia.set(familia, lista)
+  }
+
+  const produtosAgrupados = familiaOrder
+    .filter((familia) => produtosPorFamilia.has(familia))
+    .map((familia) => [familia, produtosPorFamilia.get(familia)!] as const)
+
   return (
     <aside className={estilos.rail}>
       <div className={estilos.marca}>
-        <MarcaLockup
-          logo={marca.logo}
-          nome={marca.nome}
-          classeTile={estilos.tile}
-          classeLogo={estilos.logo}
-          tamanhoGlifo={16}
-        />
+        {/*
+         * 🔴 Logo FIXA em asset, não a marca configurável (decisão de 2026-09-16): a sidebar
+         * usa `public/marca/logo-clara.png` (traço claro) no tema ESCURO e
+         * `public/marca/logo-escura.png` (traço escuro) no tema CLARO. O rail nunca fica sobre
+         * a página — ele tem superfície própria —, então a logo precisa acompanhar o tema do
+         * rail para continuar legível. As duas `<img>` são renderizadas e o CSS escolhe qual
+         * aparece por `:root[data-tema="claro"]` (ver `Rail.module.css`). Não é `MarcaLockup`
+         * porque aquele respeita a marca do comprador (Configurações → Marca). */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/marca/logo-clara.png" alt={marca.nome} className={`${estilos.logo} ${estilos.logoClara}`} />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/marca/logo-escura.png" alt={marca.nome} className={`${estilos.logo} ${estilos.logoEscura}`} />
         <div className={estilos.marcaTexto}>
           <b>{marca.nome}</b>
         </div>
-      </div>
-
-      {}
-      <div className={estilos.topo}>
-        <SeletorWorkspace workspaces={workspaces} wsAtivo={wsAtivo} />
       </div>
 
       {}
@@ -116,8 +143,29 @@ export default async function Rail({ user, wsAtivo, workspaces, avisoAtualizacao
         </>
         )}
 
-        <div className={estilos.sec}>Ferramentas</div>
-        <ItemNav href="/ferramentas" rotulo="Ferramentas"><Scale size={16} strokeWidth={2} /></ItemNav>
+        {produtosNoMenu.length > 0 && (
+        <>
+        <div className={estilos.sec}>Calculadoras</div>
+        {}
+        {produtosAgrupados.map(([familia, produtos]) => (
+          <Fragment key={familia}>
+            <div className={estilos.navGrupo}>
+              <Scale size={16} strokeWidth={2} />
+              <span>{familiaLabels[familia]}</span>
+            </div>
+            {produtos.map(({ produto }) => (
+              <ItemNav
+                key={produto.id}
+                href={caminhoDoProduto(produto.slug)}
+                rotulo={produto.menuTitulo}
+                descricao={produto.menuDescricao}
+                indentado
+              />
+            ))}
+          </Fragment>
+        ))}
+        </>
+        )}
 
         {}
         {!soFerramentas && grupos.map(([grupo, itens]) => (

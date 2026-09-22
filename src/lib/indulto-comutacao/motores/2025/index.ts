@@ -2,6 +2,7 @@ import type { MotorDecreto } from '../../tipos'
 import { QUESTIONARIO_2025 } from './questionario'
 import { INCISOS_INDULTO_2025, INCISOS_COMUTACAO_2025, AVISOS_2025 } from './incisos'
 import { calcular2025 } from './motor'
+import { gerarPeticaoIndulto2025, gerarPeticaoComutacao2025 } from './peticoes'
 
 /**
  * Decreto nº 12.970/2025 — indulto natalino.
@@ -19,4 +20,8 @@ export const motor2025: MotorDecreto = {
   incisos: { indulto: INCISOS_INDULTO_2025, comutacao: INCISOS_COMUTACAO_2025 },
   avisos: AVISOS_2025,
   calcular: calcular2025,
+  peticoes: {
+    indulto: (dados) => gerarPeticaoIndulto2025(motor2025, dados),
+    comutacao: (dados) => gerarPeticaoComutacao2025(motor2025, dados),
+  },
 }

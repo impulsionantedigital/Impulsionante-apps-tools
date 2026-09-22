@@ -12,6 +12,8 @@
     "sync:foundation": "node scripts/sync-foundation.mjs",
     "verify:foundation": "node scripts/verify-foundation-sync.mjs",
     "verify:no-inlining": "node scripts/verify-no-inlining.mjs",
+    "verify:aposentados": "node scripts/verify-caminhos-aposentados.mjs",
+    "verify": "node scripts/verify-caminhos-aposentados.mjs && vitest run",
     "check:motor": "node scripts/check-motor-untouched.mjs",
     "gen:manifest": "node scripts/gen-manifest.mjs",
     "audit:entrega": "node scripts/auditar-entrega.mjs"

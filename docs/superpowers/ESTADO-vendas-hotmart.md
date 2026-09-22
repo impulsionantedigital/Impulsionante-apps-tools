@@ -125,9 +125,10 @@ todas provadas por inversão). **História completa, causa, regra e varredura do
 (`app.gpsdapena.com.br`) com a conta `+4`: `/novo` abre e o cálculo ao vivo responde (5 anos →
 remanescente 5 anos, 1/5 = 1 ano, 1/2 = 2 anos 6 meses), zero erros no console.
 
-⚠️ **`origin/vendas-hotmart` continua em `65c4f84`, com o defeito** (`<Calculadora motor={motor} />`).
-Quem retomar dali ressuscita o 500. Apagar (`git push origin --delete vendas-hotmart`) ou sobrescrever
-(`git push origin main:vendas-hotmart --force`).
+✅ **Resolvido em 16/09/2026: a branch não existe mais**, nem local nem remota — conferido com
+`git ls-remote --heads origin`. Este aviso fica registrado só como história: enquanto existiu, ela
+apontava para `65c4f84` com o defeito (`<Calculadora motor={motor} />`), e quem retomasse dali
+ressuscitaria o 500.
 
 **Verificado em produção em 2026-09-14 — o circuito inteiro, ponta a ponta:**
 
@@ -225,7 +226,10 @@ enviar() { # $1=evento $2=transacao $3=email $4=event_id
 1. **Trocar credenciais** que foram expostas numa conversa: senha do banco, chave de serviço do
    Supabase e senha SMTP. Usar um `TICK_SECRET` aleatório e independente, nunca um pedaço de outra
    chave.
-1b. **`origin/vendas-hotmart` ainda serve o código com o defeito do 500** — apagar ou sobrescrever.
+1b. ✅ **RESOLVIDO em 16/09/2026 — `vendas-hotmart` não existe mais.** Conferido com
+   `git ls-remote --heads origin`: restam só `main`, `calculadora2024` e
+   `calculadora-indulto-comutacao`. Nada a fazer. Se algum dia reaparecer, lembre que o conteúdo
+   dela em `65c4f84` carregava o 500 da calculadora (`<Calculadora motor={motor} />`).
 1c. **Limpar os dados de teste** antes de vender: 3 vendas (`HP0000000003/4/5`), 3 contas de teste e
    os períodos delas. As 3 ofertas, os 4 modelos de e-mail e o hottok ficam. A conta
    `alexandre.pavon+4@gmail.com` ficou com a senha `TesteLocal2026!`, definida durante a verificação;
@@ -245,6 +249,56 @@ enviar() { # $1=evento $2=transacao $3=email $4=event_id
    valendo pelo caminho normal e senha errada não ganha tentativa extra.
 
 **Próximo:** uma terceira correção que o usuário vai trazer.
+
+## Detração por Recolhimento Noturno — o que ficou fora do plano (16/09/2026)
+
+O plano de 15 tarefas (`docs/superpowers/plans/2026-09-15-detracao-recolhimento-noturno.md`) está
+concluído. O que segue foi trabalho feito **depois** da Task 14, sem plano próprio, e não está
+registrado lá.
+
+### Publicado em `f7a760a`
+
+- **Botão de petição** — `BotaoPeticao.tsx`, `PeticaoOverlay.tsx` e
+  `src/lib/detracao/recolhimento-noturno/peticao.ts`: um texto de anotação processual pedindo a
+detreação, com overlay para copiar.
+
+### Sem commit (nesta sessão de 16/09/2026)
+
+- **Painel `Resumo`** — `src/lib/detracao/recolhimento-noturno/resumo.ts` + `resumo.spec.ts` (5
+testes) + `Resumo.tsx`: quebra o total por categoria de dia (útil / fim de semana / feriado),
+fatiando cada intervalo pela meia-noite e contando cada fatia na categoria da SUA própria data
+civil. Diferente da convenção do motor, que atribui o turno inteiro ao dia em que começa.
+- **O total volta ao papel** — a petição passou a usar `resultado.diasDetracao` em vez de
+  `(totalMinutos/1440).toFixed(2)`, para o número não divergir do destaque da tela. E, na folha
+  impressa, o `Resumo` passou a abrir com **"Você tem N dias de detração"**. Veja o defeito abaixo.
+- **`CabecalhoAnexo.tsx`** (novo) — identificação, protocolo e data do anexo, visível só na
+  impressão. Mesmo desenho do CIC, inclusive a data fixada num `useEffect`.
+
+### 🔴 O defeito que a verificação no navegador pegou
+A tabela de `@media print` foi escrita com `.painel` oculto e `.resumo` visível — mas o **total
+apurado vivia só no `.painel`**. A folha saía com datas, período noturno e a composição por
+categoria, **e nenhum número de dias**. Quem imprimia para anexar à petição levava tudo menos o
+resultado. Corrigido levando o total para dentro do `Resumo`; a regra completa, com as decisões que
+um revisor tende a desfazer, está em
+`docs/detracao-recolhimento-noturno/verificacoes-de-conjunto.md`.
+
+### Verificado em 16/09/2026
+- `pnpm test`: **1753 testes, 58 arquivos, todos verdes**.
+- `pnpm exec tsc --noEmit`: sem erros. `pnpm build`: compila.
+- `next-env.d.ts` regenerado pelo build e revertido; varredura de duplicados `* [0-9].*` limpa.
+- **Navegador de verdade**, contra o banco de produção, `pnpm dev` na 3000: um mês de recolhimento
+  noturno das 22h às 06h em todos os dias → tela e papel devolveram o mesmo **"Você tem 9 dias de
+  detração"**, zero erros de console, zero requisições falhas.
+
+⚠️ **`pnpm start` não serve esta build** — é `output: standalone`, e os chunks dão 404, deixando a
+página sem montar. Parece defeito do código e não é. Use `pnpm dev` para conferir telas.
+
+### O que segue pendente nesta feature
+- Nada foi salvo nem excluído num cálculo real nesta sessão (a verificação foi de leitura em
+  `/novo`). O roteiro de 10 passos de `docs/calculadora-indulto-comutacao/pendencias-e-roteiro-de-teste.md`
+também vale para esta tela, adaptado.
+- A exportação em PDF/CSV/JSON que o `LEIA-ME` da pasta promete continua não existindo.
+- A comparação com a calculadora de referência (Streamlit) idem.
 
 ### Dívida menor, sem urgência
 

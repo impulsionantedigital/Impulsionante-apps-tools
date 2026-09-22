@@ -77,6 +77,51 @@ const SEM_PREVISAO = VEREDITOS.sem_previsao
  * Compara TUDO o que o porte produz: os dois vereditos de cada dispositivo, o
  * quantum e a pena após de cada comutação, os nove tempos do resumo e os avisos.
  */
+// --------------------------------------------------------------------------
+// DESVIOS DELIBERADOS DO PORTE
+// --------------------------------------------------------------------------
+
+/**
+ * Cenários congelados em que o porte DIVERGE do oráculo de propósito, e por quê.
+ *
+ * 🔴 Chave é a `_nome` do cenário, valor é a razão que o teste mostra quando ele é
+ * pulado. Não acrescente nada aqui sem a decisão do dono do produto registrada no
+ * `motor.ts` — esta lista é para desvio CONHECIDO, não para silenciar reprovação.
+ *
+ * Hoje só há um motivo, e ele é UM SÓ nos dois decretos: o Art. 13 exigia, na
+ * planilha e no engine.js, pena cumprida MAIOR que a fração (`<` estrito). O porte
+ * passou a aceitar o cumprimento EXATO (`<=`), como manda o texto do Decreto e como
+ * já faziam todos os demais dispositivos. Nos cenários abaixo a pena cumprida é
+exatamente a fração, então o porte diz "Preenche" onde o oráculo diz "Não
+ * preenche" — em `art13` e, por consequência, em `art13_4` (que usava F148).
+ */
+export const CENARIOS_ART13_EXATO: ReadonlyMap<string, string> = new Map([
+  [
+    'Inciso XVI positivo (condição grave de saúde)',
+    'Art. 13 na fronteira exata: o porte aceita o cumprimento exato da fração (`<=`); o engine.js exigia MAIOR (`<`).',
+  ],
+  [
+    'Posicionado contra a planilha 4: Art. 13 na fronteira exata D6+G7+G8 == N13 (10a, cumprido 2a, idoso)',
+    'É O cenário da fronteira exata — existe para cair exatamente nela. O porte aceita o exato (`<=`); o engine.js negava (`<`).',
+  ],
+])
+
+/**
+ * O desvio de 2024 é em OUTRO plano: lá não há engine.js, a verdade é a planilha, e
+ * ela não tem coluna de quantum para o `art13` (a de comutação é do `art13_4`). Quem
+ * escreve o `art13` de 2024 é uma coluna com `<` estrito. O porte aceita o exato.
+ *
+ * Em vez de pular o cenário inteiro (o que perderia a checagem de `art11_*` e do
+ * `art13_4`, que continuam fiéis), o teste de 2024 marca `art13` desta lista como
+ * desvio esperado e confere o RESTO campo a campo.
+ */
+export const CENARIOS_ART13_EXATO_2024: ReadonlyMap<string, string> = new Map([
+  [
+    'Inciso XII na fração 1/5 de 2024 (não reinc; em 2025 seria 1/6)',
+    'Art. 13 na fronteira exata: o porte aceita o cumprimento exato da fração (`<=`); a planilha exigia MAIOR (`<`).',
+  ],
+])
+
 export function divergencia(entrada: Entrada, porte: (e: Entrada) => Resultado): string | null {
   const a = engineOriginal.calcular(entrada)
   const b = porte(entrada)

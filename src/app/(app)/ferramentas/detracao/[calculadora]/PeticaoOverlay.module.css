@@ -1,0 +1,25 @@
+.corpo {
+  display: grid;
+  gap: var(--s-4);
+}
+
+.texto {
+  margin: 0;
+  padding: var(--s-4);
+  background: var(--fundo);
+  border: 1px solid var(--linha);
+  border-radius: var(--r-controle);
+  font-family: inherit;
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  color: var(--tinta);
+  white-space: pre-wrap;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.acoes {
+  display: flex;
+  gap: var(--s-3);
+  flex-wrap: wrap;
+}

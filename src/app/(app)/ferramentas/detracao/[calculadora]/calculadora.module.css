@@ -1,0 +1,388 @@
+/* calculadora.module.css — formulário e resultado do Recolhimento Noturno, no mesmo vocabulário
+ * de token do resto do produto (ver calculadora.module.css do CIC, mesma receita).
+ *
+ * 🔴 Sem cor em hexadecimal e sem `--borda` (não existe no kit): só token. */
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--s-6);
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 1fr; }
+}
+/* 🔴 `gap` aqui, e não `margin` em cada card: a coluna empilha `.painel` + `.resumo` (mais a
+ *  barra que os precede), e sem o gap eles ficam colados — `padding` é espaço INTERNO e não separa
+ * irmãos. Assim todo card novo já nasce espaçado, sem depender de quem escreve o componente. */
+.coluna {
+  min-width: 0;
+  display: grid;
+  gap: var(--s-6);
+  align-content: start;
+}
+
+.pagina { display: grid; gap: var(--s-6); }
+
+.fieldsetSemBorda { border: 0; padding: 0; margin: 0; min-width: 0; }
+
+.questionario { display: grid; gap: var(--s-5); }
+
+.secao {
+  display: grid;
+  gap: var(--s-4);
+  padding: var(--s-5);
+  background: var(--superficie);
+  border: 1px solid var(--linha);
+  border-radius: var(--r-painel);
+  box-shadow: var(--elev-1);
+}
+
+.tituloSecao {
+  padding: 0 var(--s-2);
+  font-size: var(--fs-title);
+  font-weight: 600;
+  color: var(--tinta);
+}
+
+.campos { display: grid; gap: var(--s-4); }
+.campoTempo { display: grid; gap: var(--s-2); }
+.rotuloGrupo { font-size: var(--fs-body); font-weight: 500; color: var(--tinta-2); }
+.ajudaGrupo { margin: 0; font-size: var(--fs-body); color: var(--tinta-3); }
+
+.alternadorModo {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  font-size: var(--fs-body);
+  font-weight: 500;
+  color: var(--tinta);
+}
+
+.diasSemana { display: flex; flex-wrap: wrap; gap: var(--s-3); }
+.diaSemanaItem {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  font-size: var(--fs-body);
+  color: var(--tinta-2);
+}
+
+.editorLista { display: grid; gap: var(--s-3); }
+
+/* Bloco que abre uma SEÇÃO nova dentro do mesmo card, separada do que vem acima por uma linha —
+ *  é o caso dos feriados municipais/estaduais, que vinham colados no checkbox de feriados
+ *  nacionais e pareciam parte dele. O espaço é de SEÇÃO, não de campo (ver `--s-4`), para o olho
+ *  ler a quebra. */
+.blocoSeparado {
+  display: grid;
+  gap: var(--s-3);
+  margin-top: var(--s-4);
+  padding-top: var(--s-4);
+  border-top: 1px solid var(--linha);
+}
+
+/* O nome do feriado ocupa o resto da linha; a data tem largura fixa (`linhaIntervalo > *` garante
+ *  o mínimo). Sem isto o campo de nome ficaria do tamanho da data e "Aniversário da cidade"
+ *  apareceria cortado. */
+.campoNomeFeriado { flex: 1 1 100%; }
+.editorCabecalho {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+}
+.linhaIntervalo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--s-3);
+  padding: var(--s-3);
+  border: 1px solid var(--linha);
+  border-radius: var(--r-controle);
+}
+.linhaIntervalo > * { min-width: 160px; }
+
+/* ── Resultado ── */
+.painel {
+  display: grid;
+  gap: var(--s-5);
+  padding: var(--s-5);
+  background: var(--superficie);
+  border: 1px solid var(--linha);
+  border-radius: var(--r-painel);
+  box-shadow: var(--elev-1);
+}
+.destaque { display: flex; align-items: baseline; gap: var(--s-3); }
+.numero { font-size: 2.5rem; font-weight: 700; color: var(--tinta); line-height: 1; }
+.rotuloNumero { font-size: var(--fs-body); color: var(--tinta-2); }
+
+.metricas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--s-4);
+  margin: 0;
+}
+.metricas dt { font-size: var(--fs-micro); color: var(--tinta-3); }
+.metricas dd { margin: 0; font-size: var(--fs-body); font-weight: 600; color: var(--tinta); }
+
+.memoria { font-size: var(--fs-body); color: var(--tinta-2); }
+.memoria summary { cursor: pointer; font-weight: 500; color: var(--tinta); }
+.listaMemoria {
+  display: grid;
+  gap: var(--s-1);
+  margin: var(--s-2) 0 var(--s-4);
+  padding: 0;
+  list-style: none;
+  font-size: var(--fs-micro);
+  color: var(--tinta-3);
+}
+
+/* ── Resumo (apoio à decisão) — o único painel visível na impressão, ver `.painel` abaixo. ── */
+.resumo {
+  display: grid;
+  gap: var(--s-4);
+  padding: var(--s-5);
+  background: var(--superficie);
+  border: 1px solid var(--linha);
+  border-radius: var(--r-painel);
+  box-shadow: var(--elev-1);
+}
+.resumoSegmento {
+  display: grid;
+  gap: var(--s-1);
+  padding-bottom: var(--s-3);
+  border-bottom: 1px solid var(--linha);
+}
+.resumoSegmento:last-of-type { border-bottom: none; padding-bottom: 0; }
+.resumoLinha {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--s-3);
+  font-size: var(--fs-body);
+  color: var(--tinta-2);
+}
+.resumoLinha b { color: var(--tinta); font-weight: 600; }
+/* Cabeçalho da composição por dia de calendário — precisa ser visivelmente secundário ao total de
+ * detração, para o advogado não ler "2445 dias" como se fosse o resultado do cálculo. */
+.resumoSubCategoria {
+  font-size: var(--fs-micro);
+  line-height: var(--lh-micro);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--ls-micro);
+  color: var(--tinta-3);
+}
+.resumoCategorias {
+  display: grid;
+  gap: var(--s-2);
+  padding-top: var(--s-2);
+  border-top: 1px solid var(--linha);
+}
+
+/* ── Ajustes do cabeçalho SÓ na tela do cálculo salvo ─────
+ *
+ * Chega pela prop `className` do `CabecalhoPagina` (ver o comentário naquele componente), nunca
+ * por uma regra no kit, que é de TODAS as telas do CRM. É o mesmo ajuste que a calculadora de
+ * indulto já faz, e pelo mesmo motivo — o padrão está em
+ * `src/app/(app)/ferramentas/[calculadora]/calculadora.module.css`. */
+.cabecalhoDoCalculo h1,
+.cabecalhoDoCalculo p {
+  /* (b) O subtítulo ("Tema Repetitivo 1.155/STJ") sobe para o MESMO corpo do título. O kit o
+   * desenha em `--fs-body`/400 — dois terços do título — porque em geral o subtítulo EXPLICA um
+   * título; aqui ele é a IDENTIDADE do tema com que se está calculando.
+   *
+   * 🔴 `--fs-page` é o token que o PRÓPRIO kit usa no título. Igualar os dois por um literal
+   * (`24px`) os desalinharia na próxima revisão do kit, quando o token mudasse. */
+  font-size: var(--fs-page);
+  line-height: var(--lh-page);
+}
+
+.cabecalhoDoCalculo p {
+  /* O peso NÃO sobe junto: a 600 os dois viram o mesmo bloco e o olho perde qual é o título.
+   * A hierarquia passa a ser o peso, não o corpo. */
+  font-weight: 400;
+  letter-spacing: var(--ls-page);
+}
+
+/* (a) O título do cálculo não vai para o PAPEL: é o nome que o membro deu ao registro
+ * ("Caso do João", "Execução 0012345"), não informação do caso. O subtítulo do tema FICA.
+ *
+ * `header h1` (descendente) e não `.titulo`: a classe do kit tem hash e o CSS module do chamador
+ * não a enxerga. O seletor estrutural chega no elemento pelo que ele É.
+ *
+ * 🔴 É `h1` DENTRO do header, e não filho direto: o kit envolve o título numa `.textos` (ele é
+ * irmão do bloco de ações, na mesma `.linha`). Um `>` aqui não casaria com nada, e a regra
+ * sumiria em SILÊNCIO — o título voltaria a sair no anexo sem nenhum teste acusar. */
+@media print {
+  .cabecalhoDoCalculo h1 {
+    display: none;
+  }
+}
+
+/* Lista dos feriados computados. Três colunas de largura fixa para a data e o dia da semana, e o
+ *  nome ocupando o resto: assim as três colunas ficam alinhadas entre as linhas e a lista se lê
+ *  como tabela, sem `display: table` (que brigaria com o grid do painel). */
+.listaFeriados {
+  display: grid;
+  gap: var(--s-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--fs-body);
+  color: var(--tinta-2);
+}
+.listaFeriados li {
+  display: grid;
+  grid-template-columns: 4rem 8rem minmax(0, 1fr);
+  gap: var(--s-3);
+  align-items: baseline;
+}
+.feriadoData { font-variant-numeric: tabular-nums; color: var(--tinta); font-weight: 600; }
+.feriadoDiaSemana { color: var(--tinta-3); }
+.feriadoNome { color: var(--tinta-2); }
+.feriadoOrigem { color: var(--tinta-3); font-style: normal; }
+
+/* No papel, a lista estreita não cabe em três colunas sem quebrar feio. */
+@media print {
+  .listaFeriados li { grid-template-columns: 3.5rem 7rem minmax(0, 1fr); gap: var(--s-2); }
+}
+.resumoObservacoes {
+  display: grid;
+  gap: var(--s-1);
+  padding-top: var(--s-2);
+  border-top: 1px solid var(--linha);
+  font-size: var(--fs-body);
+  color: var(--tinta-2);
+}
+.resumoObservacoesTexto {
+  margin: 0;
+  white-space: pre-wrap;
+  color: var(--tinta);
+}
+
+/* ── O anexo de petição (só no papel) ─────────────────────
+ *
+ * 🔴 `display: none` fora da impressão. Na tela os botões continuam como estão — desta vez não é
+ * preço, é conserto: até 16/09/2026 a folha saía com o formulário oculto, o `.painel` escondido e
+ * o `Resumo` mostrando a composição por categoria, MAS SEM O TOTAL apurado. O advogado imprimia e
+ * o número não estava em lugar nenhum. O total vive no `Resultado` (oculto) e no `Resumo` (único
+ * painel visível), e é o `Resumo` que o traz — ver `.resumoLinha`. */
+.anexo {
+  display: none;
+}
+
+/* ── Barra de salvar, exclusão, lista — mesma receita do CIC ── */
+.barra { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--s-3); margin-bottom: var(--s-5); }
+
+/* Acesso encerrado: só o botão de imprimir, sem a barra de salvar. Some na impressão — o anexo
+ * é só o `Resultado`. */
+.barraImprimir { display: flex; justify-content: flex-end; gap: var(--s-3); margin-bottom: var(--s-5); }
+.campoTitulo { flex: 1; min-width: 240px; }
+.voltar {
+  display: inline-flex; align-items: center; gap: var(--s-2);
+  font-size: var(--fs-body); color: var(--tinta-3); text-decoration: none;
+  transition: color var(--t-rapido) var(--suave);
+}
+.voltar:hover { color: var(--tinta); }
+.voltar:focus-visible { outline: 2px solid var(--acento); outline-offset: 2px; border-radius: var(--r-pequeno); }
+
+.linhaTitulo { display: flex; flex-wrap: wrap; gap: var(--s-3); }
+.linhaTitulo > :first-child { flex: 1; min-width: 200px; }
+
+.mensagem {
+  flex-basis: 100%; margin: 0; padding: var(--s-2) var(--s-4);
+  border-radius: var(--r-controle); font-size: var(--fs-body); font-weight: 500;
+}
+.mensagem[data-tom='erro'] { background: var(--erro-wash); color: var(--erro); }
+.mensagem[data-tom='ok'] { background: var(--ok-wash); color: var(--ok); }
+
+.excluirWrap { display: flex; flex-direction: column; gap: var(--s-3); }
+.confirmaExcluir {
+  display: flex; flex-direction: column; gap: var(--s-3); padding: var(--s-4);
+  border: 1px solid var(--erro); border-radius: var(--r-controle); background: var(--erro-wash);
+}
+.confirmaTexto { margin: 0; font-size: var(--fs-body); color: var(--tinta); }
+.confirmaAcoes { display: flex; align-items: center; gap: var(--s-3); flex-wrap: wrap; }
+
+.notaPrivacidade { max-width: 68ch; margin: 0; font-size: var(--fs-body); color: var(--tinta-2); }
+
+.lista { display: grid; gap: var(--s-3); list-style: none; margin: 0; padding: 0; }
+.item {
+  display: block; padding: var(--s-4) var(--s-5); background: var(--superficie);
+  border: 1px solid var(--linha); border-radius: var(--r-painel); box-shadow: var(--elev-1);
+  color: inherit; text-decoration: none; transition: border-color var(--t-rapido) var(--suave);
+}
+.item:hover { border-color: var(--linha-forte); }
+.item:focus-visible { outline: 2px solid var(--acento); outline-offset: 2px; border-radius: var(--r-pequeno); }
+.itemTitulo { margin: 0 0 var(--s-1); font-size: var(--fs-body); font-weight: 600; color: var(--tinta); }
+.itemMeta { font-size: var(--fs-micro); color: var(--tinta-3); }
+
+.listaWrap { display: grid; gap: var(--s-4); }
+.busca { max-width: 480px; }
+.buscaVazia { margin: 0; padding: var(--s-4) var(--s-5); color: var(--tinta-3); font-size: var(--fs-body); }
+
+.avisoVersao {
+  padding: var(--s-4) var(--s-5); background: var(--aviso-wash); border: 1px solid var(--aviso);
+  border-radius: var(--r-painel); color: var(--tinta); font-size: var(--fs-body);
+}
+
+/* ── A folha de impressão ─────────────────
+ *
+ * Quem manda no que sai é o CSS, não o React (mesma regra do CIC — ver
+ * `docs/calculadora-indulto-comutacao/verificacoes-de-conjunto.md`, §A folha de impressão).
+ *
+ * | Elemento                      | Na tela | No papel |
+ * |-------------------------------|---------|----------|
+ * | Formulário (coluna esquerda)  | visível | oculto   |
+ * | Barra de salvar, imprimir, excluir, voltar | visível | oculto |
+ * | `CabecalhoAnexo` — identificação e data | **oculto** | **visível** |
+ * | `Resultado` — destaque e memória de cálculo | visível | oculto |
+ * | `Resumo` — total, datas, categorias | visível | visível |
+ * | Observações (texto livre)     | visível | **oculto** |
+ *
+ * Duas decisões que não são óbvias e que um revisor tende a desfazer:
+ *
+ * 1. **O `.painel` fica oculto de propósito.** Ele traz o mesmo destaque que o `Resumo` já leva,
+ *    e a memória de cálculo é conferência de TELA — dezenas de linhas de `timestamp` que inflam o
+ *    anexo sem dizer nada ao juízo. Quem imprime quer o número e como ele se compõe, não o log.
+ * 2. **As observações ficam ocultas.** São texto livre do advogado; o anexo acompanha a petição,
+ *    que é assinada, e rascunho não vai assinado.
+ *
+ * Papel não tem tema escuro: redefinir os TOKENS (e não as propriedades) propaga o preto sobre
+ * branco por toda a árvore, porque cada classe acima já lê `var(--tinta)` etc. */
+@media print {
+  .resumo {
+    --superficie: #fff;
+    --linha: #999;
+    --tinta: #000;
+    --tinta-2: #222;
+    --tinta-3: #444;
+    --elev-1: none;
+    color: #000;
+  }
+  .resumoSegmento, .resumoCategorias, .resumoLinha { break-inside: avoid; }
+  .resumoObservacoes { display: none; }
+
+  .anexo {
+    display: block;
+    color: #000;
+    margin-bottom: var(--s-5);
+    break-after: avoid;
+  }
+  .anexoTitulo {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 700;
+  }
+  .anexoMeta {
+    margin: var(--s-1) 0 var(--s-4);
+    font-size: 0.85rem;
+    color: #222;
+  }
+
+  .layout { grid-template-columns: 1fr; }
+  .coluna:first-child { display: none; }
+  .barra, .barraImprimir, .excluirWrap, .voltar, .painel { display: none; }
+}

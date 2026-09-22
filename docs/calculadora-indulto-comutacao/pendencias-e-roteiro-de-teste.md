@@ -69,11 +69,16 @@ Montado pelas revisões das Tasks 10 e 11. É o que o dono do produto precisa pe
 
 ## Decisões que são do usuário (não corrigir na revisão)
 
-1. **Art. 13 com `<` estrito** (`Cálculo!H138`): a planilha nega a comutação a quem cumpriu **exatamente** a fração; o texto do artigo e todos os demais dispositivos aceitam o cumprimento exato. Motor fiel à planilha; exibido em "Pontos a validar juridicamente". Correção, se o usuário decidir: um caractere, com cenário de fronteira já no oráculo.
-2. **Teto dobrado do Inciso VIII** (`Cálculo!R96`): vem da própria planilha. Exibido ao advogado.
-3. **"NÃO SE APLICA" à reincidência no Art. 11** satisfaz requisitos opostos. Fiel; exibido.
-4. **Bug G149 da planilha em uso**: esconde uma comutação de 2/3 devida quando o Art. 13 não preenche e o §4º preenche (só na igualdade exata, por causa do item 1). O motor já corrige; é a planilha em uso que prejudica o sentenciado.
-5. **Justiça restaurativa ausente da calculadora web da POC**: a POC em uso nunca coletava o campo `E51`, negando a regra especial do §2º a quem só se enquadra por ele. O motor novo coleta.
-6. **Limite de cálculos gravados por usuário**: não existe.
-7. **Cálculos de quem é removido de um workspace**: o membro perde o acesso e não consegue excluí-los; ficam até a conta ou o workspace ser apagado.
-8. **Exclusão da conta leva os cálculos junto** (`on delete cascade` de `auth.users`): bom para eliminação sob a LGPD; ruim se o escritório tiver dever de guarda.
+> **Resolvido em 17/09/2026 — o Art. 13 com `<` estrito saiu desta lista.** Era o item 1; o dono do
+> produto decidiu aceitar o cumprimento exato da fração, e o motor passou a `<=` nos dois decretos. O
+> item não foi reescrito aqui porque os documentos de decisão são **registro**; o que mudou, o porquê e
+> o efeito nos testes estão em
+> [`telas-questionario-e-resultado.md`](telas-questionario-e-resultado.md), §5.
+
+1. **Teto dobrado do Inciso VIII** (`Cálculo!R96`): vem da própria planilha. Exibido ao advogado.
+2. **"NÃO SE APLICA" à reincidência no Art. 11** satisfaz requisitos opostos. Fiel; exibido.
+3. **Bug G149 da planilha em uso**: esconde uma comutação de 2/3 devida quando o Art. 13 não preenche e o §4º preenche — só na igualdade exata, que era justamente o caso do `<` estrito resolvido em 17/09/2026 (item que saiu desta lista). O motor já corrigia; era a planilha em uso que prejudicava o sentenciado.
+4. **Justiça restaurativa ausente da calculadora web da POC**: a POC em uso nunca coletava o campo `E51`, negando a regra especial do §2º a quem só se enquadra por ele. O motor novo coleta.
+5. **Limite de cálculos gravados por usuário**: não existe.
+6. **Cálculos de quem é removido de um workspace**: o membro perde o acesso e não consegue excluí-los; ficam até a conta ou o workspace ser apagado.
+7. **Exclusão da conta leva os cálculos junto** (`on delete cascade` de `auth.users`): bom para eliminação sob a LGPD; ruim se o escritório tiver dever de guarda.

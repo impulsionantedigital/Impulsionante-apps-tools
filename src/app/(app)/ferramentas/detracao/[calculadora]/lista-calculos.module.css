@@ -1,0 +1,86 @@
+/* lista-calculos.module.css — página de lista de cálculos para detracao
+ *
+ * Segue o padrão de tokens do projeto: `--superficie`, `--linha`, `--r-painel`.
+ * A tabela é renderizada com padrão de painel, como em outras listas do produto.
+ */
+
+.pagina {
+  display: grid;
+  gap: var(--s-6);
+}
+
+.tabelaWrap {
+  border: 1px solid var(--linha);
+  border-radius: var(--r-painel);
+  background: var(--superficie);
+  box-shadow: var(--elev-1);
+  overflow: auto;
+}
+
+.tabela {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-body);
+}
+
+.tabela thead {
+  background: var(--linha);
+  border-bottom: 2px solid var(--linha-forte);
+}
+
+.tabela th {
+  padding: var(--s-4) var(--s-5);
+  text-align: left;
+  font-weight: 600;
+  color: var(--tinta);
+}
+
+.tabela td {
+  padding: var(--s-4) var(--s-5);
+  border-bottom: 1px solid var(--linha);
+  color: var(--tinta);
+}
+
+.tabela tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.tabela tbody tr:hover {
+  background: var(--linha);
+}
+
+.link {
+  color: var(--acento);
+  text-decoration: none;
+  transition: color var(--t-rapido) var(--suave);
+}
+
+.link:hover {
+  color: var(--acento-forte);
+  text-decoration: underline;
+}
+
+.link:focus-visible {
+  outline: 2px solid var(--acento);
+  outline-offset: 2px;
+  border-radius: var(--r-pequeno);
+}
+
+.acoes {
+  display: flex;
+  gap: var(--s-3);
+  align-items: center;
+}
+
+/* Responsivo: em telas pequenas, reduz o padding das células */
+@media (max-width: 768px) {
+  .tabela th,
+  .tabela td {
+    padding: var(--s-3) var(--s-4);
+    font-size: var(--fs-micro);
+  }
+
+  .acoes {
+    gap: var(--s-2);
+  }
+}

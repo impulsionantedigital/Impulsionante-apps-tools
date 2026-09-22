@@ -21,7 +21,7 @@ import { calcular2025 } from '@/lib/indulto-comutacao/motores/2025/motor'
 import { VEREDITOS } from '@/lib/indulto-comutacao/tipos'
 import { dias, fmtDias } from '@/lib/indulto-comutacao/tempo'
 import type { Entrada, ResultadoInciso, Tempo } from '@/lib/indulto-comutacao/tipos'
-import { RAIZ } from './_oraculo'
+import { RAIZ, CENARIOS_ART13_EXATO } from './_oraculo'
 
 type Celula = string | number | boolean
 
@@ -143,7 +143,21 @@ describe('motor de 2025 contra a planilha original (validacao/2025/esperado.json
     for (const id of ids) expect(esperado.celulas[`${id}.geral`], id).toBeDefined()
   })
 
+  // 🔴 A DECISÃO DO DONO DO PRODUTO SOBRE O ART. 13 APARECE AQUI, e não é bug.
+  // A planilha negava a comutação a quem cumpriu EXATAMENTE a fração (`<` estrito,
+  // Cálculo!H138); o porte passou a conceder (`<=`), como manda o texto do Decreto.
+  // Nos cenários abaixo a pena cumprida é exatamente a fração, então o porte diz
+  // "Preenche" onde a planilha diz "Não preenche". O desvio é NOMEADO em `_oraculo.ts`
+  // e há um teste que reprova se ele deixar de bater com a realidade.
   esperado.cenarios.forEach((cenario) => {
+    const razaoDoDesvio = CENARIOS_ART13_EXATO.get(cenario._nome)
+    if (razaoDoDesvio) {
+      describe.skip(`${cenario._nome} — DESVIO: ${razaoDoDesvio}`, () => {
+        it('pulado', () => {})
+      })
+      return
+    }
+
     describe(cenario._nome, () => {
       const obtido = calcular2025(cenario.entrada)
       const p = cenario.planilha

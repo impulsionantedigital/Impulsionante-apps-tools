@@ -1,0 +1,451 @@
+/* calculadora.module.css — o questionário ao lado do resultado.
+ *
+ * Mesma regra de contenção do resultado.module.css: todo bloco de conteúdo é
+ * um PAINEL (`--superficie` + `--linha` + `--r-painel` juntos). Os controles
+ * em si (input/select, rótulo, texto de ajuda) vêm de `@/components/ui/Campo`
+ * — não duplicados aqui — daí este módulo só ter layout e a seção que os
+ * agrupa.
+ *
+ * 🔴 Sem cor em hexadecimal e sem `--borda` (não existe no kit): só token.
+ */
+
+/* Ajustes do cabeçalho SÓ na tela do cálculo salvo — chegam pela prop `className` do
+ * `CabecalhoPagina` (ver o comentário lá), nunca por uma regra no kit, que é de todas as
+ * telas do CRM.
+ *
+ * Os dois ajustes são pedidos do dono do produto, e este módulo é o lugar deles: */
+.cabecalhoDoCalculo h1,
+.cabecalhoDoCalculo p {
+  /* (b) O subtítulo ("Decreto 12.970/2025 — indulto natalino") sobe para o MESMO corpo do
+   * título. O kit o desenha em `--fs-body`/400, dois terços do título, porque em geral o
+   * subtítulo EXPLICA um título; aqui ele é a IDENTIDADE do decreto com que se está
+   * calculando, e o advogado precisa dela do mesmo tamanho que o resto do cabeçalho.
+   *
+   * 🔴 `--fs-page` é o token que o próprio kit usa no título (CabecalhoPagina.module.css).
+   * Igualar os dois por um literal — `24px` — os desalinharia na próxima revisão do kit,
+   * quando `--fs-page` mudasse. */
+  font-size: var(--fs-page);
+  line-height: var(--lh-page);
+}
+
+.cabecalhoDoCalculo p {
+  /* O peso NÃO sobe junto: a 600 os dois viram o mesmo bloco e o olho perde qual é o
+   * título. A hierarquia passa a ser o peso, não o corpo. */
+  font-weight: 400;
+  letter-spacing: var(--ls-page);
+}
+
+/* (a) O título do cálculo salvo não vai para o PAPEL: é o nome que o membro deu ao
+ * registro ("Caso do João"), não informação do caso. O subtítulo do decreto FICA.
+ *
+ * `header h1` (descendente) e não `.titulo`: a classe do kit tem hash e o CSS module do
+ * chamador não a enxerga. O seletor estrutural chega no elemento pelo que ele É.
+ *
+ * 🔴 É `h1` DENTRO do header, não filho direto: o kit envolve o título numa `.textos`
+ * (ele é irmão do bloco de ações, na mesma `.linha`). Um `>` aqui não casaria com nada e a
+ * regra sumiria em silêncio — o defeito que este ajuste veio corrigir voltaria sem aviso. */
+@media print {
+  .cabecalhoDoCalculo h1 {
+    display: none;
+  }
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--s-6);
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.coluna {
+  min-width: 0;
+}
+
+.questionario {
+  display: grid;
+  gap: var(--s-5);
+}
+
+/* A seção do questionário é um ACORDEÃO: o `padding` saiu daqui (o botão do
+ * cabeçalho e `.corpoSecao` o trazem cada um do seu lado), senão o cabeçalho
+ * fechado ficaria com o respiro de um card cheio e o conjunto pareceria maior do
+ * que é — justamente o que a mudança veio corrigir. */
+.secao {
+  background: var(--superficie);
+  border: 1px solid var(--linha);
+  border-radius: var(--r-painel);
+  box-shadow: var(--elev-1);
+  overflow: hidden;
+}
+
+/* A seção aberta ganha a borda do token de destaque do produto. Num acordeão, a
+ * única aberta precisa se distinguir das fechadas por algo além da altura — e a
+ * altura só serve a quem enxerga a tela inteira. */
+.secaoAberta {
+  border-color: var(--linha-forte);
+}
+
+/* `h2` sem margem: é um invólucro para o botão, não um bloco de texto. */
+.cabecalhoSecao {
+  margin: 0;
+}
+
+/* O cabeçalho clicável. `width: 100%` + `text-align: left` para o alvo ser a linha
+ * inteira, não só o texto — o título curto como "Observações" ficaria com um alvo
+ * de uns 100px, fácil de errar. */
+.botaoSecao {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  width: 100%;
+  padding: var(--s-4) var(--s-5);
+  background: none;
+  border: 0;
+  font: inherit;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+}
+.botaoSecao:hover {
+  background: var(--superficie-hover);
+}
+/* `--acento` e o mesmo anel dos inputs do produto (globals.css): o foco do cabeçalho
+ * não pode ser um desenho próprio. O `offset` negativo mantém o anel DENTRO do
+ * painel, que tem `overflow: hidden` — com offset positivo ele seria cortado. */
+.botaoSecao:focus-visible {
+  outline: 2px solid var(--acento);
+  outline-offset: -2px;
+}
+
+.tituloSecao {
+  font-size: var(--fs-title);
+  font-weight: 600;
+  color: var(--tinta);
+}
+
+/* Sem quadro de foco próprio: ele vive no botão que o contém, e um segundo anel no
+ * ícone faria o foco parecer duplo. A rotação é o que comunica aberto/fechado a quem
+ * não vê a lista — o `aria-expanded` é quem faz isso para o leitor de tela. */
+.chevron {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  color: var(--tinta-3);
+  transition: transform 0.15s ease;
+}
+.chevronAberto {
+  transform: rotate(180deg);
+}
+
+/* O miolo da seção aberta. O `gap` que antes era da `.secao` mora aqui: separado do
+ * cabeçalho, ele só precisa espaçar aviso/descrição/campos entre si. */
+.corpoSecao {
+  display: grid;
+  gap: var(--s-4);
+  padding: 0 var(--s-5) var(--s-5);
+}
+
+/* O aviso de veto ("responder NÃO bloqueia...") — mesmo vocabulário de banner
+ * de alerta do resto do produto: wash + borda sólida do próprio token. */
+.aviso {
+  margin: 0;
+  padding: var(--s-3) var(--s-4);
+  background: var(--aviso-wash);
+  border: 1px solid var(--aviso);
+  border-radius: var(--r-controle);
+  font-size: var(--fs-body);
+  font-weight: 500;
+  color: var(--tinta);
+}
+
+.descricao {
+  margin: 0;
+  font-size: var(--fs-body);
+  color: var(--tinta-3);
+}
+
+/* `fieldset` sem borda nem margem: ele existe pelo `disabled` que carrega (acesso
+ * encerrado), não para desenhar um quadro — o painel da seção já é o quadro. */
+.campos {
+  display: grid;
+  gap: var(--s-4);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.campoTempo {
+  display: grid;
+  gap: var(--s-2);
+}
+
+.rotuloGrupo {
+  font-size: var(--fs-body);
+  font-weight: 500;
+  color: var(--tinta-2);
+}
+
+.ajudaGrupo {
+  font-size: var(--fs-body);
+  color: var(--tinta-3);
+}
+
+.tempo {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--s-3);
+}
+
+/* Ao imprimir, o questionário não vai junto: o anexo é o resultado. */
+@media print {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+  .coluna:first-child {
+    display: none;
+  }
+}
+
+/* ── Task 12: a nota de dado pessoal (spec §9) ───────────────────────────
+ * Logo abaixo do `CabecalhoPagina` de "Novo cálculo": lembra o membro que o cálculo é dele
+ * (nenhum outro membro o vê), que ele pode excluí-lo quando quiser, e que o nº de execução
+ * evita gravar o nome do sentenciado. Texto secundário — mesma receita de `.ajuda`/`.frase`
+ * do resto do produto: `--tinta-2`, nunca `opacity`. */
+.notaPrivacidade {
+  max-width: 68ch;
+  margin: 0;
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  color: var(--tinta-2);
+}
+
+/* ── Task 11: a barra de salvar e a exclusão ─────────────────────────────
+ *
+ * Mesma regra de token do resto do módulo: nada de hex solto nem de
+ * `var(--borda, …)` — `--borda` não existe neste kit, e o tema padrão é
+ * escuro, então uma cor pensada para fundo claro dá contraste ruim aqui. */
+
+.barra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--s-3);
+  margin-bottom: var(--s-5);
+}
+
+.campoTitulo {
+  flex: 1;
+  min-width: 240px;
+}
+
+/* O link "Voltar" acima do título — mesma receita de `_crm/crm.module.css` (`.voltar`). */
+.voltar {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  color: var(--tinta-3);
+  text-decoration: none;
+  transition: color var(--t-rapido) var(--suave);
+}
+.voltar:hover { color: var(--tinta); }
+.voltar:focus-visible {
+  outline: 2px solid var(--acento);
+  outline-offset: 2px;
+  border-radius: var(--r-pequeno);
+}
+
+/* Input e botão lado a lado, na mesma altura. `align-items: stretch` (o padrão) faz o botão
+ * acompanhar a altura do input sem ninguém precisar saber qual é. No telefone a linha quebra e
+ * o botão vai para baixo, ocupando a largura toda. */
+.linhaTitulo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-3);
+}
+
+.linhaTitulo > :first-child {
+  flex: 1;
+  min-width: 200px;
+}
+
+/* Aviso local que some sozinho (padrão de `Board.tsx`) e erro da exclusão —
+ * mesmo vocabulário de wash + tom que `_crm/crm.module.css` já usa. */
+.mensagem {
+  flex-basis: 100%;
+  margin: 0;
+  padding: var(--s-2) var(--s-4);
+  border-radius: var(--r-controle);
+  font-size: var(--fs-body);
+  font-weight: 500;
+}
+.mensagem[data-tom='erro'] {
+  background: var(--erro-wash);
+  color: var(--erro);
+}
+.mensagem[data-tom='ok'] {
+  background: var(--ok-wash);
+  color: var(--ok);
+}
+
+/* A confirmação de exclusão em duas etapas — espelha `_crm/crm.module.css`
+ * (`.excluirWrap`/`.confirmaExcluir`/`.confirmaTexto`/`.confirmaAcoes`). */
+.excluirWrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
+.confirmaExcluir {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  padding: var(--s-4);
+  border: 1px solid var(--erro);
+  border-radius: var(--r-controle);
+  background: var(--erro-wash);
+}
+
+.confirmaTexto {
+  margin: 0;
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  color: var(--tinta);
+}
+
+.confirmaAcoes {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  flex-wrap: wrap;
+}
+
+/* A barra e a exclusão são da tela, não do anexo: somem na impressão — o
+ * anexo é só o `Resultado` (ver a regra de `.layout`/`.coluna` acima). */
+.barraImprimir {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--s-3);
+  margin-bottom: var(--s-5);
+}
+
+/* A barra, a exclusão e o próprio botão de imprimir são da tela, não do anexo. */
+@media print {
+  .barra,
+  .barraImprimir,
+  .excluirWrap,
+  .voltar {
+    display: none;
+  }
+}
+
+/* ── Task 11: a lista "Meus cálculos" ────────────────────────────────────
+ * Mesma regra de contenção do resto do produto: cada item é um PAINEL
+ * (`--superficie` + `--linha` + `--r-painel` + `--elev-1`), como em
+ * `agentes.module.css` (`.agente`/`.linha`). */
+
+.pagina {
+  display: grid;
+  gap: var(--s-6);
+}
+
+.lista {
+  display: grid;
+  gap: var(--s-3);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* O card inteiro é o link (ver ListaCalculos.tsx) — antes .item vivia no <li> e só o título,
+   dentro dele, era um <a>; a diferença entre "parece clicável" e "é clicável" era exatamente
+   essa borda entre os dois elementos. */
+.item {
+  display: block;
+  padding: var(--s-4) var(--s-5);
+  background: var(--superficie);
+  border: 1px solid var(--linha);
+  border-radius: var(--r-painel);
+  box-shadow: var(--elev-1);
+  color: inherit;
+  text-decoration: none;
+  transition: border-color var(--t-rapido) var(--suave);
+}
+.item:hover {
+  border-color: var(--linha-forte);
+}
+.item:focus-visible {
+  outline: 2px solid var(--acento);
+  outline-offset: 2px;
+  border-radius: var(--r-pequeno);
+}
+
+.itemTitulo {
+  margin: 0 0 var(--s-1);
+  font-size: var(--fs-body);
+  font-weight: 600;
+  color: var(--tinta);
+}
+
+/* Sentenciado + execução — entre o título (dado que o membro escolheu) e a meta (decreto/motor/
+ * data). Um degrau abaixo do título, um acima da meta: por isso `--tinta-2`, não `--tinta-3`. */
+.itemSub {
+  margin: 0 0 var(--s-1);
+  font-size: var(--fs-body);
+  color: var(--tinta-2);
+}
+
+.itemMeta {
+  font-size: var(--fs-micro);
+  color: var(--tinta-3);
+}
+
+.listaWrap {
+  display: grid;
+  gap: var(--s-4);
+}
+
+.busca {
+  max-width: 480px;
+}
+
+.buscaVazia {
+  margin: 0;
+  padding: var(--s-4) var(--s-5);
+  color: var(--tinta-3);
+  font-size: var(--fs-body);
+}
+
+/* O aviso "Este cálculo mudou" — mesmo tom de atenção de `.aviso` acima,
+ * mas em painel próprio: não é um alerta do questionário, é da tela. */
+.avisoVersao {
+  padding: var(--s-4) var(--s-5);
+  background: var(--aviso-wash);
+  border: 1px solid var(--aviso);
+  border-radius: var(--r-painel);
+  color: var(--tinta);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+}
+
+/* Aviso de acesso que já TERMINOU (comprado ou degustação): pesa mais que o de vencimento, que
+ * ainda é só um lembrete de quem está com acesso. Usa o par --erro/--erro-wash, já medido nos dois
+ * temas (globals.css) — não invente tom aqui: a cor precisa passar no contraste nos dois fundos. */
+.avisoForte {
+  background: var(--erro-wash);
+  border-color: var(--erro);
+}
+
+/* O botão do aviso não deve colar no texto. */
+.avisoVersao :global(button),
+.avisoVersao :global(a) {
+  margin-left: var(--s-3);
+}

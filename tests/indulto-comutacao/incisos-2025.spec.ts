@@ -45,17 +45,23 @@ describe('incisos de comutação', () => {
 })
 
 describe('avisos', () => {
-  it('traz as cinco ambiguidades jurídicas a validar', () => {
-    // As duas primeiras vêm do `avisos` do engine.js; a terceira e a quarta saíram
-    // da auditoria do porte (Task 6); a quinta, da validação contra a planilha
-    // (Task 7). Só as duas primeiras têm contraparte no engine.
-    expect(AVISOS_2025.validarJuridicamente).toHaveLength(5)
+  it('traz as quatro ambiguidades jurídicas ainda em aberto', () => {
+    // As duas primeiras vêm do `avisos` do engine.js; a terceira (Inciso VIII) e a
+    // quarta (Art. 11) saíram da auditoria do porte (Task 6). Só as duas primeiras têm
+    // contraparte no engine.
+    //
+    // 🔴 ERAM CINCO: a quinta, da validação contra a planilha (Task 7), era o `<`
+    // estrito do Art. 13 — e SAIU porque o dono do produto RESOLVEU a ambiguidade: o
+    // motor passou a aceitar o cumprimento exato da fração (`<=`). Se este teste voltar
+    // a esperar 5, alguém reintroduziu um aviso sobre um comportamento que o motor não
+    // tem mais.
+    expect(AVISOS_2025.validarJuridicamente).toHaveLength(4)
     const texto = AVISOS_2025.validarJuridicamente.join(' ')
     expect(texto).toMatch(/pena total imposta/i)
     expect(texto).toMatch(/remanescente/i)
     expect(texto).toMatch(/DOBRA o teto/i)
     expect(texto).toMatch(/NÃO SE APLICA/i)
-    expect(texto).toMatch(/Art\. 13.*comparação estrita/i)
+    expect(texto).not.toMatch(/comparação estrita/i)
   })
 
   it('traz as quatro notas fixas da POC', () => {

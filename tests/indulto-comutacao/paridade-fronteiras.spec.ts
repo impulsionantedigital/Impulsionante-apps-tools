@@ -12,6 +12,15 @@
 // primeiro: igualdade exata (`D6 + G7 + G8 === N13`) quase nunca sai de gerador
 // aleatório, mas é exatamente onde mora a diferença entre `<` e `<=`.
 //
+// 🔴 E É POR ISSO QUE ESTA VARREDURA AGORA TEM UMA EXCEÇÃO. A decisão do dono do
+// produto foi aceitar o cumprimento EXATO da fração no Art. 13 (`<=`, como o texto do
+// Decreto), onde o engine.js exigia MAIOR (`<`). A varredura dia a dia PASSA por todos
+// esses pontos de igualdade por construção, então o desvio esperado é filtrado —
+// NOMEADO e ESTREITO: só `art13`/`art13_4`, só quando é o porte que concede a mais, e
+// só quando a pena cumprida é EXATAMENTE a fração. Qualquer OUTRA divergência, mesmo
+// dentro desses cenários, continua reprovando. O teste no fim deste arquivo prova que
+// o filtro não está mascarando mais do que isso.
+//
 // 🔴 ORÇAMENTO DE TEMPO. Isto roda em todo commit; o alvo é a ordem de 0,7 s, e são
 // ~76 mil execuções diferenciais. É por isso que `divergencia` (ver `_oraculo.ts`)
 // compara campo a campo sem montar string, e que o `expect` só aparece no fim de
@@ -25,16 +34,37 @@ import type { Entrada } from '@/lib/indulto-comutacao/tipos'
 import { divergencia } from './_oraculo'
 
 const ANO = 360
+/**
+ * O desvio do Art. 13 na fronteira exata, reconhecido pela MENSAGEM da divergência.
+ *
+ * Estreito de propósito: casa só o porte DIZENDO "Preenche" onde o original diz
+ * "Não preenche", nos dois incisos afetados. Inverter o sentido (porte negando o que
+ * o original concede) é regressão e NÃO casa aqui.
+ */
+const DESVIO_ART13 = /^art13(_4)?\.geral: original="Não preenche os requisitos" porte="Preenche os requisitos"$/
 
 /** Acumula as divergências de um laço; o teste falha uma vez, com a lista. */
 function varre(casos: Iterable<{ rotulo: string; entrada: Entrada }>): string[] {
   const achados: string[] = []
   for (const { rotulo, entrada } of casos) {
     const d = divergencia(entrada, calcular2025)
-    if (d) {
+    if (d && !DESVIO_ART13.test(d)) {
       achados.push(`${rotulo} → ${d}`)
       if (achados.length >= 10) break // 10 bastam para diagnosticar; o resto é ruído
     }
+  }
+  return achados
+}
+
+/**
+ * Roda a varredura e devolve TODAS as divergências cruas, sem o filtro — inclusive as
+ * do desvio. É o que permite provar que o filtro não esconde outra coisa.
+ */
+function varreCru(casos: Iterable<{ rotulo: string; entrada: Entrada }>): string[] {
+  const achados: string[] = []
+  for (const { rotulo, entrada } of casos) {
+    const d = divergencia(entrada, calcular2025)
+    if (d) achados.push(`${rotulo} → ${d}`)
   }
   return achados
 }
@@ -296,4 +326,51 @@ describe('fuzz diferencial (semente fixa)', () => {
 
   roda('uniforme', 12345, 1200, false)
   roda('enviesado para os incisos raros', 987654321, 1200, true)
+})
+// ---------------------------------------------------------------------------
+// O FILTRO DO DESVIO NÃO ESCONDE NADA ALÉM DELE
+//
+// O filtro acima existe por causa do Art. 13. Sem esta prova, ele é um buraco: uma
+// regressão que produzisse exatamente a mesma mensagem passaria despercebida. Aqui a
+// varredura roda SEM filtro, num conjunto que produz o desvio, e cada divergência
+// encontrada tem de casar com o padrão — se aparecer QUALQUER outra, reprova.
+// ---------------------------------------------------------------------------
+describe('o desvio do Art. 13 é o único que o filtro suprime', () => {
+  it('num cruzamento com muitos pontos de igualdade exata, só o art13 diverge', () => {
+    const penas = PENAS[0] // sem violência 8a: 1/5 = 576 e 1/4 = 720 caem na varredura
+    const base: Entrada = {
+      ...PERFIL_BASE,
+      ...penas.campos,
+      ...PERFIS[1].campos,
+      reincidente: 'NÃO',
+    }
+    const casos: Array<{ rotulo: string; entrada: Entrada }> = []
+    for (let d = 0; d <= penas.total + 60; d++) {
+      casos.push({ rotulo: `N13=${d}`, entrada: { ...base, penaCumpridaSEEU: { dias: d } }})
+    }
+    const cruas = varreCru(casos)
+
+    // O desvio TEM de aparecer neste cruzamento — senão este teste não está provando
+    // nada (por exemplo, se a fronteira sair da varredura por mudança de perfil).
+    expect(cruas.length, 'esperava encontrar o desvio do Art. 13 nesta varredura').toBeGreaterThan(0)
+    for (const d of cruas) {
+      expect(DESVIO_ART13.test(d.split(' → ').slice(1).join(' → ')), `divergência não reconhecida: ${d}`).toBe(true)
+    }
+  })
+
+  it('a fronteira ainda é a igualdade exata, e as duas frações são exercitadas', () => {
+    // O 1/5 (576) e o 1/4 (720) da pena de 8 anos, os dois. Se a pena ou o perfil
+    // mudarem, o teste de cima deixa de provar o que diz provar — este avisa antes.
+    const cumpridos = [576, 720]
+    for (const d of cumpridos) {
+      const entrada: Entrada = {
+        ...PERFIL_BASE,
+        ...PENAS[0].campos,
+        ...PERFIS[1].campos,
+        reincidente: d === 720 ? 'SIM' : 'NÃO',
+        penaCumpridaSEEU: { dias: d },
+      }
+      expect(DESVIO_ART13.test(divergencia(entrada, calcular2025) ?? ''), `N13=${d}`).toBe(true)
+    }
+  })
 })

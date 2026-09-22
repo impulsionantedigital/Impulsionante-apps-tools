@@ -1,0 +1,38 @@
+-- 0068_detracao_limpa_calculos_de_teste.sql
+--
+-- Apaga TODOS os cálculos da calculadora de recolhimento noturno.
+--
+-- ⚠️ Por que uma migration NOVA, e não uma correção da 0067: o `migrate.mjs` decide o que aplicar
+-- pelo NÚMERO da versão (`!applied.has(m.version)`), sem hash de conteúdo. A 0067 já está na tabela
+-- `awave_migrations` desta instalação, então editar o corpo dela não a faria rodar de novo — e a
+-- limpeza simplesmente não aconteceria, sem erro nenhum. Migration aplicada é histórico: corrija
+-- com uma nova.
+--
+-- ⚠️ POR QUE ISTO É SEGURO AQUI, E NÃO SERIA EM GERAL: os cálculos existentes são de TESTE, e o
+-- dono da instalação autorizou a limpeza. A regra geral do produto é o oposto — cálculo salvo é
+-- DOCUMENTO e pode ter virado petição protocolada, e por isso o motor passou a ser versionado e
+-- congelado (`src/lib/detracao/recolhimento-noturno/versoes/`), justamente para não perder nenhum.
+-- Não replique este DELETE em outras tabelas sem a mesma autorização explícita.
+--
+-- Por que apagar em vez de migrar a entrada: a RN-2.0 mudou o formato do segmento (janela de
+-- instantes → par de datas). Converter a entrada conserta a tela mas PERDE o documento — o número
+-- que passaria a aparecer é o da fórmula nova, e o antigo não teria como ser reconstruído. Com os
+-- dados de teste removidos, nenhuma conversão é necessária e a estrutura fica limpa: cada versão
+-- tem o seu formulário e o seu motor congelados, sem ponte entre eles.
+--
+-- 🔴 ADITIVA E IDEMPOTENTE, como toda migration daqui: o CRM reaplica no boot qualquer migration
+-- que não encontre registrada, então esta instrução aguenta rodar duas vezes (o segundo DELETE
+-- simplesmente não encontra nada).
+--
+-- Escopo: TODOS os cálculos da calculadora de recolhimento noturno (`calculo_tipo`), sem filtrar
+-- versão. Os cálculos de indulto/comutação NÃO são tocados — são de outra tabela, e o dono da
+-- instalação pediu explicitamente para não mexer no CIC.
+--
+-- 🔴 A versão anterior deste DELETE tinha um `and algoritmo_versao <> 'RN-2.0'`. Era uma regra
+-- INVENTADA aqui: o pedido foi excluir todos os cálculos de recolhimento noturno, que são de teste.
+-- O filtro por versão parecia inofensivo (apagaria "os antigos"), mas deixou para trás registros
+-- com o rótulo defasado em relação ao formato da entrada — que apareciam na lista e não abriam.
+-- Filtrar por uma condição que ninguém pediu é o que cria esse tipo de sobra.
+
+delete from public.detracao_calculos
+where calculo_tipo = 'recolhimento-noturno';

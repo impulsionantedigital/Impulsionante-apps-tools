@@ -16,11 +16,16 @@ doze tarefas estão juntas. Não refaça as revisões por tarefa; procure o que 
 - **POC de origem e planilha:** `validacao/2025/`
 
 ## 🔴 O que NÃO é defeito a corrigir
-
-As oito **decisões do usuário** listadas no fim de `pendencias-revisao-final.md` (o `<` estrito do Art. 13,
-o teto dobrado do Inciso VIII, os dois problemas da planilha e da POC em uso, e as questões de LGPD sobre
-guarda e exclusão). O motor reproduz a planilha de propósito, e as ambiguidades são exibidas ao advogado.
+As **decisões do usuário** listadas no fim de `pendencias-e-roteiro-de-teste.md` (o teto dobrado do Inciso
+VIII, os dois problemas da planilha e da POC em uso, e as questões de LGPD sobre guarda e exclusão). O motor
+reproduz a planilha de propósito, e as ambiguidades são exibidas ao advogado.
 **Não proponha mudar regra jurídica.** Se achar uma ambiguidade nova, relate; não corrija.
+
+> ⚠️ **O `<` estrito do Art. 13 saiu desta lista em 17/09/2026.** Era a oitava decisão, e o dono do produto
+> decidiu mudá-la: o motor passou a aceitar o cumprimento exato da fração. Ao revisar, **não trate o `<=`
+> do `c13` como defeito nem "restaure" o `<`** — e leia
+> [`telas-questionario-e-resultado.md`](telas-questionario-e-resultado.md), §5, antes de tocar nos testes de
+> paridade, que passaram a pular dois cenários de propósito.
 
 ## O que conferir no conjunto
 
@@ -47,8 +52,10 @@ Procure `2025`, `12.970`, `25/12`, `§`, `Art.`, número romano de inciso. O cri
 um decreto, é defeito.
 
 ### 3. Os avisos jurídicos chegam ao advogado
-- As 5 entradas de `motor.avisos.validarJuridicamente` aparecem **sempre** na tela de resultado, na de
-  cálculo novo e na de cálculo salvo.
+- ⚠️ **Mudou em 17/09/2026:** o card "Pontos a validar juridicamente" **saiu da tela** a pedido do dono do
+  produto. As entradas de `motor.avisos.validarJuridicicamente` **continuam no motor** (e também são 4, não
+  5 — o aviso do Art. 13 saiu quando a ambiguidade foi resolvida), mas **não são mais exibidas**.
+  Não "conserte" recolocando o card; ver `telas-questionario-e-resultado.md`, §1.
 - O aviso da seção "data do fato" (responder NÃO veta indulto e comutação) aparece no questionário.
 - A nota de dado pessoal (spec §9) está na tela de novo cálculo, com as três afirmações.
 - A folha de impressão mostra o resultado com os avisos e esconde o questionário e as barras de ação.
@@ -134,6 +141,41 @@ Três decisões que não são óbvias e que um revisor tende a desfazer:
    barra some na impressão — duas cópias do mesmo texto divergiriam ao primeiro rascunho.
 
 **Como verificar sem imprimir:** emule a mídia no navegador
-(`page.emulateMedia({ media: 'print' })` no Playwright) e meça `getBoundingClientRect().height`.
-Não use `getComputedStyle(filho).display`: num filho de um elemento `display: none` ele devolve o
-display do próprio filho, e faz tudo parecer visível.
+(`page.emulateMedia({ media: 'print' })` no Playwright).
+
+🔴 **Meça `getComputedStyle(elemento).display` NO PRÓPRIO elemento, nunca
+`getBoundingClientRect().height`.** A regra que estava escrita aqui — medir altura — **está errada
+para o `.soNaTela`** (ver abaixo), e dá falso negativo: quem usa `display: contents` não tem caixa
+própria, então a altura volta 0 **mesmo com o conteúdo visível**, e o teste "prova" que ocultou o
+que continua na tela. Foi medido: os blocos apareciam com altura 0 e `display: block`.
+
+O par que não engana:
+
+```js
+const cs = getComputedStyle(document.querySelector('[class*=soNaTela]'))
+return { display: cs.display, apareceNoTexto: document.body.innerText.includes('não aplicáveis') }
+```
+
+No caminho inverso (`.anexo`, que é `display: none` na tela e `block` no papel), o cuidado antigo
+continua valendo: **não leia o `display` de um FILHO** de elemento escondido — ele devolve o display
+do próprio filho e faz tudo parecer visível.
+
+## O que sai na impressão mudou de novo (17/09/2026)
+
+Além do que a seção acima descreve, **três coisas passaram a NÃO sair no papel**, todas a pedido do
+dono do produto, todas por `.soNaTela` (a classe inversa do `.anexo`: existe na tela, some na
+impressão):
+
+| O que | Por quê |
+|---|---|
+| **Título do cálculo salvo** (no `CabecalhoAnexo`) | É o nome que o membro deu ao registro, não informação do caso. A **data** de impressão continua saindo |
+| **A lista de dispositivos NÃO aplicáveis** (Indulto) | O anexo vai ao juiz com o que se aplica ao caso; a lista do que não se aplica só daria o que contestar sem motivo |
+| **A lista de dispositivos NÃO aplicáveis** (Comutação) | Idem |
+
+E **as cinco frações de referência sumiram do resumo** (`2/3 dos impeditivos`, `1/5`, `1/4`, `1/3`,
+`1/2 da pena não impeditiva`) — da tela **e** do papel. O resumo mostra só os quatro totais do caso.
+As frações **continuam sendo calculadas pelo motor**: não as remova de `resultado.resumo.fracoes`
+para "limpar", porque a régua de 1/5 é a que o Art. 13 exige e o 2/3 dos impeditivos é requisito de
+outros dispositivos.
+
+O detalhamento de cada decisão está em [`telas-questionario-e-resultado.md`](telas-questionario-e-resultado.md).

@@ -3,8 +3,9 @@ import { PRODUTOS, ehProdutoConhecido, produtoDoMotor, rotuloDoProduto } from '@
 import { REGISTRO } from '@/lib/indulto-comutacao/registro'
 
 describe('catálogo de produtos', () => {
-  it('todo produto é um motor do REGISTRO, e todo motor é vendável', () => {
-    expect(PRODUTOS.map((p) => p.id).sort()).toEqual(REGISTRO.map((m) => m.id).sort())
+  it('todo produto de indulto-comutacao é um motor do REGISTRO, e todo motor é vendável', () => {
+    const produtosIndulto = PRODUTOS.filter((p) => p.familia === 'indulto-comutacao').map((p) => p.id).sort()
+    expect(produtosIndulto).toEqual(REGISTRO.map((m) => m.id).sort())
   })
 
   it('fixa o id do produto de 2025', () => {
@@ -17,7 +18,8 @@ describe('catálogo de produtos', () => {
 
   it('reconhece só ids do catálogo', () => {
     expect(ehProdutoConhecido('indulto-comutacao-2025')).toBe(true)
-    expect(ehProdutoConhecido('indulto-comutacao-2024')).toBe(false)
+    expect(ehProdutoConhecido('indulto-comutacao-2024')).toBe(true)
+    expect(ehProdutoConhecido('indulto-comutacao-1988')).toBe(false)
     expect(ehProdutoConhecido(42)).toBe(false)
   })
 

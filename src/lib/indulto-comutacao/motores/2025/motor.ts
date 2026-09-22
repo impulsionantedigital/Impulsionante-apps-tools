@@ -17,16 +17,19 @@
  * Exceção: inciso IV usa dias-calendário reais (Sistema B) — ver campo F49.
  *
  * Desvios em relação à planilha, todos marcados no corpo:
- *  - ⚠️ dois BUGS de fórmula, corrigidos (L145:L149 e G149);
+ *  - ⚠️ três BUGS de fórmula, corrigidos (L145:L149, G149 e inciso XI/I28);
+ *  - ✅ uma AMBIGUIDADE jurídica RESOLVIDA pelo dono do produto: o Art. 13 (`c13`)
+ *    exigia cumprimento MAIOR que a fração (`<` estrito, Cálculo!H138) e agora aceita
+ *    o exato (`<=`), como o texto do Decreto e todos os demais dispositivos. Ver o
+ *    comentário no próprio `c13`;
  *  - ⚖️ quatro AMBIGUIDADES jurídicas, PRESERVADAS — nenhuma "consertada":
  *     1. Inciso VIII: o `Rhalf` do §2º DOBRA o teto da pena remanescente em vez
  *        de reduzi-lo à metade — único ponto do decreto em que "metade" se inverte;
- *     2. Art. 13 (`c13`): exige cumprimento MAIOR que a fração (`<` estrito,
- *        Cálculo!H138), onde todo outro dispositivo aceita o exato (`<=`) —
- *        provável erro da planilha;
- *     3. `baseComut` (Art. 13 e §4º): base é o max entre cumprida e remanescente;
- *     4. `montaComut`: a "pena após" desconta da pena TOTAL imposta (P9).
- *    As duas últimas saem também no `avisos` do resultado (literais do engine.js);
+ *     2. `baseComut` (Art. 13 e §4º): base é o max entre cumprida e remanescente;
+ *     3. `montaComut`: a "pena após" desconta da pena TOTAL imposta (P9);
+ *     4. Art. 11: "NÃO SE APLICA" na reincidência satisfaz tanto o requisito de
+ *        reincidente obrigatório quanto o de não reincidente.
+ *    As duas primeiras saem também no `avisos` do resultado (literais do engine.js);
  *    as quatro estão em `AVISOS_2025.validarJuridicamente`, que é o que a tela mostra.
  */
 
@@ -374,9 +377,15 @@ export function calcular2025(entrada: Entrada): Resultado {
     const J = I20 === 2 ? D6 + F8 + F7 <= N13 : D6 + H8 + H7 <= N13
     const K = temPenaNaoImped
     const L = I63 !== 1
-    const M = I20 === 2 ? I30 >= F7 + F8 : H7 + H8 <= I30
+    // ⚠️ BUG DA PLANILHA, CORRIGIDO AQUI — M/Shalf do Inciso XI
+    // A fórmula original só testava I30 (tempo semiaberto+aberto somados),
+    // ignorando I28 (tempo só no semiaberto) — quem cumpriu o requisito
+    // integralmente em regime semiaberto nunca preenche I30 e era sempre
+    // reprovado. Aqui as duas perguntas valem como alternativas (OR). O
+    // engine.js foi corrigido do mesmo jeito, então o oráculo já reflete isto.
+    const M = I20 === 2 ? I28 >= F7 + F8 || I30 >= F7 + F8 : H7 + H8 <= I28 || H7 + H8 <= I30
     const Rhalf = I20 === 2 ? D6 + F8 / 2 + F7 / 2 <= N13 : D6 + H8 / 2 + H7 / 2 <= N13
-    const Shalf = I20 === 2 ? I30 >= (F7 + F8) / 2 : (H7 + H8) / 2 <= I30
+    const Shalf = I20 === 2 ? I28 >= (F7 + F8) / 2 || I30 >= (F7 + F8) / 2 : (H7 + H8) / 2 <= I28 || (H7 + H8) / 2 <= I30
     const geral = gates5 && F && G && i18ok && hediondo && J && K && L && M
     const esp = gates5 && F && G && i18ok && hediondo && K && L && elegivelP && qOk && Rhalf && Shalf
     incisos.push({ id: 'art9_XI', geral: texto(geral), especial: texto(esp) })
@@ -485,18 +494,16 @@ export function calcular2025(entrada: Entrada): Resultado {
   // Art. 13 (138) — comutação geral 1/5(não reinc)/1/4(reinc) — gates4 (sem colaboração)
   const c13 = (function () {
     const F = i18ok, G = hediondo
-    // ⚖️ AMBIGUIDADE JURÍDICA PRESERVADA — não "conserte"
-    // `<` ESTRITO: exige pena cumprida MAIOR que 1/5 (1/4 se reincidente). É o que
-    // está em Cálculo!H138. Todo outro dispositivo compara com `<=` — inclusive o
-    // §4º deste mesmo artigo (H141) e os três incisos do Art. 11 (L129, L132, L135)
-    // —, e o texto do Art. 13 (Cálculo!C138) fala em "tenham cumprido […] um quinto
-    // da pena", o que inclui o cumprimento exato. Provável erro da planilha: quem
-    // cumpriu exatamente a fração tem a comutação do Art. 13 negada. É também o que
-    // produz o lado 2 do bug G149 (F148 ≠ F149 só na igualdade exata). Herdado da
-    // planilha de propósito e exibido ao advogado em "Pontos a validar
-    // juridicamente". Trocar por `<=` sem validação dos autores do método altera um
-    // resultado que vai para petição.
-    const H = I20 === 2 ? D6 + G7 + G8 < N13 : D6 + E7 + E8 < N13
+    // ✅ AMBIGUIDADE RESOLVIDA PELO DONO DO PRODUTO (antes: `<`, divergindo da planilha)
+    // A planilha (Cálculo!H138) exigia pena cumprida MAIOR que 1/5 (1/4 se reincidente),
+    // com `<` estrito. O texto do Art. 13 fala em "que tenham cumprido […] um quinto da
+    // pena", o que INCLUI o cumprimento exato — e todos os demais dispositivos do decreto
+    // comparam com `<=`, inclusive o §4º deste mesmo artigo (H141) e os três incisos do
+    // Art. 11 (L129, L132, L135). O `<` era erro da planilha e prejudicava quem cumpriu
+    // exatamente a fração. `<=` aqui é INTENCIONAL: não "restaure" o `<` para bater com a
+    // planilha — a divergência é o ponto. Os cenários congelados que caem na igualdade
+    // exata são desvios DOCUMENTADOS em motor-2025.spec.ts e motor-2024.spec.ts.
+    const H = I20 === 2 ? D6 + G7 + G8 <= N13 : D6 + E7 + E8 <= N13
     const I = temPenaNaoImped
     return gates4 && F && G && H && I
   })()
@@ -556,10 +563,34 @@ export function calcular2025(entrada: Entrada): Resultado {
 
   // ---- Resumo de tempos (aba Questionario) ----
   // O engine.js formatava com `fmtDias`; aqui saem os DIAS e a tela formata.
+  // O cumprido que conta para os impeditivos. Extraído numa constante porque DOIS cards o
+  // usam (o 5, que o mostra, e o 8, que o subtrai) — e porque o card 8 depende da fórmula
+  // dele: se ela mudar, o 8 muda junto sem ninguém tocar nele.
+  const cumpridoImpeditivo = N13 < D6 ? N13 : D6
   const resumo = {
     totalImposto: N9,
+    // A fatia IMPEDITIVA do imposto — "Total de penas de crimes IMPEDITIVOS" na tela.
+    // É `N6` (e não `D6`, que são os 2/3 dele), o mesmo valor que `penaImpeditiva` traz.
+    totalImpeditivo: N6,
+    // A fatia NÃO impeditiva — a SOMA dos dois outros campos do questionário. Fecha o
+    // `totalImposto` com o de cima (`totalImpeditivo + totalPermissivo == totalImposto`).
+    totalPermissivo: N7 + N8,
     totalCumprido: N13,
-    penaCumpridaImpeditivos: N13 < D6 ? N13 : D6,
+    penaCumpridaImpeditivos: cumpridoImpeditivo,
+    // O que sobra do cumprido para os permissivos: diferença entre os dois valores ACIMA,
+    // não entre campos do formulário. O `Math.max(0, ...)` é guarda de sanidade — com a
+    // fórmula de `penaCumpridaImpeditivos` (limitada por `N13`) o resultado não fica
+    // negativo, mas um número negativo aqui iria para petição.
+    penaCumpridaPermissivos: Math.max(0, N13 - cumpridoImpeditivo),
+    // O impeditivo que FALTA cumprir até o que conta: card 2 menos card 5, também entre
+    // cards. `2/3 de N6 <= N6` para todo `N6 >= 0`, então a subtração não fica negativa —
+    // o `Math.max` fica como guarda, não como correção.
+    remanescenteImpeditivo: Math.max(0, N6 - cumpridoImpeditivo),
+    // O remanescente da parte NÃO impeditiva: card 7 menos card 8, como os outros dois
+    // derivados. Desenvolvendo, equivale a `totalPermissivo − penaCumpridaPermissivos`
+    // (card 3 menos card 6), porque o remanescente e o impeditivo remanescente se cancelam
+    // na conta — mas a regra pedida é a diferença entre os cards 7 e 8, e é essa que fica.
+    remanescentePermissivo: Math.max(0, N16 - Math.max(0, N6 - cumpridoImpeditivo)),
     remanescente: N16,
     fracoes: {
       doisTercosImpeditivos: D6,

@@ -51,7 +51,10 @@ Thumbs.db
 test-results/
 playwright-report/
 fotos/
-
+# Pasta de trabalho local (rascunhos, arquivos recebidos, logos soltos). O que for DADO do produto
+# mora dentro de `src/`, versionado — nao aqui: foi o que aconteceu com a lista de feriados, que
+# comecou em `temp/feriados.json` e foi para `src/lib/detracao/recolhimento-noturno/dados/`.
+temp/
 # ambiente e cache do harness Python de validacao (validacao/oraculo.py)
 .venv/
 __pycache__/

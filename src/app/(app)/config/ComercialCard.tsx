@@ -15,19 +15,10 @@ import {
   type VistaComercial,
 } from './acoes-comercial'
 import { salvarUrlPublica } from './acoes-canais'
+import { DEGUSTACAO, rotuloDaDuracao } from '@/lib/vendas/degustacao'
 import estilos from './config.module.css'
 
-const ROTULO_DURACAO: Record<string, string> = {
-  semanal: 'Semanal',
-  quinzenal: 'Quinzenal',
-  mensal: 'Mensal',
-  trimestral: 'Trimestral',
-  semestral: 'Semestral',
-  anual: 'Anual',
-  vitalicio: 'Vitalício',
-}
-
-type Resposta = { ok: true } | { erro: string }
+type Resposta = { ok: true; detalhe?: string } | { erro: string }
 
 type PropsBloco = {
   vista: VistaComercial
@@ -49,7 +40,7 @@ export default function ComercialCard({ inicial }: { inicial: VistaComercial }) 
         setRecado({ tom: 'erro', texto: r.erro })
         return
       }
-      setRecado({ tom: 'ok', texto: sucesso })
+      setRecado({ tom: 'ok', texto: r.detalhe ?? sucesso })
       router.refresh()
     })
   }
@@ -155,19 +146,75 @@ function WebhookBloco({ vista, executar, pendente }: PropsBloco) {
   )
 }
 
-type Formulario = { id?: string; codigo: string; nome: string; produtos: string[]; duracao: string; ativa: boolean }
-const FORMULARIO_VAZIO: Formulario = { codigo: '', nome: '', produtos: [], duracao: 'mensal', ativa: true }
+type Formulario = {
+  id?: string
+  codigo: string
+  nome: string
+  produtos: string[]
+  /** O valor do seletor: uma das sete durações, ou `trial:7` / `trial:15`. */
+  tempoDeAcesso: string
+  /** As filhas escolhidas — só faz sentido na principal. Uma filha não tem filha. */
+  filhas: string[]
+  /** A principal desta oferta, quando ela é filha. Não é editável aqui: é derivado do vínculo. */
+  pai: string | null
+  ativa: boolean
+  reprocessarVendas: boolean
+}
+const FORMULARIO_VAZIO: Formulario = { codigo: '', nome: '', produtos: [], tempoDeAcesso: 'mensal', filhas: [], pai: null, ativa: true, reprocessarVendas: false }
+
+/** Do item da lista para o formulário: os dias só aparecem quando a oferta é de degustação. */
+/**
+ * 🔴 `idsConhecidos` filtra produto que não existe mais (um curso renomeado ou excluído depois de
+ * a oferta ter sido salva). Sem o filtro, o id órfão continuava no formulário — invisível, porque
+ * não há checkbox para ele — e voltava no salvar, onde a validação do servidor o recusa: a oferta
+ * ficava impossível de editar, sem explicação na tela.
+ */
+function formularioDe(o: OfertaItem, idsConhecidos: Set<string>): Formulario {
+  return {
+    id: o.id,
+    codigo: o.codigo,
+    nome: o.nome,
+    produtos: o.produtos.filter((p) => idsConhecidos.has(p)),
+    tempoDeAcesso: o.tempoDeAcesso,
+    filhas: o.filhas,
+    pai: o.pai,
+    ativa: o.ativa,
+    // Sempre desmarcado: reprocessar é uma ação pontual, não um estado da oferta.
+    reprocessarVendas: false,
+  }
+}
+
+/**
+ * O que a ação do servidor recebe. `diasDegustacao` é convertido aqui, no clique de salvar, e não
+ * a cada tecla: o campo em branco vale nulo — quem decide se ele é obrigatório é a regra da oferta,
+ * não a digitação.
+ */
+function dadosDaOferta(form: Formulario) {
+  return {
+    id: form.id,
+    codigo: form.codigo,
+    nome: form.nome,
+    produtos: form.produtos,
+    tempoDeAcesso: form.tempoDeAcesso,
+    filhas: form.filhas,
+    ativa: form.ativa,
+    reprocessarVendas: form.reprocessarVendas,
+  }
+}
 
 function OfertasBloco({ vista, executar, pendente }: PropsBloco) {
   const [form, setForm] = useState<Formulario | null>(null)
 
   function editar(o: OfertaItem) {
-    const idsConhecidos = new Set(vista.produtos.map((p) => p.id))
-    setForm({ id: o.id, codigo: o.codigo, nome: o.nome, produtos: o.produtos.filter((p) => idsConhecidos.has(p)), duracao: o.duracao, ativa: o.ativa })
+    setForm(formularioDe(o, new Set(vista.produtos.map((p) => p.id))))
   }
 
   function alternarProduto(id: string) {
     setForm((f) => (f ? { ...f, produtos: f.produtos.includes(id) ? f.produtos.filter((p) => p !== id) : [...f.produtos, id] } : f))
+  }
+
+  function alternarFilha(id: string) {
+    setForm((f) => (f ? { ...f, filhas: f.filhas.includes(id) ? f.filhas.filter((x) => x !== id) : [...f.filhas, id] } : f))
   }
 
   return (
@@ -191,7 +238,9 @@ function OfertasBloco({ vista, executar, pendente }: PropsBloco) {
               <span className={estilos.itemInfo}>
                 <span className={estilos.itemRotulo}>{o.nome}</span>
                 <code className={estilos.campoTag}>{o.codigo}</code>
-                <span className={`${estilos.selo} ${estilos.selo_neutro}`}>{ROTULO_DURACAO[o.duracao] ?? o.duracao}</span>
+                <span className={`${estilos.selo} ${estilos.selo_neutro}`}>{rotuloDaDuracao(o.duracao, o.diasDegustacao)}</span>
+                {o.filhas.length > 0 && <span className={`${estilos.selo} ${estilos.selo_neutro}`}>{o.filhas.length} brinde(s)</span>}
+                {o.pai && <span className={`${estilos.selo} ${estilos.selo_neutro}`}>filha</span>}
                 {!o.ativa && <span className={`${estilos.selo} ${estilos.selo_neutro}`}>desativada</span>}
               </span>
               <span className={estilos.acoes}>
@@ -224,22 +273,70 @@ function OfertasBloco({ vista, executar, pendente }: PropsBloco) {
           </div>
           <div className={estilos.campo}>
             <label className={estilos.rotulo} htmlFor="oferta-duracao">Tempo de acesso</label>
-            <Selecao id="oferta-duracao" value={form.duracao} onChange={(e) => setForm({ ...form, duracao: e.target.value })}>
-              {vista.duracoes.map((d) => (
-                <option key={d} value={d}>{ROTULO_DURACAO[d] ?? d}</option>
+            <Selecao id="oferta-duracao" value={form.tempoDeAcesso} onChange={(e) => setForm({ ...form, tempoDeAcesso: e.target.value })}>
+              {vista.temposDeAcesso.map((t) => (
+                <option key={t.valor} value={t.valor}>{t.rotulo}</option>
               ))}
             </Selecao>
           </div>
+
+          {/*
+            🔴 A escolha entre venda e degustação é EXCLUSIVA e vive aqui, e não em duas colunas de
+            checkbox. Com dois booleanos por produto, o estado (true, true) existiria no tipo e
+            caberia a todo consumidor recusá-lo; com um seletor por produto, ele não existe.
+          */}
+          {form.tempoDeAcesso === DEGUSTACAO || form.tempoDeAcesso.startsWith(`${DEGUSTACAO}:`) ? (
+            <div className={estilos.campo}>
+              <p className={estilos.ajuda}>
+                O brinde nasce na data em que é concedido e <strong>não renova nem empilha</strong>: quem já
+                recebeu uma degustação deste produto não recebe outra por esta oferta. O código precisa ser
+                livre — a oferta de degustação nunca processa uma venda.
+              </p>
+            </div>
+          ) : (
+            <div className={estilos.campo}>
+              <span className={estilos.rotulo}>Ofertas de brinde (degustação)</span>
+              <p className={estilos.ajuda}>
+                Quem comprar esta oferta ganha também os produtos das ofertas abaixo, por quanto tempo elas
+                definirem. O brinde começa na data da concessão, não na data da compra.
+              </p>
+              {form.pai ? (
+                <p className={estilos.ajuda}>Esta oferta é filha de outra — uma filha não recebe brindes nem vendas.</p>
+              ) : vista.candidatasAFilha.length === 0 ? (
+                <p className={estilos.ajuda}>
+                  Nenhuma oferta de degustação disponível. Crie uma oferta com o tempo de acesso em
+                  “Dias de degustação” para poder vinculá-la aqui.
+                </p>
+              ) : (
+                vista.candidatasAFilha.map((f) => (
+                  <label key={f.id} className={estilos.ajuda}>
+                    <input type="checkbox" checked={form.filhas.includes(f.id)} onChange={() => alternarFilha(f.id)} /> {f.rotulo}
+                  </label>
+                ))
+              )}
+            </div>
+          )}
           <label className={estilos.ajuda}>
             <input type="checkbox" checked={form.ativa} onChange={(e) => setForm({ ...form, ativa: e.target.checked })} /> Oferta ativa
           </label>
+          {form.id ? (
+            <label className={estilos.ajuda}>
+              <input
+                type="checkbox"
+                checked={form.reprocessarVendas}
+                onChange={(e) => setForm({ ...form, reprocessarVendas: e.target.checked })}
+              />{' '}
+              Reprocessar vendas já realizadas com esta oferta (dá de bônus, para quem está com acesso em dia, os produtos que a
+              oferta ganhou — não estende nem renova nada)
+            </label>
+          ) : null}
           <div className={estilos.acoes}>
             <Botao
               variante="primario"
               carregando={pendente}
               onClick={() =>
                 executar(async () => {
-                  const r = await salvarOferta(form)
+                  const r = await salvarOferta(dadosDaOferta(form))
                   if ('ok' in r) setForm(null)
                   return r
                 }, 'Oferta salva.')
@@ -278,6 +375,7 @@ function VendasBloco({ vista, executar, pendente }: PropsBloco) {
               <span className={estilos.itemInfo}>
                 <span className={estilos.itemRotulo}>{v.membro}</span>
                 <span className={`${estilos.selo} ${estilos.selo_neutro}`}>{v.status}</span>
+                <span className={`${estilos.selo} ${estilos.selo_neutro}`}>{v.duracao}</span>
                 <span className={estilos.ajuda}>
                   {v.produtos} · {v.valor} · aprovada em {new Date(v.aprovadaEm).toLocaleDateString('pt-BR')} · vence {v.vencimento}
                 </span>

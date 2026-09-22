@@ -61,6 +61,11 @@ export default function Botao(props: PropsDoBotao) {
     estilos[tamanho],
     soIcone ? estilos.soIcone : '',
     larguraTotal ? estilos.larguraTotal : '',
+    // 🔴 Quando o botão vira `<a>` (tem `href`), as regras globais `a`/`a:hover` do `globals.css`
+    // alcançam o rótulo. No `.primario`, o hover pinta o FUNDO com `--acento-hover` e o `a:hover`
+    // pintava o TEXTO com a mesma cor — o rótulo sumia. Esta classe global o devolve para `inherit`,
+    // e o `globals.css` explica por que o seletor tem de ser de CLASSE e não `:not([class])`.
+    typeof resto.href === 'string' ? 'botaoDoKit' : '',
     className ?? '',
   ]
     .filter(Boolean)

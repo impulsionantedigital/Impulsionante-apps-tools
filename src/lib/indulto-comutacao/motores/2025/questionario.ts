@@ -26,9 +26,22 @@ export const QUESTIONARIO_2025: Secao[] = [
     ],
   },
   {
+    // 🔴 O perfil vem LOGO ABAIXO da identificação, antes das penas. A ordem das seções
+    // é a ordem em que a tela desenha o questionário — o motor não depende dela (lê cada
+    // campo pela chave, onde quer que esteja), mas a numeração do produto e o relato do
+    // usuário "card 2" dependem.
+    id: 'perfil',
+    titulo: 'Perfil do sentenciado',
+    campos: [
+      { tipo: 'selecao', chave: 'sexo', rotulo: 'Sexo', opcoes: ['MASCULINO', 'FEMININO'] },
+      { tipo: 'data', chave: 'dataNascimento', rotulo: 'Data de nascimento' },
+      { tipo: 'selecao', chave: 'reincidente', rotulo: 'Reincidente em 25/12/2025?', opcoes: SN },
+    ],
+  },
+  {
     id: 'penas-impostas',
     titulo: 'Penas impostas (em 25/12/2025)',
-    aviso: 'Some as penas por categoria de crime. Impeditivo = hediondo/equiparado.',
+    aviso: 'Some as penas por categoria de crime. Impeditivo = hediondo/equiparado + crimes previstos no Art. 1º.',
     campos: [
       { tipo: 'tempo', chave: 'penaImpeditiva', rotulo: 'Total de penas de crimes IMPEDITIVOS' },
       { tipo: 'tempo', chave: 'penaViolencia', rotulo: 'Total de penas de crimes COM VIOLÊNCIA ou grave ameaça' },
@@ -48,21 +61,17 @@ export const QUESTIONARIO_2025: Secao[] = [
     ],
   },
   {
-    id: 'perfil',
-    titulo: 'Perfil do sentenciado',
-    campos: [
-      { tipo: 'selecao', chave: 'sexo', rotulo: 'Sexo', opcoes: ['MASCULINO', 'FEMININO'] },
-      { tipo: 'data', chave: 'dataNascimento', rotulo: 'Data de nascimento' },
-      { tipo: 'selecao', chave: 'reincidente', rotulo: 'Reincidente em 25/12/2025?', opcoes: SN },
-      { tipo: 'selecao', chave: 'regime', rotulo: 'Regime prisional em 25/12/2025', opcoes: ['FECHADO', 'SEMIABERTO', 'ABERTO'] },
-      { tipo: 'data', chave: 'dataUltimaPrisao', rotulo: 'Data da última prisão' },
-      { tipo: 'numero', chave: 'diasRemicao', rotulo: 'Total de dias de remição após a última prisão' },
-    ],
-  },
-  {
+    // 🔴 `regime`, `livramentoCondicional` e `dataUltimaPrisao` abrem esta seção (o perfil
+    // agora termina na reincidência). Mudaram de SEÇÃO, não de CHAVE nem de ROTULO: o motor
+    // lê as chaves por nome e a tela só desenha a ordem declarada aqui. Nada além da posição
+    // destes três pode mudar sem revisar o `movimentacao` dos campos.
     id: 'regime-situacao',
     titulo: 'Regime, tempo e situação prisional',
     campos: [
+      { tipo: 'selecao', chave: 'regime', rotulo: 'Regime prisional em 25/12/2025', opcoes: ['FECHADO', 'SEMIABERTO', 'ABERTO'] },
+      { tipo: 'selecao', chave: 'livramentoCondicional', rotulo: 'Em livramento condicional em 25/12/2025?', opcoes: SN },
+      { tipo: 'data', chave: 'dataUltimaPrisao', rotulo: 'Data da última prisão' },
+      { tipo: 'numero', chave: 'diasRemicao', rotulo: 'Total de dias de remição após a última prisão' },
       {
         tipo: 'tempo',
         chave: 'tempoSemiaberto',
@@ -73,7 +82,6 @@ export const QUESTIONARIO_2025: Secao[] = [
         chave: 'tempoSemiabertoAberto',
         rotulo: 'Se em regime aberto: tempo cumprido no semiaberto + aberto somados (somar remição)',
       },
-      { tipo: 'selecao', chave: 'livramentoCondicional', rotulo: 'Em livramento condicional em 25/12/2025?', opcoes: SN },
       {
         tipo: 'selecao',
         chave: 'monitoramentoSV56',
@@ -94,6 +102,45 @@ export const QUESTIONARIO_2025: Secao[] = [
         ajuda: 'Em conformidade com o disposto na Resolução nº 225, de 31 de maio de 2016, do Conselho Nacional de Justiça.',
         opcoes: SN,
       },
+    ],
+  },
+  // 🔴 Estes dois vieram de DEPOIS de "Histórico e vedações" (17/09/2026, a pedido do dono do
+  // produto): "Regime aberto / restritiva" e "Crime contra o patrimônio e multa" são
+  // desdobramentos do que se acabou de responder em "Regime, tempo e situação prisional",
+  // e ficam ao lado dele. A ordem das seções é ordem de TELA — o motor lê cada campo pela
+  // chave, onde quer que esteja —, mas os specs de questionário travam a lista.
+  {
+    id: 'aberto-restritiva',
+    titulo: 'Regime aberto / restritiva de direitos',
+    campos: [
+      {
+        tipo: 'selecao',
+        chave: 'penasSubstituidas',
+        rotulo: 'Todas as penas foram substituídas por restritiva de direito ou com sursis?',
+        opcoes: SN,
+      },
+      { tipo: 'selecao', chave: 'condenacaoAberto', rotulo: 'Tem condenação em regime aberto?', opcoes: SN },
+    ],
+  },
+  {
+    id: 'patrimonio-multa',
+    titulo: 'Crime contra o patrimônio e multa',
+    campos: [
+      {
+        tipo: 'selecao',
+        chave: 'crimePatrimonio',
+        rotulo: 'Todos os crimes são contra o patrimônio sem violência ou grave ameaça?',
+        opcoes: SN,
+      },
+      { tipo: 'selecao', chave: 'reparouDano', rotulo: 'Reparou o dano até 25/12/2025 (ou não há necessidade)?', opcoes: SNA },
+      {
+        tipo: 'selecao',
+        chave: 'valorBemSalarioMinimo',
+        rotulo: 'Valor do bem não supera um salário-mínimo à época do fato?',
+        opcoes: SNA,
+      },
+      { tipo: 'numero', chave: 'valorMulta', rotulo: 'Valor da pena de multa (exceto crimes impeditivos), em R$' },
+      { tipo: 'selecao', chave: 'hipossuficiente', rotulo: 'Sentenciado hipossuficiente (Art. 12, §2º)?', opcoes: SN },
     ],
   },
   {
@@ -190,40 +237,6 @@ export const QUESTIONARIO_2025: Secao[] = [
         rotulo: 'Crime com violência/grave ameaça foi contra filho, criança ou adolescente?',
         opcoes: SN,
       },
-    ],
-  },
-  {
-    id: 'aberto-restritiva',
-    titulo: 'Regime aberto / restritiva de direitos',
-    campos: [
-      {
-        tipo: 'selecao',
-        chave: 'penasSubstituidas',
-        rotulo: 'Alguma pena substituída por restritiva de direito ou com sursis?',
-        opcoes: SN,
-      },
-      { tipo: 'selecao', chave: 'condenacaoAberto', rotulo: 'Tem condenação em regime aberto?', opcoes: SN },
-    ],
-  },
-  {
-    id: 'patrimonio-multa',
-    titulo: 'Crime contra o patrimônio e multa',
-    campos: [
-      {
-        tipo: 'selecao',
-        chave: 'crimePatrimonio',
-        rotulo: 'Tem crime contra o patrimônio sem violência ou grave ameaça?',
-        opcoes: SN,
-      },
-      { tipo: 'selecao', chave: 'reparouDano', rotulo: 'Reparou o dano até 25/12/2025 (ou não há necessidade)?', opcoes: SNA },
-      {
-        tipo: 'selecao',
-        chave: 'valorBemSalarioMinimo',
-        rotulo: 'Valor do bem não supera um salário-mínimo à época do fato?',
-        opcoes: SNA,
-      },
-      { tipo: 'numero', chave: 'valorMulta', rotulo: 'Valor da pena de multa (exceto crimes impeditivos), em R$' },
-      { tipo: 'selecao', chave: 'hipossuficiente', rotulo: 'Sentenciado hipossuficiente (Art. 12, §2º)?', opcoes: SN },
     ],
   },
   {

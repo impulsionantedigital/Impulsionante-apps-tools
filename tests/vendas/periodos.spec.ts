@@ -1,9 +1,14 @@
 import { describe, it, expect } from 'vitest'
-import { calcularPeriodos, type PeriodoExistente } from '@/lib/vendas/periodos'
+import { calcularPeriodos, calcularBonus, periodosDeBrinde, vendaVigente, type PeriodoExistente } from '@/lib/vendas/periodos'
 
 const d = (iso: string) => new Date(iso)
 const A = 'indulto-comutacao-2025'
 const B = 'indulto-comutacao-2024'
+
+/** O mesmo de `calcular` para o prazo em DIAS — a degustação, que não tem nome de duração. */
+function calcularDias(produtos: string[], dias: number, aprovadaEm: string, existentes: PeriodoExistente[] = []) {
+  return calcularPeriodos({ produtos, duracao: dias, aprovadaEm: d(aprovadaEm), existentes })
+}
 
 function calcular(produtos: string[], aprovadaEm: string, existentes: PeriodoExistente[] = [], duracao: 'mensal' | 'vitalicio' = 'mensal') {
   return calcularPeriodos({ produtos, duracao, aprovadaEm: d(aprovadaEm), existentes })
@@ -12,14 +17,14 @@ function calcular(produtos: string[], aprovadaEm: string, existentes: PeriodoExi
 describe('calcularPeriodos', () => {
   it('primeira compra começa na aprovação', () => {
     expect(calcular([A], '2027-01-01T12:00:00Z')).toEqual([
-      { produtoId: A, iniciaEm: d('2027-01-01T12:00:00Z'), expiraEm: d('2027-02-01T12:00:00Z') },
+      { produtoId: A, iniciaEm: d('2027-01-01T12:00:00Z'), expiraEm: d('2027-02-01T12:00:00Z'), origem: 'venda' },
     ])
   })
 
   it('renovação antecipada começa EXATAMENTE no vencimento anterior, sem +1 dia', () => {
     const existentes = [{ produtoId: A, expiraEm: d('2027-02-01T12:00:00Z'), vendaAtiva: true }]
     expect(calcular([A], '2027-01-25T09:00:00Z', existentes)).toEqual([
-      { produtoId: A, iniciaEm: d('2027-02-01T12:00:00Z'), expiraEm: d('2027-03-01T12:00:00Z') },
+      { produtoId: A, iniciaEm: d('2027-02-01T12:00:00Z'), expiraEm: d('2027-03-01T12:00:00Z'), origem: 'venda' },
     ])
   })
 
@@ -80,5 +85,143 @@ describe('calcularPeriodos — travas de regressão', () => {
       { produtoId: A, expiraEm: d('2027-02-01T00:00:00Z'), vendaAtiva: true },
     ]
     expect(calcular([A], '2027-01-20T00:00:00Z', existentes)[0].iniciaEm).toEqual(d('2027-03-01T00:00:00Z'))
+  })
+})
+
+describe('calcularPeriodos — degustação (prazo em dias)', () => {
+  it('sete dias de degustação vencem sete dias corridos depois da aprovação', () => {
+    expect(calcularDias([A], 7, '2027-01-01T12:00:00Z')).toEqual([
+      { produtoId: A, iniciaEm: d('2027-01-01T12:00:00Z'), expiraEm: d('2027-01-08T12:00:00Z'), origem: 'venda' },
+    ])
+  })
+
+  it('dias são corridos: atravessam mês e ano sem regra de calendário', () => {
+    expect(calcularDias([A], 45, '2027-12-20T09:00:00Z')[0].expiraEm).toEqual(d('2028-02-03T09:00:00Z'))
+  })
+
+  it('degustação VENCE — nunca devolve período vitalício', () => {
+    expect(calcularDias([A], 1, '2027-01-01T00:00:00Z')[0].expiraEm).not.toBeNull()
+  })
+
+  it('renovação dentro da degustação empilha sobre o vencimento dela', () => {
+    const existentes = [{ produtoId: A, expiraEm: d('2027-01-08T00:00:00Z'), vendaAtiva: true }]
+    expect(calcularDias([A], 7, '2027-01-05T00:00:00Z', existentes)[0]).toEqual({
+      produtoId: A,
+      iniciaEm: d('2027-01-08T00:00:00Z'),
+      expiraEm: d('2027-01-15T00:00:00Z'),
+      origem: 'venda',
+    })
+  })
+})
+
+describe('calcularBonus — degustação (prazo em dias)', () => {
+  it('o bônus usa os dias da VENDA de degustação, e não a duração da oferta de hoje', () => {
+    const r = calcularBonus({ produtosDaOferta: [B], produtosDaVenda: [], duracao: 15, aprovadaEm: d('2027-01-10T00:00:00Z') })
+    expect(r).toEqual([{ produtoId: B, iniciaEm: d('2027-01-10T00:00:00Z'), expiraEm: d('2027-01-25T00:00:00Z'), origem: 'venda' }])
+  })
+})
+
+describe('vendaVigente', () => {
+  const AGORA = d('2027-06-01T00:00:00Z')
+
+  it('status diferente de ativa nunca é vigente, mesmo com período no futuro', () => {
+    const periodos = [{ expiraEm: d('2028-01-01T00:00:00Z') }]
+    expect(vendaVigente({ status: 'cancelada', periodos, agora: AGORA })).toBe(false)
+  })
+
+  it('ativa, mas todos os períodos já venceram: não vigente (falta de pagamento silenciosa)', () => {
+    const periodos = [{ expiraEm: d('2027-01-01T00:00:00Z') }]
+    expect(vendaVigente({ status: 'ativa', periodos, agora: AGORA })).toBe(false)
+  })
+
+  it('ativa com pelo menos um período ainda não vencido: vigente', () => {
+    const periodos = [{ expiraEm: d('2027-01-01T00:00:00Z') }, { expiraEm: d('2028-01-01T00:00:00Z') }]
+    expect(vendaVigente({ status: 'ativa', periodos, agora: AGORA })).toBe(true)
+  })
+
+  it('ativa com período vitalício (sem vencimento): vigente', () => {
+    expect(vendaVigente({ status: 'ativa', periodos: [{ expiraEm: null }], agora: AGORA })).toBe(true)
+  })
+
+  it('ativa, mas sem nenhum período: não vigente', () => {
+    expect(vendaVigente({ status: 'ativa', periodos: [], agora: AGORA })).toBe(false)
+  })
+
+  it('vencimento é fronteira exclusiva, como em calcularPeriodos', () => {
+    expect(vendaVigente({ status: 'ativa', periodos: [{ expiraEm: AGORA }], agora: AGORA })).toBe(false)
+  })
+})
+
+describe('calcularBonus', () => {
+  it('produto que a oferta ganhou e a venda ainda não tem: gera período', () => {
+    const r = calcularBonus({
+      produtosDaOferta: [A, B],
+      produtosDaVenda: [A],
+      duracao: 'mensal',
+      aprovadaEm: d('2027-01-10T00:00:00Z'),
+    })
+    expect(r).toEqual([{ produtoId: B, iniciaEm: d('2027-01-10T00:00:00Z'), expiraEm: d('2027-02-10T00:00:00Z'), origem: 'venda' }])
+  })
+
+  it('produto que a venda já tem: não gera período de novo', () => {
+    expect(calcularBonus({ produtosDaOferta: [A], produtosDaVenda: [A], duracao: 'mensal', aprovadaEm: d('2027-01-10T00:00:00Z') })).toEqual([])
+  })
+
+  it('retroage à data de aprovação da venda, não a hoje', () => {
+    const r = calcularBonus({ produtosDaOferta: [B], produtosDaVenda: [], duracao: 'anual', aprovadaEm: d('2020-03-15T00:00:00Z') })
+    expect(r).toEqual([{ produtoId: B, iniciaEm: d('2020-03-15T00:00:00Z'), expiraEm: d('2021-03-15T00:00:00Z'), origem: 'venda' }])
+  })
+
+  it('não olha nem empilha sobre períodos de outras vendas do mesmo membro', () => {
+    // Ausência do parâmetro `existentes` de calcularPeriodos é proposital: esta função nem aceita
+    // esse argumento — o bônus é isolado por venda, independente do histórico do membro.
+    const r = calcularBonus({ produtosDaOferta: [A], produtosDaVenda: [], duracao: 'mensal', aprovadaEm: d('2027-01-10T00:00:00Z') })
+    expect(r[0].iniciaEm).toEqual(d('2027-01-10T00:00:00Z'))
+  })
+
+  it('duração vitalícia gera período sem vencimento', () => {
+    const r = calcularBonus({ produtosDaOferta: [A], produtosDaVenda: [], duracao: 'vitalicio', aprovadaEm: d('2027-01-10T00:00:00Z') })
+    expect(r[0].expiraEm).toBeNull()
+  })
+
+  it('produto repetido na oferta gera um período só', () => {
+    const r = calcularBonus({ produtosDaOferta: [A, A], produtosDaVenda: [], duracao: 'mensal', aprovadaEm: d('2027-01-10T00:00:00Z') })
+    expect(r).toHaveLength(1)
+  })
+
+  it('nenhum produto faltante: lista vazia', () => {
+    expect(calcularBonus({ produtosDaOferta: [], produtosDaVenda: [], duracao: 'mensal', aprovadaEm: d('2027-01-10T00:00:00Z') })).toEqual([])
+  })
+})
+describe('periodosDeBrinde — o brinde da oferta filha', () => {
+  it('nasce AGORA, e não na data da compra — é a única concessão não retroativa', () => {
+    const r = periodosDeBrinde({ produtos: [B], dias: 7, concedidoEm: d('2027-06-10T09:00:00Z') })
+    expect(r).toEqual([
+      { produtoId: B, iniciaEm: d('2027-06-10T09:00:00Z'), expiraEm: d('2027-06-17T09:00:00Z'), origem: 'degustacao' },
+    ])
+  })
+
+  it('marca a origem como `degustacao` — é o que a tela lê para dizer que o acesso é trial', () => {
+    expect(periodosDeBrinde({ produtos: [A], dias: 1, concedidoEm: d('2027-01-01T00:00:00Z') })[0].origem).toBe('degustacao')
+  })
+
+  it('um período por produto, sem repetir', () => {
+    expect(periodosDeBrinde({ produtos: [A, A, B], dias: 7, concedidoEm: d('2027-01-01T00:00:00Z') })).toHaveLength(2)
+  })
+
+  it('todos os produtos do brinde vencem no MESMO instante', () => {
+    const r = periodosDeBrinde({ produtos: [A, B], dias: 15, concedidoEm: d('2027-01-01T00:00:00Z') })
+    expect(new Set(r.map((p) => p.expiraEm?.toISOString())).size).toBe(1)
+  })
+
+  it('sempre VENCE: não existe brinde vitalício, mesmo com muitos dias', () => {
+    expect(periodosDeBrinde({ produtos: [A], dias: 3650, concedidoEm: d('2027-01-01T00:00:00Z') })[0].expiraEm).not.toBeNull()
+  })
+
+  it('o brinde NÃO consulta o histórico: ele nunca empilha sobre o acesso que o membro já tem', () => {
+    // Ausência do parâmetro `existentes` é proposital: a assinatura não o aceita. O empilhamento é
+    // regra dos produtos vendidos; o brinde começa sempre em `concedidoEm`.
+    const r = periodosDeBrinde({ produtos: [A], dias: 7, concedidoEm: d('2027-01-01T00:00:00Z') })
+    expect(r[0].iniciaEm).toEqual(d('2027-01-01T00:00:00Z'))
   })
 })
