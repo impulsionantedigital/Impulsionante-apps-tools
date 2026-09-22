@@ -196,14 +196,15 @@ atualizar o CRM.
 | Arquivo do produto | O que mudou | Por quê |
 |---|---|---|
 | `supabase/migrations/0069_oferta_degustacao.sql` | coluna `dias_degustacao` em `ofertas` e `vendas` | oferta de degustação: o prazo vem de um número de dias, não de um nome de duração |
-| `supabase/migrations/0070_ofertas_filhas_e_origem_do_periodo.sql` | tabela `ofertas_filhas`; coluna `origem` em `vendas_periodos` | vínculo de brinde entre ofertas; e o que permite responder "este acesso é trial?" sem perguntar à oferta |
+| `supabase/migrations/0070_ofertas_filhas_e_origem_do_periodo.sql` | tabela `ofertas_filhas`; coluna `origem` em `vendas_periodos` | vínculo de brinde entre ofertas (abordagem **abandonada**); e o que permite responder "este acesso é trial?" sem perguntar à oferta |
+| `supabase/migrations/0071_produtos_da_oferta.sql` | tabela `ofertas_produtos` (`oferta_id`, `produto_id`, `tipo`) + backfill | **é onde a configuração da oferta vive agora**: cada produto é venda ou degustação |
 | `src/lib/vendas/degustacao.ts` | arquivo novo | regra da degustação: prazos fixos (7 e 15), leitura do par do seletor, recusa de valor fora da lista |
 | `src/lib/vendas/periodos.ts` | `periodosDeBrinde()`; `Prazo = Duracao \| number`; `origem` no período | o brinde nasce na data da concessão e não empilha |
 | `src/lib/vendas/acesso.ts` | `detalheDeAcesso()` — campo `trial` **ao lado** do estado | trial é rótulo, não permissão (ver abaixo) |
-| `src/server/vendas/processar.ts` | guarda de oferta de degustação; `concederBrindes()`; `garantirPeriodos` completa o que falta | processar as ofertas filhas e não perder brinde em reenvio |
+| `src/server/vendas/processar.ts` | lê `ofertas_produtos`; `concederDegustacoes()`; `garantirPeriodos` completa o que falta | uma venda, N concessões — sem oferta filha |
 | `src/server/vendas/acesso.ts` | `estadoEDetalheDoProduto()` | leva o rótulo de trial até a tela do membro |
-| `src/app/(app)/config/acoes-comercial.ts` | vínculo de filhas, com as três recusas; gravação do tempo de acesso | é onde a oferta principal escolhe os brindes, e onde a degustação é gravada sem tocar no domínio de `duracao` |
-| `src/app/(app)/config/ComercialCard.tsx` | seleção de ofertas filhas; seletor de tempo de acesso | tela do admin |
+| `src/app/(app)/config/acoes-comercial.ts` | leitura/gravação de `ofertas_produtos`; validação de exclusividade | é onde a oferta escolhe quais produtos vende e quais concede em degustação |
+| `src/app/(app)/config/ComercialCard.tsx` | duas colunas por produto (Venda / Degustação); prazo único da degustação | tela do admin |
 | `src/app/(app)/ferramentas/page.tsx` | mostra "Degustação — N dia(s) restante(s)" | o membro enxerga que o acesso é trial |
 | `src/app/(app)/ferramentas/[calculadora]/AvisoAcesso.tsx` | **arquivo novo** | o aviso de vencimento/degust/a/expirado no topo da tela do produto |
 | `src/app/(app)/ferramentas/[calculadora]/Calculadora.tsx` | removido o bloco "Acesso encerrado" | passou a ser o `AvisoAcesso`, que é a versão completa (tem prazo, trial e botão) |
@@ -239,23 +240,29 @@ definido e o container **não** for reiniciado, o botão continua ausente **sem 
 o mesmo sintoma de "variável não configurada").
 
 ### O seletor "Tempo de acesso" da oferta
-
-Na tela **Configurações → Comercial → Ofertas**, o seletor tem estes valores:
+Na tela **Configurações → Comercial → Ofertas**, cada produto da oferta é marcado em **uma de duas
+colunas — Venda ou Degustação** — e a escolha é exclusiva: marcar uma desmarca a outra.
 
 ```
-Semanal · Quinzenal · Mensal · Trimestral · Semestral · Anual · Vitalício
-Degustação — 7 dias
-Degustação — 15 dias
+Produto                          Venda   Degustação
+Calculadora 2025                  [x]       [ ]
+Calculadora 2024                  [x]       [ ]
+Detração por Recolhimento         [ ]       [x]
 ```
 
-A degustação é uma **oferta marcada com número de dias**, e não um prazo digitado: não existe
-campo de texto, e os prazos são uma **lista fechada** (7 e 15 dias), em `PRAZOS_DE_DEGUSTACAO`.
-Acrescentar um prazo novo é acrescentar um item naquela lista — o seletor, a gravação e os testes
-acompanham sozinhos.
+- **Venda:** o produto é liberado pela duração do seletor (semanal a vitalício).
+- **Degustação:** o produto é liberado por **7 ou 15 dias**, a partir da data da concessão.
+- O prazo da degustação é **único para a oferta**: todos os produtos marcados como degustação
+  recebem o mesmo prazo. O campo aparece só quando há pelo menos um produto em degustação.
+- A oferta precisa ter **pelo menos um produto de venda** — uma oferta só de degustação não vende
+  nada, e é recusada no cadastro.
 
-Uma oferta de degustação **nunca recebe venda**: o código dela é escolhido à mão e não existe na
-Hotmart. Ela serve para ser **filha** de uma oferta que vende, concedendo os produtos dela como
-brinde (ver a seção de regras de negócio).
+> 🔄 **Histórico:** até 2026-08 existiu uma abordagem de "oferta filha" (uma oferta de degustação
+> vinculada a uma principal, em `ofertas_filhas`). Ela foi **abandonada** por exigir códigos
+> fictícios, criar relações entre ofertas e regras de ciclo/exclusividade. A tabela `ofertas_filhas`
+> continua no banco como legado inerte; o código não a consulta mais. A configuração agora vive na
+> tabela **`ofertas_produtos`** (migration 0071), com um produto por linha e `tipo` = venda ou
+> degustação.
 
 ### As mensagens que o membro vê, e quando
 
@@ -320,13 +327,19 @@ Se algum dia estas mudanças forem promovidas para `custom/`, é isto que precis
    só, e o resto desapareceria sem erro.
 8. 🔴 **A degustação NÃO grava `'degustacao'` na coluna `ofertas.duracao`.** Aquela coluna tem o
    CHECK `ofertas_duracao_dominio_check`, que aceita **só os sete nomes** — o banco recusa qualquer
-   outro valor com `23514`, e a oferta não salva. Quem identifica a degustação é **`dias_degustacao`,
-   e só ele**: `duracao` guarda `'mensal'` (o prazo de reserva, que volta a valer se a degustação for
-   desligada), e `duracaoDaOferta` lê os **dias primeiro**. Gravar `'degustacao'` ali, ou procurar a
-   degustação no nome, quebra toda oferta de trial com uma mensagem genérica de falha ao salvar.
+   outro valor com `23514`, e a oferta não salva. Quem define o papel do produto é a tabela
+   **`ofertas_produtos.tipo`**, e os dias ficam em **`ofertas.dias_degustacao`**. `oferta.duracao`
+   guarda um dos sete nomes (o prazo dos produtos de **venda**).
    > A migration 0069 **não** alarga aquele domínio, de propósito: alargar trocaria uma restrição do
    > produto por uma linha de código, e o produto derruba essa restrição na próxima atualização
-   > (com aviso no log). Guardar os dias é suficiente e não depende disso.
+   > (com aviso no log). Guardar os dias + o tipo é suficiente e não depende disso.
+9. 🔴 **O papel do produto é exclusivo, e o banco garante.** A chave primária de `ofertas_produtos`
+   é `(oferta_id, produto_id)`: um produto não pode ser venda E degustação na mesma oferta. Se
+   fosse possível, os dois períodos brigariam na chave `(venda, produto)` e um deles sumiria em
+   silêncio.
+10. **Produto de degustação NUNCA entra em `vendas.produtos`.** Ele é acesso de outra natureza —
+    nasce na concessão, não empilha e não renova. Somá-lo à lista de vendidos faria a renovação
+    seguinte tratá-lo como comprado.
 
 ### Como diagnosticar um erro neste fork
 
@@ -337,7 +350,8 @@ Os prefixos de log que este fork acrescentou:
 |---|---|
 | `[comercial] salvar oferta falhou:` | insert/update de oferta recusado pelo banco; o `code` do Postgres vem junto |
 | `[comercial] oferta recusada por coluna inexistente:` | `42703` — o banco está sem uma coluna de migration |
-| `[comercial] gravar vínculos falhou:` / `limpar vínculos falhou:` | erro em `ofertas_filhas` |
+| `[comercial] gravar produtos da oferta falhou:` | erro ao gravar `ofertas_produtos` (venda/degustação) |
+| `[comercial] limpar produtos da oferta falhou:` | erro ao limpar a configuração anterior |
 | `[migrate] Aplicando <arquivo>…` | migration aplicada neste boot |
 | `[migrate] Nenhuma migration pendente.` | banco em dia |
 

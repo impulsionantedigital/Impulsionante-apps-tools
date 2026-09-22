@@ -16,12 +16,9 @@ import { PRODUTOS, ehProdutoConhecido, rotuloDoProduto, type ProdutoId } from '@
 import {
   DEGUSTACAO,
   DURACAO_PADRAO_DA_DEGUSTACAO,
-  OPCOES_TEMPO_DE_ACESSO,
-  duracaoDaOferta,
-  lerTempoDeAcesso,
+  PRAZOS_DE_DEGUSTACAO,
   rotuloDaDuracao,
   rotuloDoTempoDeAcesso,
-  valorDaDegustacao,
 } from '@/lib/vendas/degustacao'
 import { DURACOES } from '@/lib/vendas/duracao'
 import { CHAVE_HOTTOK_HOTMART } from '@/lib/vendas/hotmart'
@@ -38,13 +35,12 @@ export interface OfertaItem {
   duracao: string
   /** Só vale quando `duracao` é a degustação — é o prazo, em dias, que a compra concede. */
   diasDegustacao: number | null
-  /** O valor do seletor "Tempo de acesso" que reabre esta oferta na opção certa. */
+  /** O valor do seletor da duração dos produtos vendidos. */
   tempoDeAcesso: string
+  /** Produtos vendidos e produtos de degustação configurados nesta oferta. */
+  produtosVenda: string[]
+  produtosDegustacao: string[]
   ativa: boolean
-  /** As filhas desta oferta: quem compra a principal ganha os produtos delas como brinde. */
-  filhas: string[]
-  /** Quem é a principal desta oferta, quando ela é filha. Uma filha não tem filha nem venda. */
-  pai: string | null
 }
 
 export interface VendaItem {
@@ -76,9 +72,8 @@ export interface VistaComercial {
   vendas: VendaItem[]
   eventos: EventoItem[]
   produtos: Array<{ id: string; rotulo: string }>
-  /** Só as ofertas que podem ser filhas: ativas, de degustação, e ainda livres de vínculo. */
-  candidatasAFilha: Array<{ id: string; rotulo: string }>
   temposDeAcesso: Array<{ valor: string; rotulo: string }>
+  temposDeDegustacao: Array<{ valor: string; rotulo: string }>
   souDonoDoDeploy: boolean
   temToken: boolean
   urlPublica: string | null
@@ -138,16 +133,16 @@ export async function lerComercial(): Promise<VistaComercial | { erro: string }>
       .eq('workspace_id', ws)
       .order('criado_em', { ascending: false })
     if (erroOfertas) throw erroOfertas
-    // O vínculo pai-filha: uma leitura só, e o mapa é montado em memória.
-    const { data: vinculos, error: erroVinculos } = await db
-      .from('ofertas_filhas')
-      .select('oferta_pai_id, oferta_filha_id')
-    if (erroVinculos) throw erroVinculos
-    const filhasDe = new Map<string, string[]>()
-    const paiDe = new Map<string, string>()
-    for (const v of (vinculos ?? []) as Array<{ oferta_pai_id: string; oferta_filha_id: string }>) {
-      filhasDe.set(v.oferta_pai_id, [...(filhasDe.get(v.oferta_pai_id) ?? []), v.oferta_filha_id])
-      paiDe.set(v.oferta_filha_id, v.oferta_pai_id)
+    const { data: produtosDasOfertas, error: erroProdutosDasOfertas } = await db
+      .from('ofertas_produtos')
+      .select('oferta_id, produto_id, tipo')
+    if (erroProdutosDasOfertas) throw erroProdutosDasOfertas
+    const produtosPorOferta = new Map<string, { venda: string[]; degustacao: string[] }>()
+    for (const item of (produtosDasOfertas ?? []) as Array<{ oferta_id: string; produto_id: string; tipo: string }>) {
+      const atual = produtosPorOferta.get(item.oferta_id) ?? { venda: [], degustacao: [] }
+      if (item.tipo === 'degustacao') atual.degustacao.push(item.produto_id)
+      else atual.venda.push(item.produto_id)
+      produtosPorOferta.set(item.oferta_id, atual)
     }
 
     const { data: vendas, error: erroVendas } = await db
@@ -198,20 +193,16 @@ export async function lerComercial(): Promise<VistaComercial | { erro: string }>
     }
 
     return {
-      ofertas: ((ofertas ?? []) as Array<Omit<OfertaItem, 'diasDegustacao' | 'filhas' | 'pai' | 'tempoDeAcesso'> & { dias_degustacao: number | null }>).map((o) => ({
-        ...o,
-        diasDegustacao: o.dias_degustacao,
-        // O valor que o seletor precisa para reabrir a oferta na opção certa. Os DIAS vêm primeiro:
-        // eles —— e não `duracao`, que guarda um nome dos sete —— identificam a degustação.
-        tempoDeAcesso: o.dias_degustacao ? valorDaDegustacao(o.dias_degustacao) : o.duracao,
-        filhas: filhasDe.get(o.id) ?? [],
-        pai: paiDe.get(o.id) ?? null,
-      })),
-      // Só pode ser filha quem é degustação (a filha É o brinde), está ativa, não vende código
-      // conhecido da Hotmart e ainda não tem principal — a chave única do banco só permite uma.
-      candidatasAFilha: ((ofertas ?? []) as Array<{ id: string; nome: string; codigo: string; duracao: string; ativa: boolean }>)
-        .filter((o) => o.duracao === DEGUSTACAO && o.ativa && !paiDe.has(o.id))
-        .map((o) => ({ id: o.id, rotulo: `${o.nome} (${o.codigo})` })),
+      ofertas: ((ofertas ?? []) as Array<Omit<OfertaItem, 'diasDegustacao' | 'tempoDeAcesso' | 'produtosVenda' | 'produtosDegustacao'> & { dias_degustacao: number | null }>).map((o) => {
+        const produtos = produtosPorOferta.get(o.id) ?? { venda: o.produtos, degustacao: [] }
+        return {
+          ...o,
+          diasDegustacao: o.dias_degustacao,
+          tempoDeAcesso: o.duracao,
+          produtosVenda: produtos.venda,
+          produtosDegustacao: produtos.degustacao,
+        }
+      }),
       vendas: listaVendas.map((v) => {
         const vencimentos = periodos
           .filter((p) => p.venda_id === v.id)
@@ -247,7 +238,8 @@ export async function lerComercial(): Promise<VistaComercial | { erro: string }>
         detalhe: e.detalhe,
       })),
       produtos: PRODUTOS.map((p) => ({ id: p.id, rotulo: p.rotulo })),
-      temposDeAcesso: OPCOES_TEMPO_DE_ACESSO.map((valor) => ({ valor, rotulo: rotuloDoTempoDeAcesso(valor) })),
+      temposDeAcesso: DURACOES.map((valor) => ({ valor, rotulo: rotuloDoTempoDeAcesso(valor) })),
+      temposDeDegustacao: PRAZOS_DE_DEGUSTACAO.map((dias) => ({ valor: String(dias), rotulo: `Degustação — ${dias} dias` })),
       souDonoDoDeploy,
       temToken: souDonoDoDeploy ? Boolean(await getSecret(CHAVE_HOTTOK_HOTMART)) : false,
       urlPublica: await lerConfig(CHAVE_URL_PUBLICA),
@@ -264,26 +256,27 @@ const OfertaSchema = z
     codigo: z.string().trim().min(1).max(200),
     nome: z.string().trim().min(1).max(200),
     produtos: z.array(z.string().refine(ehProdutoConhecido)).min(1).max(50),
-    /**
-     * O valor do seletor "Tempo de acesso": uma das sete durações, ou `trial:7` / `trial:15`.
-     *
-     * 🔴 É `string`, e não `z.enum([...DURACOES, DEGUSTACAO])`: o par leva os DIAS junto, e o que
-     * valida é `lerTempoDeAcesso`, que recusa um prazo fora da lista fechada. Deixar o enum aqui
-     * aceitaria `duracao: 'degustacao'` sem prazo — a oferta que recusaria toda compra depois.
-     */
-    tempoDeAcesso: z.string().max(50),
-    /** As filhas: quem compra esta oferta ganha os produtos delas como brinde, pelo prazo delas. */
-    filhas: z.array(Uuid).max(20).optional(),
+    produtosDegustacao: z.array(z.string().refine(ehProdutoConhecido)).max(50).optional().default([]),
+    /** Duração normal dos produtos marcados como venda. */
+    tempoDeAcesso: z.enum(DURACOES),
+    /** Prazo único para todos os produtos marcados como degustação. */
+    diasDegustacao: z.union([z.literal(7), z.literal(15)]).nullable().optional(),
     ativa: z.boolean(),
     // Não é coluna da oferta — é um gatilho de uma ação (bônus retroativo), só faz sentido ao
     // editar (por isso não entra em `campos`/`dados` abaixo).
     reprocessarVendas: z.boolean().optional(),
   })
-  // 🔴 A degustação não tem prazo de reserva: sem um prazo da lista, a oferta é recusada aqui, e
-  // não gravada para virar `oferta_invalida` na primeira compra.
-  .refine((o) => lerTempoDeAcesso(o.tempoDeAcesso) !== null, {
-    path: ['tempoDeAcesso'],
-    message: 'Escolha um tempo de acesso válido.',
+  .refine((o) => o.produtos.some((p) => !o.produtosDegustacao.includes(p)), {
+    path: ['produtos'],
+    message: 'Escolha pelo menos um produto para venda; degustação não cria venda direta.',
+  })
+  .refine((o) => o.produtosDegustacao.length === 0 || o.diasDegustacao === 7 || o.diasDegustacao === 15, {
+    path: ['diasDegustacao'],
+    message: 'Escolha 7 ou 15 dias para os produtos em degustação.',
+  })
+  .refine((o) => o.produtosDegustacao.every((p) => o.produtos.includes(p)), {
+    path: ['produtosDegustacao'],
+    message: 'Os produtos de degustação precisam estar na lista da oferta.',
   })
 
 export async function salvarOferta(entrada: unknown): Promise<Resposta> {
@@ -293,10 +286,10 @@ export async function salvarOferta(entrada: unknown): Promise<Resposta> {
   const r = OfertaSchema.safeParse(entrada)
   if (!r.success) return { erro: 'Confira o código, o nome, os produtos e o tempo de acesso da oferta.' }
 
-  const { id, reprocessarVendas, tempoDeAcesso, filhas, ...campos } = r.data
-  // Já validado pelo `refine`: aqui a leitura não pode falhar. O `?? null` é só para o tipo.
-  const tempo = lerTempoDeAcesso(tempoDeAcesso) ?? { duracao: 'mensal' as const }
-  const degustacao = tempo.duracao === DEGUSTACAO
+  const { id, reprocessarVendas, tempoDeAcesso, produtosDegustacao, diasDegustacao, ...campos } = r.data
+  const tempo = { duracao: tempoDeAcesso as (typeof DURACOES)[number] }
+  const degustacao = produtosDegustacao.length > 0
+  const produtosSelecionados = [...new Set([...(campos.produtos ?? []), ...produtosDegustacao])]
   const dados = {
     ...campos,
     // 🔴 `duracao` NUNCA recebe 'degustacao': a coluna tem `ofertas_duracao_dominio_check`, que
@@ -306,10 +299,9 @@ export async function salvarOferta(entrada: unknown): Promise<Resposta> {
     // que fez toda oferta de trial falhar ao salvar.
     duracao: degustacao ? DURACAO_PADRAO_DA_DEGUSTACAO : tempo.duracao,
     plataforma: 'hotmart',
-    produtos: [...new Set(campos.produtos)],
-    // O prazo em dias só existe na degustação; nas outras durações a coluna volta a nulo, para
-    // uma oferta que deixou de ser degustação não guardar um número que ninguém mais lê.
-    dias_degustacao: degustacao ? tempo.diasDegustacao : null,
+    produtos: produtosSelecionados,
+    // O prazo em dias só existe quando há produtos de degustação; todos eles compartilham o mesmo prazo.
+    dias_degustacao: degustacao ? diasDegustacao : null,
   }
   const db = admin()
   const { data, error } = id
@@ -349,13 +341,20 @@ export async function salvarOferta(entrada: unknown): Promise<Resposta> {
     }
   }
 
-  // 🔴 Só mexe no vínculo quando há o que mexer. Chamar sempre fazia um `delete` em
-  // `ofertas_filhas` numa oferta sem filhas — e essa tabela só existe depois da 0070: numa
-  // instalação com o banco atrasado, salvar QUALQUER oferta comum falhava por causa de uma
-  // tabela que a oferta nem usa. O caminho de quem não usa o recurso tem de continuar funcionando.
-  if (!degustacao && filhas !== undefined) {
-    const erroVinculo = await gravarFilhas({ db, ws, paiId: ofertaId, filhas })
-    if (erroVinculo) return erroVinculo
+  const { error: erroProdutos } = await db.from('ofertas_produtos').delete().eq('oferta_id', ofertaId)
+  if (erroProdutos) {
+    console.error('[comercial] limpar produtos da oferta falhou:', detalheSeguro(erroProdutos))
+    return { erro: 'Não foi possível salvar os produtos da oferta.' }
+  }
+  const linhasProdutos = produtosSelecionados.map((produtoId) => ({
+    oferta_id: ofertaId,
+    produto_id: produtoId,
+    tipo: produtosDegustacao.includes(produtoId) ? 'degustacao' : 'venda',
+  }))
+  const { error: erroInserirProdutos } = await db.from('ofertas_produtos').insert(linhasProdutos)
+  if (erroInserirProdutos) {
+    console.error('[comercial] gravar produtos da oferta falhou:', detalheSeguro(erroInserirProdutos))
+    return { erro: 'Não foi possível salvar os produtos da oferta.' }
   }
   if (id && reprocessarVendas) {
     try {
@@ -376,83 +375,6 @@ export async function salvarOferta(entrada: unknown): Promise<Resposta> {
   return { ok: true }
 }
 
-/**
- * Regrava o conjunto de filhas de uma oferta, com as recusas que protegem o processamento.
- *
- * 🔴 As três recusas existem porque cada uma delas quebraria o `aprovar` de um jeito diferente:
- *
- *  • **produto repetido** — a principal já vende o produto, e a filha concederia o MESMO produto
- *    na mesma venda. As duas linhas brigariam na chave (venda, produto), e o brinde silenciosamente
- *    não nasceria (o `23505` é engolido).
- *  • **ciclo** — a profundidade é 1 por decisão. Uma corrente de filhas nunca seria percorrida por
- *    inteiro: `concederBrindes` lê só um nível, e o resto sumiria sem erro nenhum.
- *  • **filha que não é degustação** — não é brinde, e `concederBrindes` a ignora em silêncio.
- */
-async function gravarFilhas(args: {
-  db: ReturnType<typeof admin>
-  ws: string
-  paiId: string
-  filhas: string[]
-}): Promise<{ erro: string } | null> {
-  const { db, ws, paiId } = args
-  const escolhidas = [...new Set(args.filhas)]
-  if (escolhidas.includes(paiId)) return { erro: 'Uma oferta não pode ser filha de si mesma.' }
-
-  if (escolhidas.length > 0) {
-    const { data: principais, error: erroPrincipais } = await db
-      .from('ofertas')
-      .select('id, produtos, duracao, ativa')
-      .eq('workspace_id', ws)
-      .eq('id', paiId)
-      .maybeSingle()
-    if (erroPrincipais) return { erro: 'Não foi possível salvar as ofertas filhas.' }
-    const produtosDaPrincipal = new Set(((principais?.produtos ?? []) as string[]).filter(ehProdutoConhecido))
-
-    const { data: filhas, error: erroFilhas } = await db
-      .from('ofertas')
-      .select('id, nome, produtos, duracao, dias_degustacao')
-      .eq('workspace_id', ws)
-      .in('id', escolhidas)
-    if (erroFilhas) return { erro: 'Não foi possível salvar as ofertas filhas.' }
-    const linhas = (filhas ?? []) as Array<{ id: string; nome: string; produtos: string[]; duracao: string; dias_degustacao: number | null }>
-    if (linhas.length !== escolhidas.length) return { erro: 'Uma das ofertas filhas escolhidas não existe.' }
-
-    for (const filha of linhas) {
-      const prazo = duracaoDaOferta({ duracao: filha.duracao, diasDegustacao: filha.dias_degustacao })
-      if (typeof prazo !== 'number') {
-        return { erro: `A oferta "${filha.nome}" não é de degustação, e só uma degustação pode ser filha (é ela que define o tempo do brinde).` }
-      }
-      const repetidos = filha.produtos.filter((p) => produtosDaPrincipal.has(p as ProdutoId))
-      if (repetidos.length > 0) {
-        return {
-          erro: `A oferta "${filha.nome}" concede produto que esta oferta já vende (${repetidos.join(', ')}). O brinde seria perdido — tire o produto de uma das duas.`,
-        }
-      }
-    }
-  }
-
-  // Regravar é apagar e reinserir: o conjunto escolhido é a verdade, e um vínculo que saiu da
-  // seleção precisa mesmo sumir. Não há dado atrelado à linha do vínculo a preservar.
-  const { error: erroApagar } = await db.from('ofertas_filhas').delete().eq('oferta_pai_id', paiId)
-  if (erroApagar) {
-    console.error('[comercial] limpar vínculos falhou:', detalheSeguro(erroApagar))
-    return { erro: 'Não foi possível salvar as ofertas filhas.' }
-  }
-  if (escolhidas.length === 0) return null
-  const { error: erroInserir } = await db
-    .from('ofertas_filhas')
-    .insert(escolhidas.map((filhaId) => ({ oferta_pai_id: paiId, oferta_filha_id: filhaId })))
-  if (erroInserir) {
-    console.error('[comercial] gravar vínculos falhou:', detalheSeguro(erroInserir))
-    return {
-      erro:
-        erroInserir.code === '23505'
-          ? 'Uma das ofertas escolhidas já é filha de outra oferta. Uma filha pertence a uma principal só.'
-          : 'Não foi possível salvar as ofertas filhas.',
-    }
-  }
-  return null
-}
 
 export async function salvarTokenHotmart(token: string): Promise<Resposta> {
   await exigirEngineLiberado()

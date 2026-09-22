@@ -161,6 +161,13 @@ describe('rotuloDaDuracao', () => {
     expect(rotuloDaDuracao(DEGUSTACAO, 15)).toBe('Degustação — 15 dias')
   })
 
+  it('identifica a degustação mesmo com duracao mensal, que é o valor gravado pelo banco', () => {
+    // `ofertas.duracao` não pode ser "degustacao": o CHECK do banco aceita só os sete nomes.
+    // Portanto, a lista precisa olhar `dias_degustacao` para rotular a oferta corretamente.
+    expect(rotuloDaDuracao('mensal', 7)).toBe('Degustação — 7 dias')
+    expect(rotuloDaDuracao('mensal', 15)).toBe('Degustação — 15 dias')
+  })
+
   it('🔴 degustação sem dias NÃO vira "— dias": o placeholder saiu do seletor', () => {
     // Era o defeito visível: a opção aparecia como "— dias de degustação" no seletor.
     expect(rotuloDaDuracao(DEGUSTACAO, null)).toBe('Degustação')

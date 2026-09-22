@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { Fragment, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Botao from '@/components/ui/Botao'
 import { Entrada, Selecao } from '@/components/ui/Campo'
@@ -150,17 +150,17 @@ type Formulario = {
   id?: string
   codigo: string
   nome: string
-  produtos: string[]
-  /** O valor do seletor: uma das sete durações, ou `trial:7` / `trial:15`. */
+  /** Produtos classificados como venda. */
+  produtosVenda: string[]
+  /** Produtos classificados como degustação. */
+  produtosDegustacao: string[]
+  /** Duração normal dos produtos vendidos. */
   tempoDeAcesso: string
-  /** As filhas escolhidas — só faz sentido na principal. Uma filha não tem filha. */
-  filhas: string[]
-  /** A principal desta oferta, quando ela é filha. Não é editável aqui: é derivado do vínculo. */
-  pai: string | null
+  diasDegustacao: string
   ativa: boolean
   reprocessarVendas: boolean
 }
-const FORMULARIO_VAZIO: Formulario = { codigo: '', nome: '', produtos: [], tempoDeAcesso: 'mensal', filhas: [], pai: null, ativa: true, reprocessarVendas: false }
+const FORMULARIO_VAZIO: Formulario = { codigo: '', nome: '', produtosVenda: [], produtosDegustacao: [], tempoDeAcesso: 'mensal', diasDegustacao: '', ativa: true, reprocessarVendas: false }
 
 /** Do item da lista para o formulário: os dias só aparecem quando a oferta é de degustação. */
 function formularioDe(o: OfertaItem): Formulario {
@@ -168,10 +168,10 @@ function formularioDe(o: OfertaItem): Formulario {
     id: o.id,
     codigo: o.codigo,
     nome: o.nome,
-    produtos: o.produtos,
+    produtosVenda: o.produtosVenda,
+    produtosDegustacao: o.produtosDegustacao,
     tempoDeAcesso: o.tempoDeAcesso,
-    filhas: o.filhas,
-    pai: o.pai,
+    diasDegustacao: o.diasDegustacao === null ? '' : String(o.diasDegustacao),
     ativa: o.ativa,
     // Sempre desmarcado: reprocessar é uma ação pontual, não um estado da oferta.
     reprocessarVendas: false,
@@ -188,9 +188,10 @@ function dadosDaOferta(form: Formulario) {
     id: form.id,
     codigo: form.codigo,
     nome: form.nome,
-    produtos: form.produtos,
+    produtos: [...new Set([...form.produtosVenda, ...form.produtosDegustacao])],
+    produtosDegustacao: form.produtosDegustacao,
     tempoDeAcesso: form.tempoDeAcesso,
-    filhas: form.filhas,
+    diasDegustacao: form.diasDegustacao ? Number(form.diasDegustacao) : null,
     ativa: form.ativa,
     reprocessarVendas: form.reprocessarVendas,
   }
@@ -203,12 +204,15 @@ function OfertasBloco({ vista, executar, pendente }: PropsBloco) {
     setForm(formularioDe(o))
   }
 
-  function alternarProduto(id: string) {
-    setForm((f) => (f ? { ...f, produtos: f.produtos.includes(id) ? f.produtos.filter((p) => p !== id) : [...f.produtos, id] } : f))
-  }
-
-  function alternarFilha(id: string) {
-    setForm((f) => (f ? { ...f, filhas: f.filhas.includes(id) ? f.filhas.filter((x) => x !== id) : [...f.filhas, id] } : f))
+  function alternarProduto(id: string, tipo: 'venda' | 'degustacao') {
+    setForm((f) => {
+      if (!f) return f
+      const venda = f.produtosVenda.filter((p) => p !== id)
+      const degustacao = f.produtosDegustacao.filter((p) => p !== id)
+      return tipo === 'venda'
+        ? { ...f, produtosVenda: f.produtosVenda.includes(id) ? venda : [...venda, id], produtosDegustacao: degustacao }
+        : { ...f, produtosDegustacao: f.produtosDegustacao.includes(id) ? degustacao : [...degustacao, id], produtosVenda: venda }
+    })
   }
 
   return (
@@ -233,8 +237,11 @@ function OfertasBloco({ vista, executar, pendente }: PropsBloco) {
                 <span className={estilos.itemRotulo}>{o.nome}</span>
                 <code className={estilos.campoTag}>{o.codigo}</code>
                 <span className={`${estilos.selo} ${estilos.selo_neutro}`}>{rotuloDaDuracao(o.duracao, o.diasDegustacao)}</span>
-                {o.filhas.length > 0 && <span className={`${estilos.selo} ${estilos.selo_neutro}`}>{o.filhas.length} brinde(s)</span>}
-                {o.pai && <span className={`${estilos.selo} ${estilos.selo_neutro}`}>filha</span>}
+                {o.produtosDegustacao.length > 0 && (
+                  <span className={`${estilos.selo} ${estilos.selo_neutro}`}>
+                    {o.produtosDegustacao.length} em degustação
+                  </span>
+                )}
                 {!o.ativa && <span className={`${estilos.selo} ${estilos.selo_neutro}`}>desativada</span>}
               </span>
               <span className={estilos.acoes}>
@@ -258,58 +265,36 @@ function OfertasBloco({ vista, executar, pendente }: PropsBloco) {
             <Entrada id="oferta-nome" value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} placeholder="ex.: Calculadora 2025 — anual" autoComplete="off" />
           </div>
           <div className={estilos.campo}>
-            <span className={estilos.rotulo}>Produtos que esta oferta libera</span>
-            {vista.produtos.map((p) => (
-              <label key={p.id} className={estilos.ajuda}>
-                <input type="checkbox" checked={form.produtos.includes(p.id)} onChange={() => alternarProduto(p.id)} /> {p.rotulo}
-              </label>
-            ))}
+            <span className={estilos.rotulo}>Produtos desta oferta</span>
+            <div className={estilos.ajuda} style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 'var(--s-2)', alignItems: 'center' }}>
+              <strong>Produto</strong><strong>Venda</strong><strong>Degustação</strong>
+              {vista.produtos.map((p) => (
+                <Fragment key={p.id}>
+                  <span>{p.rotulo}</span>
+                  <input aria-label={`${p.rotulo}: venda`} type="checkbox" checked={form.produtosVenda.includes(p.id)} onChange={() => alternarProduto(p.id, 'venda')} />
+                  <input aria-label={`${p.rotulo}: degustação`} type="checkbox" checked={form.produtosDegustacao.includes(p.id)} onChange={() => alternarProduto(p.id, 'degustacao')} />
+                </Fragment>
+              ))}
+            </div>
           </div>
           <div className={estilos.campo}>
-            <label className={estilos.rotulo} htmlFor="oferta-duracao">Tempo de acesso</label>
+            <label className={estilos.rotulo} htmlFor="oferta-duracao">Tempo de acesso dos produtos vendidos</label>
             <Selecao id="oferta-duracao" value={form.tempoDeAcesso} onChange={(e) => setForm({ ...form, tempoDeAcesso: e.target.value })}>
-              {vista.temposDeAcesso.map((t) => (
-                <option key={t.valor} value={t.valor}>{t.rotulo}</option>
-              ))}
+              {vista.temposDeAcesso.map((t) => <option key={t.valor} value={t.valor}>{t.rotulo}</option>)}
             </Selecao>
           </div>
+          {form.produtosDegustacao.length > 0 ? (
+            <div className={estilos.campo}>
+              <label className={estilos.rotulo} htmlFor="oferta-dias-degustacao">Prazo dos produtos em degustação</label>
+              <Selecao id="oferta-dias-degustacao" value={form.diasDegustacao} onChange={(e) => setForm({ ...form, diasDegustacao: e.target.value })}>
+                <option value="">Escolha o prazo</option>
+                {vista.temposDeDegustacao.map((t) => <option key={t.valor} value={t.valor}>{t.rotulo}</option>)}
+              </Selecao>
+              <p className={estilos.ajuda}>Todos os produtos marcados como degustação recebem o mesmo prazo. O trial começa quando é concedido e não renova nem empilha.</p>
+            </div>
+          ) : null}
 
-          {/*
-            🔴 A escolha entre venda e degustação é EXCLUSIVA e vive aqui, e não em duas colunas de
-            checkbox. Com dois booleanos por produto, o estado (true, true) existiria no tipo e
-            caberia a todo consumidor recusá-lo; com um seletor por produto, ele não existe.
-          */}
-          {form.tempoDeAcesso === DEGUSTACAO || form.tempoDeAcesso.startsWith(`${DEGUSTACAO}:`) ? (
-            <div className={estilos.campo}>
-              <p className={estilos.ajuda}>
-                O brinde nasce na data em que é concedido e <strong>não renova nem empilha</strong>: quem já
-                recebeu uma degustação deste produto não recebe outra por esta oferta. O código precisa ser
-                livre — a oferta de degustação nunca processa uma venda.
-              </p>
-            </div>
-          ) : (
-            <div className={estilos.campo}>
-              <span className={estilos.rotulo}>Ofertas de brinde (degustação)</span>
-              <p className={estilos.ajuda}>
-                Quem comprar esta oferta ganha também os produtos das ofertas abaixo, por quanto tempo elas
-                definirem. O brinde começa na data da concessão, não na data da compra.
-              </p>
-              {form.pai ? (
-                <p className={estilos.ajuda}>Esta oferta é filha de outra — uma filha não recebe brindes nem vendas.</p>
-              ) : vista.candidatasAFilha.length === 0 ? (
-                <p className={estilos.ajuda}>
-                  Nenhuma oferta de degustação disponível. Crie uma oferta com o tempo de acesso em
-                  “Dias de degustação” para poder vinculá-la aqui.
-                </p>
-              ) : (
-                vista.candidatasAFilha.map((f) => (
-                  <label key={f.id} className={estilos.ajuda}>
-                    <input type="checkbox" checked={form.filhas.includes(f.id)} onChange={() => alternarFilha(f.id)} /> {f.rotulo}
-                  </label>
-                ))
-              )}
-            </div>
-          )}
+
           <label className={estilos.ajuda}>
             <input type="checkbox" checked={form.ativa} onChange={(e) => setForm({ ...form, ativa: e.target.checked })} /> Oferta ativa
           </label>

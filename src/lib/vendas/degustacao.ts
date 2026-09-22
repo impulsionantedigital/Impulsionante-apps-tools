@@ -100,9 +100,10 @@ export function ehDiasDegustacao(valor: unknown): valor is number {
  * prazos conhecidos. O `—` que existia aqui aparecia no seletor como uma opção sem sentido.
  */
 export function rotuloDaDuracao(duracao: string, diasDegustacao: number | null): string {
-  if (duracao === DEGUSTACAO) {
-    return diasDegustacao === null ? 'Degustação' : `Degustação — ${diasDegustacao} dias`
-  }
+  // `duracao` permanece mensal/anual por causa do CHECK do banco; os dias são a fonte de verdade
+  // para identificar a degustação também nos selos da lista de ofertas e vendas.
+  if (ehDiasDegustacao(diasDegustacao)) return `Degustação — ${diasDegustacao} dias`
+  if (duracao === DEGUSTACAO) return 'Degustação'
   return rotuloDeDuracao(duracao)
 }
 
