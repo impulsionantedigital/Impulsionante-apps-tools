@@ -266,7 +266,12 @@ function OfertasBloco({ vista, executar, pendente }: PropsBloco) {
           </div>
           <div className={estilos.campo}>
             <span className={estilos.rotulo}>Produtos desta oferta</span>
-            <div className={estilos.ajuda} style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 'var(--s-2)', alignItems: 'center' }}>
+            {/* TRÊS colunas, uma por papel do produto — é a mesma contagem do cabeçalho abaixo
+                (`Produto`, `Venda`, `Degustação`) e das células de cada linha. Com duas, o
+                cabeçalho `Degustação` caía na coluna de `Venda` e as duas caixas desciam uma
+                linha cada, desalinhando a tabela inteira. `minmax(0, 1fr)` na primeira deixa o
+                nome longo do produto encolher em vez de esticar a coluna. */}
+            <div className={estilos.ajuda} style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto auto', gap: 'var(--s-2)', alignItems: 'center', justifyItems: 'start' }}>
               <strong>Produto</strong><strong>Venda</strong><strong>Degustação</strong>
               {vista.produtos.map((p) => (
                 <Fragment key={p.id}>
