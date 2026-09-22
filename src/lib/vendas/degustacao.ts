@@ -13,22 +13,48 @@ export interface OfertaDeAcesso {
 export const DEGUSTACAO = 'degustacao'
 
 /**
+ * Os prazos de degustação oferecidos, FIXOS.
+ *
+ * 🔴 A lista é fechada de propósito: o valor do seletor é um par (`trial:7`), e não um número
+ * digitado. Isso tira o campo de texto da tela, e com ele toda uma classe de erro: prazo em branco,
+ * prazo zero, prazo absurdo, e oferta de degustação gravada sem prazo — que recusaria a compra
+ * depois (`oferta_invalida`). O conjunto é pequeno e conhecido, então é aqui que ele vive.
+ *
+ * Acrescentar um prazo novo é acrescentar um item nesta lista: o seletor, a gravação e o teste
+ * acompanham sozinhos.
+ */
+export const PRAZOS_DE_DEGUSTACAO = [7, 15] as const
+
+/**
  * As opções do seletor. `DURACOES` continua sendo o domínio do que VENCE — sete durações —, e a
  * degustação entra aqui porque é a única cuja duração vem de um número em dias, e não de um nome.
  */
-export const OPCOES_TEMPO_DE_ACESSO = [...DURACOES, DEGUSTACAO] as const
+export const OPCOES_TEMPO_DE_ACESSO = [
+  ...DURACOES,
+  ...PRAZOS_DE_DEGUSTACAO.map((dias) => valorDaDegustacao(dias)),
+] as const
+
+/** O valor do seletor para um prazo de degustação: `trial:7`. */
+export function valorDaDegustacao(dias: number): string {
+  return `${DEGUSTACAO}:${dias}`
+}
 
 /**
- * O teto de dias. É o teto que o campo do formulário promete, o que a coluna do banco aceita e o
- * que o `somarDuracao` sabe somar sem perder precisão — os três têm de ser o mesmo número.
+ * Lê o valor do seletor e devolve o que gravar — ou `null` se não for uma opção válida.
+ *
+ * 🔴 O par só vale se os DIAS estiverem na lista fechada: um `duracao` forjado como
+ * `degustacao:9999` (API direta, ou um select adulterado no navegador) tem de ser recusado, e não
+ * virar um trial de 27 anos.
  */
-export const MAX_DIAS_DEGUSTACAO = 3650
+export type TempoDeAcesso = { duracao: Duracao; diasDegustacao?: never } | { duracao: typeof DEGUSTACAO; diasDegustacao: number }
 
-/** Só os dígitos: o campo aceita o que a pessoa digita, e o que vale é o que sobrar de número. */
-export function diasDeDegustacao(texto: string): number {
-  const digitos = texto.replace(/\D/g, '')
-  if (!digitos) return 0
-  return Math.min(Number(digitos), MAX_DIAS_DEGUSTACAO)
+export function lerTempoDeAcesso(valor: string): TempoDeAcesso | null {
+  if (valor.startsWith(`${DEGUSTACAO}:`)) {
+    const dias = Number(valor.slice(DEGUSTACAO.length + 1))
+    const conhecido = (PRAZOS_DE_DEGUSTACAO as readonly number[]).includes(dias)
+    return conhecido ? { duracao: DEGUSTACAO, diasDegustacao: dias } : null
+  }
+  return ehDuracao(valor) ? { duracao: valor } : null
 }
 
 /**
@@ -40,14 +66,31 @@ export function duracaoDaOferta(oferta: OfertaDeAcesso): Duracao | number | null
   return ehDiasDegustacao(oferta.diasDegustacao) ? oferta.diasDegustacao : null
 }
 
-/** O limite é o mesmo em toda parte, e é por isso que ele mora aqui e não em cada chamador. */
+/**
+ * Se o número de dias é um prazo que o CRM oferece. É o mesmo critério da lista fechada do seletor,
+ * e por isso não há teto arbitrário aqui: um prazo fora da lista é recusado, e não truncado.
+ */
 export function ehDiasDegustacao(valor: unknown): valor is number {
-  return Number.isInteger(valor) && (valor as number) >= 1 && (valor as number) <= MAX_DIAS_DEGUSTACAO
+  return typeof valor === 'number' && (PRAZOS_DE_DEGUSTACAO as readonly number[]).includes(valor)
 }
 
-/** Rótulo do selo da lista — a mesma frase que descreve a oferta na tela de vendas. */
+/**
+ * Rótulo de um tempo de acesso, para o seletor e para os selos de lista.
+ *
+ * 🔴 Sem o `diasDegustacao`, a degustação NÃO ganha placeholder: ela não tem um prazo "vazio", tem
+ * prazos conhecidos. O `—` que existia aqui aparecia no seletor como uma opção sem sentido.
+ */
 export function rotuloDaDuracao(duracao: string, diasDegustacao: number | null): string {
-  return duracao === DEGUSTACAO ? `${diasDegustacao ?? '—'} dias de degustação` : rotuloDeDuracao(duracao)
+  if (duracao === DEGUSTACAO) {
+    return diasDegustacao === null ? 'Degustação' : `Degustação — ${diasDegustacao} dias`
+  }
+  return rotuloDeDuracao(duracao)
+}
+
+/** O rótulo de uma opção do seletor: `trial:15` vira "Degustação — 15 dias". */
+export function rotuloDoTempoDeAcesso(valor: string): string {
+  if (valor.startsWith(`${DEGUSTACAO}:`)) return `Degustação — ${valor.slice(DEGUSTACAO.length + 1)} dias`
+  return rotuloDeDuracao(valor)
 }
 
 const ROTULOS: Partial<Record<Duracao, string>> = {

@@ -15,11 +15,12 @@ import { CHAVE_URL_PUBLICA } from '@/lib/canais/url-publica'
 import { PRODUTOS, ehProdutoConhecido, rotuloDoProduto, type ProdutoId } from '@/lib/produtos/catalogo'
 import {
   DEGUSTACAO,
-  MAX_DIAS_DEGUSTACAO,
   OPCOES_TEMPO_DE_ACESSO,
   duracaoDaOferta,
-  ehDiasDegustacao,
+  lerTempoDeAcesso,
   rotuloDaDuracao,
+  rotuloDoTempoDeAcesso,
+  valorDaDegustacao,
 } from '@/lib/vendas/degustacao'
 import { DURACOES } from '@/lib/vendas/duracao'
 import { CHAVE_HOTTOK_HOTMART } from '@/lib/vendas/hotmart'
@@ -36,6 +37,8 @@ export interface OfertaItem {
   duracao: string
   /** Só vale quando `duracao` é a degustação — é o prazo, em dias, que a compra concede. */
   diasDegustacao: number | null
+  /** O valor do seletor "Tempo de acesso" que reabre esta oferta na opção certa. */
+  tempoDeAcesso: string
   ativa: boolean
   /** As filhas desta oferta: quem compra a principal ganha os produtos delas como brinde. */
   filhas: string[]
@@ -75,8 +78,6 @@ export interface VistaComercial {
   /** Só as ofertas que podem ser filhas: ativas, de degustação, e ainda livres de vínculo. */
   candidatasAFilha: Array<{ id: string; rotulo: string }>
   temposDeAcesso: Array<{ valor: string; rotulo: string }>
-  /** O teto do campo de dias — a tela não repete o número, pergunta a quem manda nele. */
-  maxDiasDegustacao: number
   souDonoDoDeploy: boolean
   temToken: boolean
   urlPublica: string | null
@@ -196,9 +197,11 @@ export async function lerComercial(): Promise<VistaComercial | { erro: string }>
     }
 
     return {
-      ofertas: ((ofertas ?? []) as Array<Omit<OfertaItem, 'diasDegustacao' | 'filhas' | 'pai'> & { dias_degustacao: number | null }>).map((o) => ({
+      ofertas: ((ofertas ?? []) as Array<Omit<OfertaItem, 'diasDegustacao' | 'filhas' | 'pai' | 'tempoDeAcesso'> & { dias_degustacao: number | null }>).map((o) => ({
         ...o,
         diasDegustacao: o.dias_degustacao,
+        // O valor que o seletor precisa para reabrir a oferta na opção certa.
+        tempoDeAcesso: o.duracao === DEGUSTACAO && o.dias_degustacao ? valorDaDegustacao(o.dias_degustacao) : o.duracao,
         filhas: filhasDe.get(o.id) ?? [],
         pai: paiDe.get(o.id) ?? null,
       })),
@@ -242,8 +245,7 @@ export async function lerComercial(): Promise<VistaComercial | { erro: string }>
         detalhe: e.detalhe,
       })),
       produtos: PRODUTOS.map((p) => ({ id: p.id, rotulo: p.rotulo })),
-      temposDeAcesso: OPCOES_TEMPO_DE_ACESSO.map((valor) => ({ valor, rotulo: rotuloDaDuracao(valor, null) })),
-      maxDiasDegustacao: MAX_DIAS_DEGUSTACAO,
+      temposDeAcesso: OPCOES_TEMPO_DE_ACESSO.map((valor) => ({ valor, rotulo: rotuloDoTempoDeAcesso(valor) })),
       souDonoDoDeploy,
       temToken: souDonoDoDeploy ? Boolean(await getSecret(CHAVE_HOTTOK_HOTMART)) : false,
       urlPublica: await lerConfig(CHAVE_URL_PUBLICA),
@@ -260,11 +262,14 @@ const OfertaSchema = z
     codigo: z.string().trim().min(1).max(200),
     nome: z.string().trim().min(1).max(200),
     produtos: z.array(z.string().refine(ehProdutoConhecido)).min(1).max(50),
-    // Aceita `degustacao` além das sete durações: é a opção do seletor "Tempo de acesso", e o
-    // prazo dela vem dos dias abaixo, não do nome.
-    duracao: z.enum([...DURACOES, DEGUSTACAO]),
-    /** Sem sentido fora da degustação: a coluna fica nula e é assim que a compra a lê. */
-    diasDegustacao: z.number().int().min(1).max(MAX_DIAS_DEGUSTACAO).nullable().optional(),
+    /**
+     * O valor do seletor "Tempo de acesso": uma das sete durações, ou `trial:7` / `trial:15`.
+     *
+     * 🔴 É `string`, e não `z.enum([...DURACOES, DEGUSTACAO])`: o par leva os DIAS junto, e o que
+     * valida é `lerTempoDeAcesso`, que recusa um prazo fora da lista fechada. Deixar o enum aqui
+     * aceitaria `duracao: 'degustacao'` sem prazo — a oferta que recusaria toda compra depois.
+     */
+    tempoDeAcesso: z.string().max(50),
     /** As filhas: quem compra esta oferta ganha os produtos delas como brinde, pelo prazo delas. */
     filhas: z.array(Uuid).max(20).optional(),
     ativa: z.boolean(),
@@ -272,11 +277,11 @@ const OfertaSchema = z
     // editar (por isso não entra em `campos`/`dados` abaixo).
     reprocessarVendas: z.boolean().optional(),
   })
-  // 🔴 A degustação não tem prazo de reserva: sem dias válidos a oferta é recusada aqui, e não
-  // gravada para virar `oferta_invalida` na primeira compra.
-  .refine((o) => o.duracao !== DEGUSTACAO || ehDiasDegustacao(o.diasDegustacao), {
-    path: ['diasDegustacao'],
-    message: 'Informe o número de dias da degustação.',
+  // 🔴 A degustação não tem prazo de reserva: sem um prazo da lista, a oferta é recusada aqui, e
+  // não gravada para virar `oferta_invalida` na primeira compra.
+  .refine((o) => lerTempoDeAcesso(o.tempoDeAcesso) !== null, {
+    path: ['tempoDeAcesso'],
+    message: 'Escolha um tempo de acesso válido.',
   })
 
 export async function salvarOferta(entrada: unknown): Promise<Resposta> {
@@ -286,28 +291,40 @@ export async function salvarOferta(entrada: unknown): Promise<Resposta> {
   const r = OfertaSchema.safeParse(entrada)
   if (!r.success) return { erro: 'Confira o código, o nome, os produtos e o tempo de acesso da oferta.' }
 
-  const { id, reprocessarVendas, diasDegustacao, filhas, ...campos } = r.data
+  const { id, reprocessarVendas, tempoDeAcesso, filhas, ...campos } = r.data
+  // Já validado pelo `refine`: aqui a leitura não pode falhar. O `?? null` é só para o tipo.
+  const tempo = lerTempoDeAcesso(tempoDeAcesso) ?? { duracao: 'mensal' as const }
   const dados = {
     ...campos,
+    duracao: tempo.duracao,
     plataforma: 'hotmart',
     produtos: [...new Set(campos.produtos)],
     // O prazo em dias só existe na degustação; nas outras durações a coluna volta a nulo, para
     // uma oferta que deixou de ser degustação não guardar um número que ninguém mais lê.
-    dias_degustacao: campos.duracao === DEGUSTACAO ? (diasDegustacao as number) : null,
+    dias_degustacao: tempo.duracao === DEGUSTACAO ? tempo.diasDegustacao : null,
   }
   const db = admin()
   const { data, error } = id
     ? await db.from('ofertas').update(dados).eq('workspace_id', ws).eq('id', id).select('id')
     : await db.from('ofertas').insert({ ...dados, workspace_id: ws }).select('id')
   if (error) {
-    return { erro: error.code === '23505' ? 'Este código de oferta já está cadastrado.' : 'Não foi possível salvar a oferta.' }
+    // 🔴 `42703` é coluna inexistente: a migration não rodou no banco. Vale a mensagem própria
+    // porque o sintoma é indistinguível de erro de formulário, e o dono ficaria procurando o
+    // problema no lugar errado — foi o que aconteceu de verdade, e a mensagem genérica escondeu.
+    if (error.code === '42703') {
+      console.error('[comercial] oferta recusada por coluna inexistente:', detalheSeguro(error))
+      return { erro: 'O banco deste CRM está sem as colunas da degustação. Reinicie o servidor para aplicar as migrations pendentes.' }
+    }
+    if (error.code === '23505') return { erro: 'Este código de oferta já está cadastrado.' }
+    console.error('[comercial] salvar oferta falhou:', detalheSeguro(error))
+    return { erro: 'Não foi possível salvar a oferta.' }
   }
   if (!data?.length) return { erro: 'Oferta não encontrada.' }
   const ofertaId = (data[0] as { id: string }).id
   // 🔴 A vaca sagrada: uma oferta de DEGUSTAÇÃO nunca recebe venda (§7.5.1). O código dela é
   // escolhido à mão e não existe na Hotmart; se alguém colar ali o código de uma oferta real, a
   // compra cairia numa oferta que não vende — e o membro pagaria sem receber.
-  if (campos.duracao === DEGUSTACAO && campos.ativa) {
+  if (tempo.duracao === DEGUSTACAO && campos.ativa) {
     const { data: colide, error: erroColide } = await db
       .from('ofertas')
       .select('id')

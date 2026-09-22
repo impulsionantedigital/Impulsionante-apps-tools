@@ -1,20 +1,32 @@
 import { describe, it, expect } from 'vitest'
 import {
   DEGUSTACAO,
-  MAX_DIAS_DEGUSTACAO,
   OPCOES_TEMPO_DE_ACESSO,
-  diasDeDegustacao,
+  PRAZOS_DE_DEGUSTACAO,
   duracaoDaOferta,
   ehDiasDegustacao,
+  lerTempoDeAcesso,
   rotuloDaDuracao,
+  rotuloDoTempoDeAcesso,
+  valorDaDegustacao,
 } from '@/lib/vendas/degustacao'
 import { DURACOES } from '@/lib/vendas/duracao'
 
+describe('PRAZOS_DE_DEGUSTACAO', () => {
+  it('são 7 e 15 dias, e nada mais', () => {
+    expect([...PRAZOS_DE_DEGUSTACAO]).toEqual([7, 15])
+  })
+})
+
 describe('OPCOES_TEMPO_DE_ACESSO', () => {
-  // O seletor "Tempo de acesso" do admin: as sete durações continuam lá, e é nelas que o
-  // domínio do banco (`DURACOES`) se apoia. A degustação é uma opção A MAIS, não uma troca.
-  it('são as sete durações mais a degustação, e nada mais', () => {
-    expect([...OPCOES_TEMPO_DE_ACESSO]).toEqual([...DURACOES, 'degustacao'])
+  // O seletor "Tempo de acesso": as sete durações continuam lá, e a degustação entra com um item
+  // POR PRAZO. A degustação não entra em `DURACOES` porque não é um domínio que vence por nome.
+  it('são as sete durações mais uma opção por prazo de degustação', () => {
+    expect([...OPCOES_TEMPO_DE_ACESSO]).toEqual([...DURACOES, 'degustacao:7', 'degustacao:15'])
+  })
+
+  it('🔴 NÃO existe opção "degustacao" sem prazo — era ela que criava a oferta inválida', () => {
+    expect((OPCOES_TEMPO_DE_ACESSO as readonly string[]).includes('degustacao')).toBe(false)
   })
 
   it('a degustação não entra no domínio do que vence por nome', () => {
@@ -22,34 +34,84 @@ describe('OPCOES_TEMPO_DE_ACESSO', () => {
   })
 })
 
-describe('diasDeDegustacao', () => {
-  it('lê o que se digita com ou sem ruído', () => {
-    expect(diasDeDegustacao('7')).toBe(7)
-    expect(diasDeDegustacao('07')).toBe(7)
-    expect(diasDeDegustacao(' 7 ')).toBe(7)
-    expect(diasDeDegustacao('7 dias')).toBe(7)
+describe('lerTempoDeAcesso', () => {
+  it('lê as durações normais como vieram', () => {
+    expect(lerTempoDeAcesso('mensal')).toEqual({ duracao: 'mensal' })
+    expect(lerTempoDeAcesso('vitalicio')).toEqual({ duracao: 'vitalicio' })
   })
 
-  it('campo sem número nenhum vale zero — quem recusa é a regra da oferta', () => {
-    expect(diasDeDegustacao('')).toBe(0)
-    expect(diasDeDegustacao('dias')).toBe(0)
+  it('lê o par da degustação e separa os DIAS do nome', () => {
+    expect(lerTempoDeAcesso('degustacao:7')).toEqual({ duracao: DEGUSTACAO, diasDegustacao: 7 })
+    expect(lerTempoDeAcesso('degustacao:15')).toEqual({ duracao: DEGUSTACAO, diasDegustacao: 15 })
   })
 
-  it('trava no teto em vez de recusar: digitar além do limite não vira erro de digitação', () => {
-    expect(diasDeDegustacao('99999')).toBe(MAX_DIAS_DEGUSTACAO)
-    expect(diasDeDegustacao(String(MAX_DIAS_DEGUSTACAO))).toBe(MAX_DIAS_DEGUSTACAO)
+  it('🔴 prazo fora da lista é RECUSADO, e não truncado', () => {
+    // Um `tempoDeAcesso` forjado (API direta ou select adulterado no navegador) não pode virar um
+    // trial de 27 anos, nem uma oferta que aceita toda compra e não libera nada.
+    expect(lerTempoDeAcesso('degustacao:9999')).toBeNull()
+    expect(lerTempoDeAcesso('degustacao:30')).toBeNull()
+    expect(lerTempoDeAcesso('degustacao:0')).toBeNull()
+    expect(lerTempoDeAcesso('degustacao:-7')).toBeNull()
+    expect(lerTempoDeAcesso('degustacao:7.5')).toBeNull()
+  })
+
+  it('degustação SEM prazo é recusada — é a oferta que viraria `oferta_invalida`', () => {
+    expect(lerTempoDeAcesso('degustacao')).toBeNull()
+  })
+
+  it('duração desconhecida é recusada', () => {
+    expect(lerTempoDeAcesso('bimestral')).toBeNull()
+    expect(lerTempoDeAcesso('')).toBeNull()
+  })
+
+  it('toda opção do seletor é lida sem erro — a lista e o leitor não podem discordar', () => {
+    for (const opcao of OPCOES_TEMPO_DE_ACESSO) {
+      expect(lerTempoDeAcesso(opcao)).not.toBeNull()
+    }
+  })
+})
+
+describe('valorDaDegustacao', () => {
+  it('é o formato que o seletor usa e o leitor entende', () => {
+    expect(valorDaDegustacao(7)).toBe('degustacao:7')
+    expect(lerTempoDeAcesso(valorDaDegustacao(15))).toEqual({ duracao: DEGUSTACAO, diasDegustacao: 15 })
+  })
+
+  it('ida e volta: todo prazo da lista sobrevive ao par', () => {
+    for (const dias of PRAZOS_DE_DEGUSTACAO) {
+      expect(lerTempoDeAcesso(valorDaDegustacao(dias))).toEqual({ duracao: DEGUSTACAO, diasDegustacao: dias })
+    }
+  })
+})
+
+describe('rotuloDoTempoDeAcesso', () => {
+  it('o par da degustação vira o texto que o dono lê no seletor', () => {
+    expect(rotuloDoTempoDeAcesso('degustacao:7')).toBe('Degustação — 7 dias')
+    expect(rotuloDoTempoDeAcesso('degustacao:15')).toBe('Degustação — 15 dias')
+  })
+
+  it('as durações normais mantêm os nomes de sempre', () => {
+    expect(rotuloDoTempoDeAcesso('mensal')).toBe('Mensal')
+    expect(rotuloDoTempoDeAcesso('vitalicio')).toBe('Vitalício')
+  })
+
+  it('🔴 nenhuma opção sai com o placeholder "—" — era o defeito visível no seletor', () => {
+    for (const opcao of OPCOES_TEMPO_DE_ACESSO) {
+      const rotulo = rotuloDoTempoDeAcesso(opcao)
+      expect(rotulo).not.toMatch(/^—/)
+      expect(rotulo).not.toContain('— dias')
+    }
   })
 })
 
 describe('ehDiasDegustacao', () => {
-  it('aceita inteiro de 1 ao teto', () => {
-    expect(ehDiasDegustacao(1)).toBe(true)
+  it('aceita só os prazos que o CRM oferece', () => {
+    expect(ehDiasDegustacao(7)).toBe(true)
     expect(ehDiasDegustacao(15)).toBe(true)
-    expect(ehDiasDegustacao(MAX_DIAS_DEGUSTACAO)).toBe(true)
   })
 
-  it('recusa zero, negativo, fracionado, texto, nulo e além do teto', () => {
-    for (const valor of [0, -1, 7.5, '7', null, undefined, MAX_DIAS_DEGUSTACAO + 1]) {
+  it('recusa qualquer outro número, e qualquer outro tipo', () => {
+    for (const valor of [1, 3, 8, 14, 30, 0, -7, 7.5, '7', null, undefined]) {
       expect(ehDiasDegustacao(valor)).toBe(false)
     }
   })
@@ -65,7 +127,7 @@ describe('duracaoDaOferta', () => {
 
   it('a degustação vale pelos DIAS, não pelo nome', () => {
     expect(duracaoDaOferta({ duracao: DEGUSTACAO, diasDegustacao: 7 })).toBe(7)
-    expect(duracaoDaOferta({ duracao: DEGUSTACAO, diasDegustacao: 1 })).toBe(1)
+    expect(duracaoDaOferta({ duracao: DEGUSTACAO, diasDegustacao: 15 })).toBe(15)
   })
 
   it('degustação sem dias válidos é recusa, e não "sem prazo"', () => {
@@ -73,6 +135,8 @@ describe('duracaoDaOferta', () => {
     // eterno a uma oferta mal cadastrada — o erro mais caro possível.
     expect(duracaoDaOferta({ duracao: DEGUSTACAO, diasDegustacao: null })).toBeNull()
     expect(duracaoDaOferta({ duracao: DEGUSTACAO, diasDegustacao: 0 })).toBeNull()
+    // E prazo fora da lista também: a lista é fechada nas duas pontas.
+    expect(duracaoDaOferta({ duracao: DEGUSTACAO, diasDegustacao: 30 })).toBeNull()
   })
 
   it('duração desconhecida é recusa, e não passa adiante', () => {
@@ -87,11 +151,18 @@ describe('rotuloDaDuracao', () => {
   })
 
   it('a degustação mostra os dias que ela concede', () => {
-    expect(rotuloDaDuracao(DEGUSTACAO, 7)).toBe('7 dias de degustação')
+    expect(rotuloDaDuracao(DEGUSTACAO, 7)).toBe('Degustação — 7 dias')
+    expect(rotuloDaDuracao(DEGUSTACAO, 15)).toBe('Degustação — 15 dias')
   })
 
-  it('degustação sem dias aparece como pendência, e não como "0 dias"', () => {
-    expect(rotuloDaDuracao(DEGUSTACAO, null)).toBe('— dias de degustação')
+  it('🔴 degustação sem dias NÃO vira "— dias": o placeholder saiu do seletor', () => {
+    // Era o defeito visível: a opção aparecia como "— dias de degustação" no seletor.
+    expect(rotuloDaDuracao(DEGUSTACAO, null)).toBe('Degustação')
+  })
+
+  it('🔴 degustação sem dias NÃO vira "— dias": o placeholder saiu do seletor', () => {
+    // Era o defeito visível: a opção aparecia como "— dias de degustação" no seletor.
+    expect(rotuloDaDuracao(DEGUSTACAO, null)).toBe('Degustação')
   })
 
   it('duração desconhecida sai como veio, para não sumir da tela', () => {

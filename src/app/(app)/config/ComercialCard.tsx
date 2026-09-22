@@ -15,7 +15,7 @@ import {
   type VistaComercial,
 } from './acoes-comercial'
 import { salvarUrlPublica } from './acoes-canais'
-import { DEGUSTACAO, diasDeDegustacao, rotuloDaDuracao } from '@/lib/vendas/degustacao'
+import { DEGUSTACAO, rotuloDaDuracao } from '@/lib/vendas/degustacao'
 import estilos from './config.module.css'
 
 type Resposta = { ok: true; detalhe?: string } | { erro: string }
@@ -151,9 +151,8 @@ type Formulario = {
   codigo: string
   nome: string
   produtos: string[]
-  duracao: string
-  /** Texto, e não número: enquanto a pessoa digita, o campo precisa aceitar o que ela digitou. */
-  diasDegustacao: string
+  /** O valor do seletor: uma das sete durações, ou `trial:7` / `trial:15`. */
+  tempoDeAcesso: string
   /** As filhas escolhidas — só faz sentido na principal. Uma filha não tem filha. */
   filhas: string[]
   /** A principal desta oferta, quando ela é filha. Não é editável aqui: é derivado do vínculo. */
@@ -161,7 +160,7 @@ type Formulario = {
   ativa: boolean
   reprocessarVendas: boolean
 }
-const FORMULARIO_VAZIO: Formulario = { codigo: '', nome: '', produtos: [], duracao: 'mensal', diasDegustacao: '', filhas: [], pai: null, ativa: true, reprocessarVendas: false }
+const FORMULARIO_VAZIO: Formulario = { codigo: '', nome: '', produtos: [], tempoDeAcesso: 'mensal', filhas: [], pai: null, ativa: true, reprocessarVendas: false }
 
 /** Do item da lista para o formulário: os dias só aparecem quando a oferta é de degustação. */
 function formularioDe(o: OfertaItem): Formulario {
@@ -170,8 +169,7 @@ function formularioDe(o: OfertaItem): Formulario {
     codigo: o.codigo,
     nome: o.nome,
     produtos: o.produtos,
-    duracao: o.duracao,
-    diasDegustacao: o.diasDegustacao === null ? '' : String(o.diasDegustacao),
+    tempoDeAcesso: o.tempoDeAcesso,
     filhas: o.filhas,
     pai: o.pai,
     ativa: o.ativa,
@@ -191,8 +189,7 @@ function dadosDaOferta(form: Formulario) {
     codigo: form.codigo,
     nome: form.nome,
     produtos: form.produtos,
-    duracao: form.duracao,
-    diasDegustacao: form.diasDegustacao.trim() ? diasDeDegustacao(form.diasDegustacao) : null,
+    tempoDeAcesso: form.tempoDeAcesso,
     filhas: form.filhas,
     ativa: form.ativa,
     reprocessarVendas: form.reprocessarVendas,
@@ -270,7 +267,7 @@ function OfertasBloco({ vista, executar, pendente }: PropsBloco) {
           </div>
           <div className={estilos.campo}>
             <label className={estilos.rotulo} htmlFor="oferta-duracao">Tempo de acesso</label>
-            <Selecao id="oferta-duracao" value={form.duracao} onChange={(e) => setForm({ ...form, duracao: e.target.value })}>
+            <Selecao id="oferta-duracao" value={form.tempoDeAcesso} onChange={(e) => setForm({ ...form, tempoDeAcesso: e.target.value })}>
               {vista.temposDeAcesso.map((t) => (
                 <option key={t.valor} value={t.valor}>{t.rotulo}</option>
               ))}
@@ -282,17 +279,8 @@ function OfertasBloco({ vista, executar, pendente }: PropsBloco) {
             checkbox. Com dois booleanos por produto, o estado (true, true) existiria no tipo e
             caberia a todo consumidor recusá-lo; com um seletor por produto, ele não existe.
           */}
-          {form.duracao === DEGUSTACAO ? (
+          {form.tempoDeAcesso === DEGUSTACAO || form.tempoDeAcesso.startsWith(`${DEGUSTACAO}:`) ? (
             <div className={estilos.campo}>
-              <label className={estilos.rotulo} htmlFor="oferta-degustacao-dias">Dias de degustação</label>
-              <Entrada
-                id="oferta-degustacao-dias"
-                inputMode="numeric"
-                value={form.diasDegustacao}
-                onChange={(e) => setForm({ ...form, diasDegustacao: e.target.value })}
-                placeholder={`ex.: 7 (de 1 a ${vista.maxDiasDegustacao})`}
-                autoComplete="off"
-              />
               <p className={estilos.ajuda}>
                 O brinde nasce na data em que é concedido e <strong>não renova nem empilha</strong>: quem já
                 recebeu uma degustação deste produto não recebe outra por esta oferta. O código precisa ser
