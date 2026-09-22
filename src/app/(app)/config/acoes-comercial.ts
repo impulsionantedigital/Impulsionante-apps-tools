@@ -332,14 +332,23 @@ export async function salvarOferta(entrada: unknown): Promise<Resposta> {
       .eq('codigo', campos.codigo)
       .neq('id', ofertaId)
       .limit(1)
-    if (erroColide) return { erro: 'Não foi possível salvar a oferta.' }
+    if (erroColide) {
+      console.error('[comercial] conferência de código colidiu falhou:', detalheSeguro(erroColide))
+      return { erro: 'Não foi possível salvar a oferta.' }
+    }
     if (colide?.length) {
       return { erro: 'Este código já pertence a outra oferta. A oferta de degustação não recebe vendas, então o código dela precisa ser livre.' }
     }
   }
 
-  const erroVinculo = await gravarFilhas({ db, ws, paiId: ofertaId, filhas: filhas ?? [] })
-  if (erroVinculo) return erroVinculo
+  // 🔴 Só mexe no vínculo quando há o que mexer. Chamar sempre fazia um `delete` em
+  // `ofertas_filhas` numa oferta sem filhas — e essa tabela só existe depois da 0070: numa
+  // instalação com o banco atrasado, salvar QUALQUER oferta comum falhava por causa de uma
+  // tabela que a oferta nem usa. O caminho de quem não usa o recurso tem de continuar funcionando.
+  if (tempo.duracao !== DEGUSTACAO && filhas !== undefined) {
+    const erroVinculo = await gravarFilhas({ db, ws, paiId: ofertaId, filhas })
+    if (erroVinculo) return erroVinculo
+  }
   if (id && reprocessarVendas) {
     try {
       const { vendasAtualizadas, periodosNovos } = await bonificarVendasDaOferta(ws, id)
@@ -417,12 +426,16 @@ async function gravarFilhas(args: {
   // Regravar é apagar e reinserir: o conjunto escolhido é a verdade, e um vínculo que saiu da
   // seleção precisa mesmo sumir. Não há dado atrelado à linha do vínculo a preservar.
   const { error: erroApagar } = await db.from('ofertas_filhas').delete().eq('oferta_pai_id', paiId)
-  if (erroApagar) return { erro: 'Não foi possível salvar as ofertas filhas.' }
+  if (erroApagar) {
+    console.error('[comercial] limpar vínculos falhou:', detalheSeguro(erroApagar))
+    return { erro: 'Não foi possível salvar as ofertas filhas.' }
+  }
   if (escolhidas.length === 0) return null
   const { error: erroInserir } = await db
     .from('ofertas_filhas')
     .insert(escolhidas.map((filhaId) => ({ oferta_pai_id: paiId, oferta_filha_id: filhaId })))
   if (erroInserir) {
+    console.error('[comercial] gravar vínculos falhou:', detalheSeguro(erroInserir))
     return {
       erro:
         erroInserir.code === '23505'
