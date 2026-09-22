@@ -6,6 +6,7 @@ import Botao from '@/components/ui/Botao'
 import { Entrada, Selecao } from '@/components/ui/Campo'
 import {
   encerrarVenda,
+  excluirOferta,
   lerPayload,
   reenviarEmails,
   reprocessar,
@@ -199,8 +200,14 @@ function dadosDaOferta(form: Formulario) {
 
 function OfertasBloco({ vista, executar, pendente }: PropsBloco) {
   const [form, setForm] = useState<Formulario | null>(null)
+  /* Qual oferta está esperando o SEGUNDO clique. Guarda o id, e não um booleano: com um booleano,
+     abrir a confirmação numa linha e clicar em `Excluir` de OUTRA excluiria a outra. */
+  const [confirmando, setConfirmando] = useState<string | null>(null)
 
   function editar(o: OfertaItem) {
+    // Abrir o editor desarma uma confirmação pendente: sem isto, a linha ficaria com o
+    // formulário aberto embaixo e um "Confirmar exclusão?" armado esperando o próximo clique.
+    setConfirmando(null)
     setForm(formularioDe(o))
   }
 
@@ -248,6 +255,41 @@ function OfertasBloco({ vista, executar, pendente }: PropsBloco) {
                 <Botao variante="fantasma" tamanho="pequeno" onClick={() => editar(o)}>
                   Editar
                 </Botao>
+                {/* O botão está SEMPRE visível — desabilitado quando há venda, com o motivo no
+                    `title`. Esconder deixaria a pessoa sem saber que a ação existe; desabilitado
+                    com explicação ensina a regra. É a mesma receita do `TiposAtividade`.
+                    🔴 Quem recusa de verdade é o banco: `vendas.oferta_id` é `on delete restrict`,
+                    porque a venda é a fotografia da oferta no dia da compra. */}
+                <Botao
+                  variante="fantasma"
+                  tamanho="pequeno"
+                  tom="erro"
+                  carregando={pendente}
+                  desabilitado={o.vendas > 0}
+                  title={
+                    o.vendas > 0
+                      ? `Tem ${o.vendas} venda(s) — desative a oferta para parar de liberar compras novas.`
+                      : 'Excluir esta oferta'
+                  }
+                  onClick={() => {
+                    // Primeiro clique arma; o segundo executa. Nada sai sem a confirmação.
+                    if (confirmando !== o.id) {
+                      setConfirmando(o.id)
+                      return
+                    }
+                    setConfirmando(null)
+                    executar(() => excluirOferta(o.id), 'Oferta excluída.')
+                  }}
+                >
+                  {confirmando === o.id ? 'Confirmar exclusão?' : 'Excluir'}
+                </Botao>
+                {/* A saída da confirmação, ao lado: sem ela, quem clicou por engano fica sem
+                    como voltar a não ser clicando em outro lugar. */}
+                {confirmando === o.id && (
+                  <Botao variante="fantasma" tamanho="pequeno" onClick={() => setConfirmando(null)}>
+                    Cancelar
+                  </Botao>
+                )}
               </span>
             </li>
           ))}

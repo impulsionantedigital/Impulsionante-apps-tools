@@ -41,6 +41,12 @@ export interface OfertaItem {
   produtosVenda: string[]
   produtosDegustacao: string[]
   ativa: boolean
+  /**
+   * Quantas vendas apontam para esta oferta. **Decide se ela pode ser excluída**: a FK
+   * `vendas.oferta_id` é `on delete restrict`, então uma oferta com venda não sai do banco —
+   * e é essa a regra, não uma checagem nossa que poderia divergir dela.
+   */
+  vendas: number
 }
 
 export interface VendaItem {
@@ -169,6 +175,20 @@ export async function lerComercial(): Promise<VistaComercial | { erro: string }>
     const idsVenda = listaVendas.map((v) => v.id)
     const idsMembro = [...new Set(listaVendas.map((v) => v.membro_id))]
 
+    /* 🔴 A contagem vem de uma consulta PRÓPRIA, sem `limit`, e não da lista de cima: aquela é um
+       `limit(50)` para exibição, e uma oferta com a 51ª venda mais antiga pareceria sem venda
+       nenhuma — o botão de excluir apareceria, e o banco recusaria o delete (`on delete restrict`
+       em `vendas.oferta_id`). O erro só apareceria no clique, depois de a tela ter mentido. */
+    const { data: vendasDasOfertas, error: erroVendasDasOfertas } = await db
+      .from('vendas')
+      .select('oferta_id')
+      .eq('workspace_id', ws)
+    if (erroVendasDasOfertas) throw erroVendasDasOfertas
+    const vendasPorOferta = new Map<string, number>()
+    for (const v of (vendasDasOfertas ?? []) as Array<{ oferta_id: string }>) {
+      vendasPorOferta.set(v.oferta_id, (vendasPorOferta.get(v.oferta_id) ?? 0) + 1)
+    }
+
     const periodos: Array<{ venda_id: string; expira_em: string | null }> = []
     if (idsVenda.length > 0) {
       const { data, error } = await db.from('vendas_periodos').select('venda_id, expira_em').in('venda_id', idsVenda)
@@ -193,7 +213,7 @@ export async function lerComercial(): Promise<VistaComercial | { erro: string }>
     }
 
     return {
-      ofertas: ((ofertas ?? []) as Array<Omit<OfertaItem, 'diasDegustacao' | 'tempoDeAcesso' | 'produtosVenda' | 'produtosDegustacao'> & { dias_degustacao: number | null }>).map((o) => {
+      ofertas: ((ofertas ?? []) as Array<Omit<OfertaItem, 'diasDegustacao' | 'tempoDeAcesso' | 'produtosVenda' | 'produtosDegustacao' | 'vendas'> & { dias_degustacao: number | null }>).map((o) => {
         const produtos = produtosPorOferta.get(o.id) ?? { venda: o.produtos, degustacao: [] }
         return {
           ...o,
@@ -201,6 +221,7 @@ export async function lerComercial(): Promise<VistaComercial | { erro: string }>
           tempoDeAcesso: o.duracao,
           produtosVenda: produtos.venda,
           produtosDegustacao: produtos.degustacao,
+          vendas: vendasPorOferta.get(o.id) ?? 0,
         }
       }),
       vendas: listaVendas.map((v) => {
@@ -371,6 +392,58 @@ export async function salvarOferta(entrada: unknown): Promise<Resposta> {
       return { ok: true, detalhe: 'Oferta salva, mas o reprocessamento das vendas falhou. Tente reprocessar de novo.' }
     }
   }
+
+  return { ok: true }
+}
+
+/**
+ * Exclui uma oferta **sem venda nenhuma**. É o único caso em que ela pode sair: a FK
+ * `vendas.oferta_id` é `on delete restrict`, porque a venda é a fotografia da oferta no dia da
+ * compra (§7.4) — apagar a oferta apagaria a explicação de por que aquele membro recebeu aqueles
+ * produtos por aquele prazo.
+ *
+ * 🔴 Quem recusa é o BANCO, não um `if` daqui. A conferência local existe para dar a mensagem
+ * certa em vez de um erro de FK cru, mas a decisão de gravar continua sendo uma só, no schema: se
+ * uma venda entrar entre a contagem e o delete, o `restrict` segura do mesmo jeito.
+ *
+ * `ofertas_produtos` sai junto pelo `on delete cascade` da própria tabela (migration 0071).
+ */
+export async function excluirOferta(id: string): Promise<Resposta> {
+  await exigirEngineLiberado()
+  const ws = await workspaceDoOwner()
+  if (!ws) return { erro: NAO_AUTORIZADO }
+  if (!Uuid.safeParse(id).success) return { erro: 'Oferta inválida.' }
+
+  const db = admin()
+  const { data: vendas, error: erroVendas } = await db
+    .from('vendas')
+    .select('id')
+    .eq('workspace_id', ws)
+    .eq('oferta_id', id)
+    .limit(1)
+  if (erroVendas) {
+    console.error('[comercial] conferir vendas da oferta falhou:', detalheSeguro(erroVendas))
+    return { erro: 'Não foi possível conferir as vendas desta oferta.' }
+  }
+  if (vendas?.length) {
+    return {
+      erro: 'Esta oferta já tem venda e não pode ser excluída — o histórico de quem comprou aponta para ela. Desative a oferta para parar de liberar compras novas.',
+    }
+  }
+
+  const { data, error } = await db.from('ofertas').delete().eq('workspace_id', ws).eq('id', id).select('id')
+  if (error) {
+    // A corrida: uma venda entrou depois da contagem acima. O `on delete restrict` recusou —
+    // a mesma resposta da contagem, para o clique não virar um erro de banco na cara do usuário.
+    if (error.code === '23503') {
+      return {
+        erro: 'Esta oferta já tem venda e não pode ser excluída — o histórico de quem comprou aponta para ela. Desative a oferta para parar de liberar compras novas.',
+      }
+    }
+    console.error('[comercial] excluir oferta falhou:', detalheSeguro(error))
+    return { erro: 'Não foi possível excluir a oferta.' }
+  }
+  if (!data?.length) return { erro: 'Oferta não encontrada.' }
 
   return { ok: true }
 }
