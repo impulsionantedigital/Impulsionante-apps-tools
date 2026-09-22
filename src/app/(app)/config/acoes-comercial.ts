@@ -15,6 +15,7 @@ import { CHAVE_URL_PUBLICA } from '@/lib/canais/url-publica'
 import { PRODUTOS, ehProdutoConhecido, rotuloDoProduto, type ProdutoId } from '@/lib/produtos/catalogo'
 import {
   DEGUSTACAO,
+  DURACAO_PADRAO_DA_DEGUSTACAO,
   OPCOES_TEMPO_DE_ACESSO,
   duracaoDaOferta,
   lerTempoDeAcesso,
@@ -200,8 +201,9 @@ export async function lerComercial(): Promise<VistaComercial | { erro: string }>
       ofertas: ((ofertas ?? []) as Array<Omit<OfertaItem, 'diasDegustacao' | 'filhas' | 'pai' | 'tempoDeAcesso'> & { dias_degustacao: number | null }>).map((o) => ({
         ...o,
         diasDegustacao: o.dias_degustacao,
-        // O valor que o seletor precisa para reabrir a oferta na opção certa.
-        tempoDeAcesso: o.duracao === DEGUSTACAO && o.dias_degustacao ? valorDaDegustacao(o.dias_degustacao) : o.duracao,
+        // O valor que o seletor precisa para reabrir a oferta na opção certa. Os DIAS vêm primeiro:
+        // eles —— e não `duracao`, que guarda um nome dos sete —— identificam a degustação.
+        tempoDeAcesso: o.dias_degustacao ? valorDaDegustacao(o.dias_degustacao) : o.duracao,
         filhas: filhasDe.get(o.id) ?? [],
         pai: paiDe.get(o.id) ?? null,
       })),
@@ -294,14 +296,20 @@ export async function salvarOferta(entrada: unknown): Promise<Resposta> {
   const { id, reprocessarVendas, tempoDeAcesso, filhas, ...campos } = r.data
   // Já validado pelo `refine`: aqui a leitura não pode falhar. O `?? null` é só para o tipo.
   const tempo = lerTempoDeAcesso(tempoDeAcesso) ?? { duracao: 'mensal' as const }
+  const degustacao = tempo.duracao === DEGUSTACAO
   const dados = {
     ...campos,
-    duracao: tempo.duracao,
+    // 🔴 `duracao` NUNCA recebe 'degustacao': a coluna tem `ofertas_duracao_dominio_check`, que
+    // aceita só os sete nomes, e o banco recusa o insert com 23514. Quem identifica a degustação é
+    // `dias_degustacao` — é ele que `duracaoDaOferta` lê primeiro. Gravar 'degustacao' aqui
+    // contradizia a decisão tomada na migration 0069 (que não alarga o domínio), e foi o defeito
+    // que fez toda oferta de trial falhar ao salvar.
+    duracao: degustacao ? DURACAO_PADRAO_DA_DEGUSTACAO : tempo.duracao,
     plataforma: 'hotmart',
     produtos: [...new Set(campos.produtos)],
     // O prazo em dias só existe na degustação; nas outras durações a coluna volta a nulo, para
     // uma oferta que deixou de ser degustação não guardar um número que ninguém mais lê.
-    dias_degustacao: tempo.duracao === DEGUSTACAO ? tempo.diasDegustacao : null,
+    dias_degustacao: degustacao ? tempo.diasDegustacao : null,
   }
   const db = admin()
   const { data, error } = id
@@ -324,7 +332,7 @@ export async function salvarOferta(entrada: unknown): Promise<Resposta> {
   // 🔴 A vaca sagrada: uma oferta de DEGUSTAÇÃO nunca recebe venda (§7.5.1). O código dela é
   // escolhido à mão e não existe na Hotmart; se alguém colar ali o código de uma oferta real, a
   // compra cairia numa oferta que não vende — e o membro pagaria sem receber.
-  if (tempo.duracao === DEGUSTACAO && campos.ativa) {
+  if (degustacao && campos.ativa) {
     const { data: colide, error: erroColide } = await db
       .from('ofertas')
       .select('id')
@@ -345,7 +353,7 @@ export async function salvarOferta(entrada: unknown): Promise<Resposta> {
   // `ofertas_filhas` numa oferta sem filhas — e essa tabela só existe depois da 0070: numa
   // instalação com o banco atrasado, salvar QUALQUER oferta comum falhava por causa de uma
   // tabela que a oferta nem usa. O caminho de quem não usa o recurso tem de continuar funcionando.
-  if (tempo.duracao !== DEGUSTACAO && filhas !== undefined) {
+  if (!degustacao && filhas !== undefined) {
     const erroVinculo = await gravarFilhas({ db, ws, paiId: ofertaId, filhas })
     if (erroVinculo) return erroVinculo
   }

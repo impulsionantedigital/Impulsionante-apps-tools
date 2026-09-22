@@ -40,6 +40,22 @@ export function valorDaDegustacao(dias: number): string {
 }
 
 /**
+ * O que a coluna `ofertas.duracao` guarda numa oferta de degustação.
+ *
+ * 🔴 NÃO é 'degustacao'. A coluna tem `ofertas_duracao_dominio_check`, que aceita só os sete nomes
+ * de `DURACOES`, e o banco recusa qualquer outro valor com `23514` (check violation). Quem
+ * identifica a degustação é `dias_degustacao`, e é por isso que `duracaoDaOferta` o lê primeiro.
+ *
+ * Este valor é só o prazo de RESERVA: se a degustação for desligada, é a duração que volta a
+ * valer — e por isso `mensal` (o mesmo padrão do formulário), em vez de algo arbitrário.
+ *
+ * A alternativa seria alargar o domínio da coluna com uma migration nova, mas isso trocaria uma
+ * restrição do produto por uma linha de código — e o produto derruba essa restrição na próxima
+ * atualização, com aviso no log. Guardar os dias é suficiente e não depende disso.
+ */
+export const DURACAO_PADRAO_DA_DEGUSTACAO = 'mensal' satisfies Duracao
+
+/**
  * Lê o valor do seletor e devolve o que gravar — ou `null` se não for uma opção válida.
  *
  * 🔴 O par só vale se os DIAS estiverem na lista fechada: um `duracao` forjado como
@@ -62,8 +78,11 @@ export function lerTempoDeAcesso(valor: string): TempoDeAcesso | null {
  * vira `oferta_invalida` na aprovação, e a compra não libera nada por engano.
  */
 export function duracaoDaOferta(oferta: OfertaDeAcesso): Duracao | number | null {
-  if (oferta.duracao !== DEGUSTACAO) return ehDuracao(oferta.duracao) ? oferta.duracao : null
-  return ehDiasDegustacao(oferta.diasDegustacao) ? oferta.diasDegustacao : null
+  // 🔴 Os DIAS vêm primeiro, e são eles que identificam a degustação — a coluna `duracao` guarda
+  // um dos sete nomes (DURACAO_PADRAO_DA_DEGUSTACAO), porque o CHECK do banco não aceita
+  // 'degustacao'. Procurar a degustação em `oferta.duracao` não acharia nada.
+  if (ehDiasDegustacao(oferta.diasDegustacao)) return oferta.diasDegustacao
+  return ehDuracao(oferta.duracao) ? oferta.duracao : null
 }
 
 /**

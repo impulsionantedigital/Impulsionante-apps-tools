@@ -120,9 +120,15 @@ describe('ehDiasDegustacao', () => {
 describe('duracaoDaOferta', () => {
   it('a duração normal passa como veio, sem olhar os dias', () => {
     expect(duracaoDaOferta({ duracao: 'anual', diasDegustacao: null })).toBe('anual')
-    // Dias guardados numa oferta que não é de degustação são inertes, não viram prazo.
-    expect(duracaoDaOferta({ duracao: 'anual', diasDegustacao: 7 })).toBe('anual')
     expect(duracaoDaOferta({ duracao: 'vitalicio', diasDegustacao: null })).toBe('vitalicio')
+  })
+
+  it('🔴 os DIAS mandam: é por eles que a degustação é identificada', () => {
+    // O CHECK do banco não aceita 'degustacao' na coluna `duracao`, então a oferta de dessustação
+    // fica gravada com um dos sete nomes + os dias. Procurar a degustação no nome não acharia nada
+    // — e uma oferta de trial seria tratada como mensal.
+    expect(duracaoDaOferta({ duracao: 'mensal', diasDegustacao: 7 })).toBe(7)
+    expect(duracaoDaOferta({ duracao: 'anual', diasDegustacao: 15 })).toBe(15)
   })
 
   it('a degustação vale pelos DIAS, não pelo nome', () => {
