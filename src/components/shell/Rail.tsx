@@ -39,22 +39,20 @@ function iconeDe(nome: IconePermitido): React.ReactNode {
   return ICONES[nome] ?? ICONES[ICONE_PADRAO]
 }
 
-export default async function Rail({ user, wsAtivo, workspaces, avisoAtualizacao = false }: {
+export default async function Rail({ user, wsAtivo, workspaces }: {
   user: UsuarioResumo
   wsAtivo: string
   workspaces: WorkspaceOpcao[]
-  
-  avisoAtualizacao?: boolean
 }) {
   const marca = await lerMarca()
-  
-  
-  
-  
+
+
+
+
   const tema = await temaDaRequisicao()
 
-  
-  
+
+
   const itensCustom = await lerMenuCustom()
   const porGrupo = new Map<string, typeof itensCustom>()
   for (const item of itensCustom) {
@@ -181,7 +179,7 @@ export default async function Rail({ user, wsAtivo, workspaces, avisoAtualizacao
         {}
         {}
         {!soFerramentas && (
-          <ItemNav href="/config" rotulo="Configurações" aviso={avisoAtualizacao}><Settings size={16} strokeWidth={2} /></ItemNav>
+          <ItemNav href="/config" rotulo="Configurações"><Settings size={16} strokeWidth={2} /></ItemNav>
         )}
         <MenuUsuario user={user} tema={tema} />
       </div>

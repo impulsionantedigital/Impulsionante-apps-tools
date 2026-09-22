@@ -1,26 +1,101 @@
 # Regras para agentes de código (Claude Code, Cursor, Codex, …)
 
-> **PÚBLICO-ALVO — leia antes de obedecer.** Este arquivo é para o **COMPRADOR** que roda
-> o Awave CRM no servidor dele e quer customizar. As regras abaixo (só `custom/`) protegem
-> a customização DELE de sumir na próxima atualização.
->
-> **Se você é o time da Awave desenvolvendo o CORE do CRM** (o repositório-fonte — aquele que
-> tem a suíte de testes e a documentação interna do time, nenhuma das duas presente na cópia do
-> comprador), **estas regras NÃO se aplicam a você** — editar `src/` é exatamente o seu
-> trabalho. Siga o guia interno da raiz daquele repositório, não este arquivo. Não perca tempo
-> se perguntando se pode mexer no core: pode.
+> **Este repositório é 100% próprio.** Ele nasceu de uma cópia do Awave CRM, mas não recebe
+> mais nada do produto original: **não existe atualização em um clique aqui, e a tela que a
+> disparava não existe mais.** Não há versão nova para baixar, nada substitui arquivo nenhum,
+> e nada é sobrescrito por cima do seu trabalho.
 
-Este produto é **atualizável em 1 clique** (Configurações → Servidor → Atualizações): a cada
-atualização, os arquivos do produto são substituídos pela versão nova. Por isso (se você é
-o COMPRADOR customizando):
+A consequência prática é simples: **edite qualquer parte do código.** `src/`, `supabase/`,
+`tests/`, `docs/`, scripts, configuração — tudo é seu, e a mudança fica. Não existe mais
+"zona protegida" nem arquivo que some na próxima atualização.
 
-1. **Você (IA) só pode criar/editar arquivos dentro de `custom/`** — minúsculo exato, na
-   raiz do repositório. **Leia `custom/LEIA-ME.md` antes de qualquer mudança.**
-2. **Arquivos fora de `custom/` são sobrescritos nas atualizações.** Editar o produto
-   dispara aviso de divergência na tela de Atualizações, e a edição sai da branch principal
-   na próxima atualização — sobra só um backup no branch `awave-backup/pre-<versão>`.
-3. **A zona tem sete pontos de extensão.** Cada um está documentado, com exemplo copiável,
-   num `LEIA-ME.md` dentro da própria pasta — leia o da pasta antes de escrever nela.
+**Não há trava de pasta.** Se a tarefa pede para mexer em `src/`, mexa. Se pede uma tabela nova,
+escreva a migration na faixa numérica que continuar a sequência. Se pede uma tela, crie uma
+página de verdade — não force a coisa dentro de `custom/` só porque um dia essa regra existiu.
+
+1. **Antes de começar, leia o que já está documentado.** `docs/` tem o histórico de decisões, as
+   armadilhas conhecidas e os guias de deploy. `docs/superpowers/` guarda os planos e specs das
+   features grandes. Isso costuma responder "por que isto está assim" antes de você reescrever.
+2. **Rode `pnpm build` (nunca `npm`) antes de commitar.** O projeto usa pnpm; misturar os dois
+   gera um lockfile que o build não entende. `pnpm run test` cobre a suíte — mantenha-a verde.
+3. **`custom/` continua existindo e continua válido** — mas agora é só *uma* forma de organizar
+   código, não a única. Use-o quando fizer sentido tratar algo como módulo plugável (uma tela
+   em `/x/<nome>`, um webhook, uma tarefa de relógio, um bloco dentro de uma tela existente).
+   O contrato dele não mudou: os sete pontos de extensão são `custom/migrations/`,
+   `custom/paginas/`, `custom/slots/`, `custom/api/`, `custom/tarefas/`, `custom/eventos/` e
+   `custom/menu.ts`, e a extensão do arquivo faz parte do contrato (`pagina.tsx`, âncora `.tsx`,
+   os outros `.ts`). Cada pasta tem um `LEIA-ME.md` com exemplo copiável.
+   - **O `custom/menu.ts` recusa item em silêncio.** No máximo **10 itens**, contando só os
+     válidos — do 11º válido em diante o resto não aparece. `titulo` até **40** caracteres e
+     `caminho` até **200**: passar disso faz o item **sumir inteiro**, e o mesmo vale para campo
+     vazio ou ausente. O `caminho` começa com `/x/`, só minúsculas, números e hífen, no máximo
+     3 níveis (`/x/Financeiro`, `/x/relatórios`, `/x/meu_modulo` e `/x/financeiro-` são
+     recusados). `grupo` acima de 24 cai em "Personalizado" e `icone` fora da lista cai no padrão
+     — nesses dois o item continua aparecendo. Nada disso gera erro na tela nem linha no log.
+4. **O CRM é multi-inquilino — o isolamento é do banco, não do código.** Toda tabela precisa de
+   `workspace_id`, `enable row level security` e uma policy. Sem as três coisas, o dado de um
+   espaço de trabalho aparece para outro, **sem nenhum aviso**. Vale para tabela em `custom/` e
+   vale igual para tabela nova em `supabase/migrations/`.
+   - **Guardando ARQUIVO? Bucket próprio e privado** (`public = false`). Bucket público serve
+     qualquer objeto pela URL, sem passar por policy nenhuma.
+   - **Não escreva `create policy ... on storage.objects` numa migration.** O comando exige ser
+     dono da tabela, o papel da instalação pode não ser, e **migration que falha impede o boot**.
+     Bucket privado já é fechado por padrão: quem lê é o servidor, não o navegador.
+   - **Toda instrução de migration precisa aguentar rodar DUAS vezes.** O CRM reaplica no boot
+     qualquer migration que ele não encontre registrada, e uma instrução que falhe com "objeto já
+     existe" **impede o servidor de subir**. Use `if not exists` onde a linguagem aceita
+     (`create table`, `create index`, `add column`). Onde ela **não** aceita — `create policy`,
+     `create trigger` e `alter table … add constraint` — embrulhe num bloco `do $$ … end $$;` que
+     pergunte ao catálogo antes (`pg_policies`, `pg_trigger`, `pg_constraint`).
+   - **`clienteSemIsolamento()` desliga o isolamento.** Ele existe para os lugares onde **não há
+     ninguém logado**: `custom/api/` (webhook de sistema externo), `custom/tarefas/` e
+     `custom/eventos/`. Sob ele, o `.eq('workspace_id', …)` é responsabilidade sua: um `select`
+     sem esse filtro devolve o dado de TODOS os espaços de trabalho, sem erro e sem aviso.
+     - Em `custom/eventos/`, o `workspaceId` **vem no próprio evento** — use aquele, não um fixo.
+     - Em tela e em bloco (`custom/paginas/`, `custom/slots/`) use `clienteDaSessao()`, que aplica
+       o isolamento sozinho.
+     - Tarefa e gancho têm **10 segundos** cada. Use `AbortSignal.timeout()` no seu `fetch`:
+       passado o limite, o CRM para de esperar e o resultado é descartado.
+5. **Nome, logo, favicon e cor se configuram em Configurações → Servidor → Marca.** A seção fica
+   no `/config`, na aba **Servidor**, e vale para o servidor inteiro. Prefira essa tela a editar
+   token de CSS ou arquivo de marca.
+   - A **cor é recusada quando não dá contraste** (mínimo de 4,5:1 contra o branco, medido na hora
+     de salvar). Não contorne editando token de CSS na mão: a partir dessa única cor o produto
+     **deriva** os tons de passar o mouse, de clicar e de fundo de chip, e faz isso **duas vezes**
+     — tema claro e escuro, cada um medido contra o fundo do seu tema. O token que você editar à
+     mão só conserta o tema em que você olhou.
+
+## O que ficou parado no código
+
+A remoção da atualização em um clique foi **só de tela**: o card saiu do `/config`, o ponto no
+menu saiu do `Rail`, e o `layout.tsx` deixou de consultar o aviso. O código do servidor continua
+no repositório, **parado e sem ninguém chamando**:
+
+- `src/server/atualizacao/` — `aplicar.ts`, `reverter.ts`, `detectar.ts`, `git.ts`, `gatilho.ts`, `aviso.ts`
+- `src/app/(app)/config/acoes-atualizacao.ts` e `AtualizacoesCard.tsx` (o componente não é mais renderizado)
+- `src/lib/atualizacao.ts`, `src/lib/estado-atualizacao.ts`, `src/lib/gatilho-implantacao.ts`
+- `src/lib/manifesto-diff.ts`, `src/server/awave-manifest.json`, `src/server/awave-stamp.json`
+
+**Eles não foram apagados de propósito**, porque compartilham código com coisas que continuam
+ativas — em especial a **licença** (`src/server/license/`, `LicencaCard`) e o **controle de
+migrations** (`public.awave_migrations`, lido por `src/server/crm/relatorios.ts`). Arrancar esse
+bloco inteiro tem risco de derrubar o boot por algo que não se ganha em trocar. Se algum dia
+valer a pena remover de verdade, trate como refactor separado, com a suíte verde em cada passo.
+
+## Licença
+
+A licença **não destranca funcionalidade nenhuma** — o CRM funciona inteiro, offline. Ela
+interrompe o acesso em duas situações: reembolso dentro da garantia, e instalação recente que
+ficou dias sem conseguir confirmar a licença. Nos dois casos o CRM leva para uma tela única que
+explica e oferece a saída.
+
+Se o CRM parar nessa tela, **isso não é bug do código**: é estado de licença, e quem resolve é o
+dono da instalação, em Configurações → Servidor → Licença. O `docs/DEPLOY.md` descreve as duas.
+
+Nesse estado a **API de integração** (`/api/v1/...`) também para, e responde **403** com
+`{"error":{"code":"licenca_bloqueada"}}` — não confunda com o **401** `nao_autorizado`, que é
+credencial errada ou ausente. O `/api/v1/echo` continua respondendo de propósito, para provar que
+a credencial está certa mesmo com o acesso interrompido.
 
    | Onde | O que é | Vira |
    |---|---|---|

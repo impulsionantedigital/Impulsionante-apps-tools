@@ -5,8 +5,6 @@ import {
 import { versaoParaExibir, licenciadoPara } from '@/server/versao'
 import { lerLicenca } from './acoes-licenca'
 import LicencaCard from './LicencaCard'
-import { lerAtualizacao } from './acoes-atualizacao'
-import AtualizacoesCard from './AtualizacoesCard'
 import { lerEquipe } from './acoes-equipe'
 import EquipeCard from './EquipeCard'
 import ComercialCard from './ComercialCard'
@@ -74,25 +72,27 @@ export default async function ConfigPage({
   const mostrarServidor = aba === 'servidor'
   const rLicenca = mostrarServidor ? await lerLicenca() : null
   const licenca = rLicenca && !('erro' in rLicenca) ? rLicenca : null
-  const rAtualizacao = mostrarServidor ? await lerAtualizacao() : null
-  const atualizacao = rAtualizacao && !('erro' in rAtualizacao) ? rAtualizacao : null
+  /* SEM `lerAtualizacao()`: este repositório é próprio e não recebe a atualização em um clique,
+     então o card saiu da tela. A chamada ia junto — não há por que consultar versão no GitHub,
+     token e divergência para um card que ninguém renderiza. O código do servidor
+     (`src/server/atualizacao/`, `acoes-atualizacao.ts`) continua no lugar, parado. */
   const rMarca = mostrarServidor ? await lerMarcaConfig() : null
   const marca = rMarca && !('erro' in rMarca) ? rMarca : null
   const rModelos = mostrarServidor ? await lerModelosEmail() : null
   const modelos = rModelos && !('erro' in rModelos) ? rModelos : null
 
-  
-  
+
+
   const { nome: marcaNome } = await lerMarca()
 
   return (
     <div className={estilos.pagina}>
       <CabecalhoPagina
         titulo="Configurações"
-        
-        
-        
-        
+
+
+
+
         subtitulo="Ajuste o CRM ao seu processo. Cada seção diz a quem ela vale."
       />
 
@@ -152,7 +152,6 @@ export default async function ConfigPage({
           {modelos ? <ModelosEmailCard vista={modelos} /> : null}
 
           {licenca ? <LicencaCard inicial={licenca} /> : null}
-          {atualizacao ? <AtualizacoesCard inicial={atualizacao} /> : null}
         </>
       )}
 

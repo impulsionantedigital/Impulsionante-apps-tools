@@ -4,14 +4,13 @@ import { usePathname } from 'next/navigation'
 import estilos from './Rail.module.css'
 
 
-export default function ItemNav({ href, rotulo, descricao, children, aviso, indentado }: {
+export default function ItemNav({ href, rotulo, descricao, children, indentado }: {
   href: string
   rotulo: string
   // Segunda linha, menor e apagada — o item vira um cartão de duas linhas (título + descrição)
   // em vez do rótulo único de sempre. Usado pelas ferramentas individuais em Rail.tsx.
   descricao?: string
   children?: React.ReactNode
-  aviso?: boolean
   // Recua o item sem ícone sob o rótulo de um grupo estático acima dele (ver `.navGrupo` em
   // Rail.tsx) — a indentação é o que diz "isto pertence ao grupo de cima".
   indentado?: boolean
@@ -34,9 +33,6 @@ export default function ItemNav({ href, rotulo, descricao, children, aviso, inde
       ) : (
         <span>{rotulo}</span>
       )}
-      {aviso ? (
-        <span className={estilos.aviso} role="status" aria-label="Atualização disponível" title="Atualização disponível" />
-      ) : null}
     </Link>
   )
 }

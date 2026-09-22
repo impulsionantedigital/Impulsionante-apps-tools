@@ -3,7 +3,6 @@ import { exigirSessao } from '@/server/auth/sessao'
 import { precisaTrocarSenha } from '@/server/auth/temporaria'
 import { resolverWorkspaceAtivo } from '@/server/auth/workspace-ativo'
 import { motivoDeBloqueioAtual } from '@/server/license/bloqueio'
-import { mostrarAvisoDeAtualizacao } from '@/server/atualizacao/aviso'
 import { criarClienteServidor } from '@/server/supabase-session'
 import { nomeExibicao } from '@/lib/nome-exibicao'
 import Rail from '@/components/shell/Rail'
@@ -50,15 +49,17 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   
   
   
-  const avisoAtualizacao = await mostrarAvisoDeAtualizacao(user.id)
+  /* SEM aviso de atualização: este repositório é próprio e não recebe a atualização em um clique,
+     então o ponto no menu apontaria para um card que não existe mais. `mostrarAvisoDeAtualizacao`
+     continua em `src/server/atualizacao/aviso.ts`, parado. */
 
   return (
-    
-    
-    
-    
-    
-    
+
+
+
+
+
+
     <NavMobileProvider>
       <div className={estilos.shell}>
         <GavetaRail>
@@ -66,7 +67,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             user={{ nome, email: user.email ?? '' }}
             wsAtivo={wsAtivo}
             workspaces={workspaces}
-            avisoAtualizacao={avisoAtualizacao}
           />
         </GavetaRail>
         <div className={estilos.coluna}>

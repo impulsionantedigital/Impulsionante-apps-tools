@@ -101,8 +101,7 @@ export default function MarcaCard({ inicial }: { inicial: Vista }) {
 
       <p className={estilos.ajuda}>
         Nome, logo, ícone da aba e cor aparecem no menu, na tela de entrada e no título da
-        janela. <strong>Isto sobrevive à atualização em um clique</strong> — não precisa
-        editar arquivo nenhum.
+        janela. Não precisa editar arquivo nenhum para trocar nenhum dos quatro.
       </p>
 
       {}
