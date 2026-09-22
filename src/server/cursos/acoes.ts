@@ -23,7 +23,7 @@ export type CursoDetalhe = CursoResumo & { descricao: string | null; capa_url: s
  * "dono de algum workspace", que deixaria o owner de um workspace mexer no de outro.
  *
  * 🔴 Devolve só `ws`, nunca o `cliente` da sessão: a RLS de `cursos`/`modulos`/`aulas` (migration
- * 0066) só libera `authenticated` para conteúdo PUBLICADO com compra ativa — o dono gerenciando
+ * 0071) só libera `authenticated` para conteúdo PUBLICADO com compra ativa — o dono gerenciando
  * rascunhos não se enxerga por essa policy. Toda leitura/escrita de conteúdo aqui é por
  * `admin()`, no mesmo padrão de `lerComercial()` em `acoes-comercial.ts` para `ofertas`/`vendas`
  * (mesma forma de RLS: só `service_role`). Não reintroduza `cliente` para consultar estas
@@ -40,7 +40,7 @@ export async function listarCursos(): Promise<CursoResumo[]> {
   const { ws } = await sessaoAdminCursos()
   if (!ws) return []
   // 🔴 admin(), não `cliente`: a RLS de `cursos` só libera `authenticated` para conteúdo
-  // publicado com compra ativa (política `cursos_membro_select`, migration 0066) — não existe
+  // publicado com compra ativa (política `cursos_membro_select`, migration 0071) — não existe
   // policy de leitura ampla para o dono gerenciar rascunhos. Mesmo padrão de `lerComercial()`
   // em `src/app/(app)/config/acoes-comercial.ts` para `ofertas`/`vendas`, que têm a mesma forma
   // de RLS (só service_role).

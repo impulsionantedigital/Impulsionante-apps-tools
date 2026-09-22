@@ -1,4 +1,4 @@
--- 0066_cursos.sql — cursos, módulos, aulas e progresso de leitura do membro.
+-- 0071_cursos.sql — cursos, módulos, aulas e progresso de leitura do membro.
 --
 -- ⚠️ ADITIVA E IDEMPOTENTE. Migration que falha = container que NÃO SOBE, em toda instalação.
 -- Nada apaga dado. A guarda em tests/migracoes/idempotencia.spec.ts confere as regras.
