@@ -127,7 +127,7 @@ export default async function ConfigPage({
                 titulo="Importar planilha" sub="Traga contatos, empresas ou negócios de um arquivo CSV." />
               {}
               <Destino href="/config/ia" icone={<Plug size={16} strokeWidth={1.75} />}
-                titulo="Integração por API" sub="Gere a credencial e o webhook para outro sistema agir neste CRM — inclusive a IA da Awave. Não é aqui que se liga o assistente que responde no WhatsApp: esse é o cartão Agentes de IA." />
+                titulo="Integração por API" sub="Gere a credencial e o webhook para outro sistema agir neste CRM — inclusive um assistente de IA externo. Não é aqui que se liga o assistente que responde no WhatsApp: esse é o cartão Agentes de IA." />
               {}
               <Destino href="/config/canais" icone={<MessageSquare size={16} strokeWidth={1.75} />}
                 titulo="Canais" sub="Conecte o WhatsApp e o Instagram da sua empresa e receba as mensagens aqui. O servidor de mensagens vale para o servidor inteiro." />

@@ -1,4 +1,4 @@
-/* globals.css — fundação de estilo do Awave CRM.
+/* globals.css — fundação de estilo do Impulsionante App CRM.
  *
  * Os tokens abaixo SÃO a fonte de verdade do design system: componentes referenciam SÓ
  * var(--…), nunca hex solto. Aqui: os DOIS conjuntos de token + reset básico + body

@@ -1,4 +1,4 @@
-# Changelog — Awave CRM
+# Changelog — Impulsionante App CRM
 
 Formato: uma seção por release, mais nova em cima. Escrito **pro comprador**, não pro
 desenvolvedor — quem lê isto quer saber o que muda na tela dele, não qual arquivo mudou.

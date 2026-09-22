@@ -1,7 +1,7 @@
 {
   "name": "awave-crm",
   "version": "0.9.1",
-  "description": "Awave CRM — flagship self-host da linha Awave",
+  "description": "Impulsionante App CRM — self-host",
   "type": "module",
   "private": true,
   "scripts": {

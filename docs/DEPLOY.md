@@ -271,8 +271,9 @@ Abra o app no EasyPanel → aba **Logs**. Num boot saudável você vê, nesta or
 ## 5. O primeiro acesso: criar a conta do dono
 
 1. Abra o seu domínio. Numa instalação nova o CRM te leva direto pra tela de **cadastro** (não
-   pro login — não haveria conta nenhuma pra usar), com o título **"Este é o seu Awave CRM.
-   Crie a conta do dono."**
+   pro login — não haveria conta nenhuma pra usar), com o título **"Este é o seu Impulsionante
+   App CRM. Crie a conta do dono."** (o nome exibido é o que estiver em Configurações →
+   Servidor → Marca).
 2. Preencha **e-mail** e **senha** (mínimo 6 caracteres), o **nome do workspace** e a **chave
    do primeiro acesso** (a do §4 — pode colar em minúsculas ou com espaço sobrando).
 3. **Criar conta.** Você já entra logado, com um funil de vendas pronto pra usar.

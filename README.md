@@ -1,4 +1,4 @@
-# Awave CRM
+# Impulsionante App CRM
 
 CRM completo que roda **no seu servidor**, contra o **seu** banco de dados. Contatos,
 empresas, negócios num quadro de arrastar e soltar, atividades e agenda, campos criados por

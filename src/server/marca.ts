@@ -6,7 +6,7 @@ import { derivarMarca, type Marca, type Paleta } from '@/lib/marca-cor'
 
 
 
-export const NOME_PADRAO = 'Awave CRM'
+export const NOME_PADRAO = 'Impulsionante App CRM'
 export const ACCENT_PADRAO = '#3D5AFE'
 
 export const CHAVE_NOME = 'marca_nome'

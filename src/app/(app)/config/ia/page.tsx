@@ -40,7 +40,7 @@ export default async function ConfigIaPage() {
       <CabecalhoPagina
         acima={<VoltarConfig />}
         titulo="Integração por API"
-        subtitulo="Gere uma credencial para outro sistema agir neste espaço de trabalho — inclusive a IA da Awave — e aponte o webhook que o avisa quando algo acontece. Não é aqui que se liga o assistente do WhatsApp: ele fica em Agentes de IA."
+        subtitulo="Gere uma credencial para outro sistema agir neste espaço de trabalho — inclusive um assistente de IA externo — e aponte o webhook que o avisa quando algo acontece. Não é aqui que se liga o assistente do WhatsApp: ele fica em Agentes de IA."
       />
       <PlugarIA
         urlBase={urlBase}

@@ -18,7 +18,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const { nome, favicon } = await lerMarca()
   return {
     title: nome,
-    description: 'CRM self-host da linha Awave.',
+    description: 'CRM self-host da Impulsionante Apps.',
     
     
     ...(favicon ? { icons: { icon: favicon } } : {}),
