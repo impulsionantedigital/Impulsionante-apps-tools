@@ -1,6 +1,37 @@
 # Vitrine de produtos bloqueados — plano de implementação
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+## Modo de execução — decidido, não opcional
+
+**Por subagentes, com revisão do supervisor entre uma task e a seguinte.** Decidido em 2026-09-22.
+Não execute este plano inline, e não encadeie tasks sem revisão no meio.
+
+O ciclo de cada task é:
+
+1. O supervisor despacha **um subagente novo, com contexto limpo**, para uma task só — a task
+   inteira, do teste que falha ao commit, e nada além dela.
+2. O subagente executa os passos na ordem e **relata com a saída dos comandos**. Afirmação de que
+   "passou" sem a saída colada não é aceita.
+3. O **supervisor revisa antes de despachar a próxima**: confere o diff contra o que a task pedia,
+   que os testes rodaram de verdade, e que nada fora do escopo da task foi tocado.
+4. Só depois do aceite a task seguinte é despachada.
+
+**Por que contexto limpo por task:** cada subagente lê o plano e o código, não a conversa que
+gerou o plano. Se uma task só faz sentido com algo que ficou dito no chat, a task está mal escrita
+— corrija o plano em vez de explicar no despacho.
+
+**Onde parar e chamar o humano**, em vez de decidir sozinho:
+
+- Qualquer task que pareça precisar de **migration** — este plano não tem nenhuma, e precisar de
+  uma significa que o desenho está errado.
+- Qualquer mudança em **gate de acesso** além das descritas (`exigirEscrita`, os redirecionamentos
+  de `/novo` e `/[id]`, a policy de RLS).
+- Teste existente falhando **fora** do único caso que a Task 1 revisa de propósito.
+- Task 7 falhando em qualquer um dos seus pontos de verificação.
+
+**Ao fim das sete tasks:** code review sobre o código que passou a existir, e só então a fusão no
+`main` — que é o que publica em produção.
 
 **Goal:** Todo produto interno passa a aparecer sempre — na vitrine `/ferramentas` e no menu lateral —, com cadeado e convite de compra para quem não tem acesso, e a página do produto abre em leitura em vez de redirecionar.
 
