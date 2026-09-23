@@ -20,6 +20,8 @@ export type AvisoAcesso =
   | { tipo: 'trial'; diasRestantes: number | null }
   | { tipo: 'expirado' }
   | { tipo: 'trialExpirado' }
+  /** Nunca teve acesso. A tela abre em leitura e este aviso é o que explica o porquê. */
+  | { tipo: 'nuncaTeve' }
 
 /**
  * Decide o aviso. Função pura de propósito: a regra é do domínio, e a tela só a desenha — assim as
@@ -35,8 +37,10 @@ export function avisoDeAcesso(args: {
 }): AvisoAcesso {
   const { estado, detalhe } = args
 
-  // Nunca teve acesso: a tela nem existe (há redirecionamento antes de chegar aqui).
-  if (estado === 'nunca') return { tipo: 'nada' }
+  // 🔴 Antes isto devolvia `{ tipo: 'nada' }`, porque a página redirecionava quem nunca teve
+  // acesso. A spec de 2026-09-22 inverteu a regra: a tela abre em leitura, e sem este aviso ela
+  // apareceria vazia, sem botão de criar e sem nenhuma explicação.
+  if (estado === 'nunca') return { tipo: 'nuncaTeve' }
 
   if (estado === 'encerrado') {
     // Já degustou alguma vez neste produto: o recado é de degustação, não de renovação.
@@ -98,5 +102,68 @@ export function textoDoAviso(aviso: AvisoAcesso): { titulo: string; corpo: strin
           'Para continuar criando e editando, assine o acesso completo.',
         acao: 'Assinar agora',
       }
+    case 'nuncaTeve':
+      return {
+        titulo: 'Você ainda não tem acesso a esta ferramenta.',
+        corpo:
+          'Esta tela abre para você conhecer a ferramenta, mas criar e editar cálculos exige acesso ativo. ' +
+          'Assine para começar a usar — o acesso é liberado assim que a compra é confirmada.',
+        acao: 'Assinar agora',
+      }
   }
+}
+
+/** O que o card da vitrine (e o item do menu) mostra sobre um produto. */
+export interface CartaoDaVitrine {
+  /** Cadeado no card: o membro não pode usar a ferramenta agora. */
+  bloqueado: boolean
+  /** A linha de estado do card. Nula quando não há nada a dizer — acesso comprado e vigente. */
+  meta: string | null
+  /**
+   * O convite de compra. Nulo quando não há nada a convidar (acesso ativo) e nulo também quando o
+   * produto não tem `CHECKOUT_URL_<SLUG>` no ambiente.
+   *
+   * 🔴 É um objeto com rótulo E endereço juntos, em vez de dois campos soltos, exatamente para
+   * tornar impossível desenhar um botão sem destino: sem endereço, não há botão nenhum para a tela
+   * renderizar por engano.
+   */
+  botao: { rotulo: string; href: string } | null
+}
+
+/**
+ * A regra da vitrine, em função pura (§ spec de 2026-09-22).
+ *
+ * 🔴 "Assinar" para quem NUNCA pagou, "Renovar" para quem já foi cliente. `detalhe.degustou` é o
+ * que separa os dois dentro do estado `encerrado`: quem só experimentou não tem o que renovar, e
+ * mandar essa pessoa "renovar" descreve errado a relação dela com o produto.
+ */
+export function cartaoDaVitrine(args: {
+  estado: EstadoAcesso
+  detalhe: DetalheAcesso
+  checkout: string | null
+}): CartaoDaVitrine {
+  const { estado, detalhe } = args
+  // Espaço em branco é o mesmo que ausência: `checkoutDoProduto` já devolve `null` nesse caso, e
+  // esta conferência protege quem chamar a função com o valor cru do ambiente.
+  const href = typeof args.checkout === 'string' && args.checkout.trim() ? args.checkout.trim() : null
+
+  if (estado === 'ativo') {
+    const meta = !detalhe.trial
+      ? null
+      : detalhe.diasRestantes === null
+        ? 'Acesso de degustação'
+        : `Degustação — ${detalhe.diasRestantes} dia(s) restante(s)`
+    // Quem tem acesso não recebe convite: o botão competiria com o trabalho da pessoa, e o convite
+    // da degustação já mora dentro da página do produto.
+    return { bloqueado: false, meta, botao: null }
+  }
+
+  const rotulo = estado === 'nunca' || detalhe.degustou ? 'Assinar agora' : 'Renovar acesso'
+  const meta =
+    estado === 'nunca'
+      ? 'Você ainda não tem acesso'
+      : detalhe.degustou
+        ? 'Sua degustação terminou'
+        : 'Acesso encerrado — seus cálculos continuam para consulta'
+  return { bloqueado: true, meta, botao: href ? { rotulo, href } : null }
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { DIAS_DE_AVISO_DE_VENCIMENTO, avisoDeAcesso, textoDoAviso } from '@/lib/vendas/aviso-acesso'
+import { DIAS_DE_AVISO_DE_VENCIMENTO, avisoDeAcesso, cartaoDaVitrine, textoDoAviso } from '@/lib/vendas/aviso-acesso'
 import type { DetalheAcesso, EstadoAcesso } from '@/lib/vendas/acesso'
 
 /** Só o que cada caso declara importa; o resto é o default de um acesso comprado e vigente. */
@@ -10,8 +10,13 @@ function detalhe(p: Partial<DetalheAcesso>): DetalheAcesso {
 const aviso = (estado: EstadoAcesso, d: Partial<DetalheAcesso> = {}) => avisoDeAcesso({ estado, detalhe: detalhe(d) })
 
 describe('avisoDeAcesso', () => {
-  it('sem acesso nenhum: não há o que avisar (a tela nem é alcançada)', () => {
-    expect(aviso('nunca')).toEqual({ tipo: 'nada' })
+  // 🔴 Este teste afirmava `{ tipo: 'nada' }`, com a justificativa "a tela nem é alcançada". Essa
+  // premissa CAIU na spec de 2026-09-22: a página do produto passou a abrir em leitura para quem
+  // nunca teve acesso, e o aviso é o que explica por que não há botão de criar. Não "conserte"
+  // isto de volta sem ler a spec.
+  it('sem acesso nenhum: a tela abre em leitura, e o aviso convida a assinar', () => {
+    expect(aviso('nunca')).toEqual({ tipo: 'nuncaTeve' })
+    expect(textoDoAviso({ tipo: 'nuncaTeve' })?.acao).toBe('Assinar agora')
   })
 
   describe('acesso comprado', () => {
@@ -127,6 +132,57 @@ describe('textoDoAviso', () => {
     const trialExpirado = textoDoAviso({ tipo: 'trialExpirado' })
     expect(expirado?.titulo).not.toBe(trialExpirado?.titulo)
     expect(expirado?.acao).not.toBe(trialExpirado?.acao)
+  })
+})
+
+describe('cartaoDaVitrine', () => {
+  const cartao = (estado: EstadoAcesso, d: Partial<DetalheAcesso> = {}, checkout: string | null = 'https://pay.hotmart.com/x') =>
+    cartaoDaVitrine({ estado, detalhe: detalhe(d), checkout })
+
+  it('acesso comprado e vigente: sem cadeado, sem botão, sem linha de estado', () => {
+    expect(cartao('ativo', { diasRestantes: 90 })).toEqual({ bloqueado: false, meta: null, botao: null })
+  })
+
+  it('degustação vigente: sem cadeado (ela TEM acesso), mas a linha de estado conta os dias', () => {
+    expect(cartao('ativo', { trial: true, diasRestantes: 5 })).toEqual({
+      bloqueado: false,
+      meta: 'Degustação — 5 dia(s) restante(s)',
+      botao: null,
+    })
+  })
+
+  it('degustação vitalícia: conta sem número, porque não há dia a contar', () => {
+    expect(cartao('ativo', { trial: true, diasRestantes: null }).meta).toBe('Acesso de degustação')
+  })
+
+  it('nunca teve acesso: cadeado e convite de ASSINAR — ela nunca pagou', () => {
+    expect(cartao('nunca')).toEqual({
+      bloqueado: true,
+      meta: 'Você ainda não tem acesso',
+      botao: { rotulo: 'Assinar agora', href: 'https://pay.hotmart.com/x' },
+    })
+  })
+
+  it('acesso comprado que venceu: cadeado e convite de RENOVAR — ela já foi cliente', () => {
+    expect(cartao('encerrado', { degustou: false })).toEqual({
+      bloqueado: true,
+      meta: 'Acesso encerrado — seus cálculos continuam para consulta',
+      botao: { rotulo: 'Renovar acesso', href: 'https://pay.hotmart.com/x' },
+    })
+  })
+
+  it('degustação que venceu: cadeado e convite de ASSINAR — "renovar" descreveria errado quem nunca pagou', () => {
+    expect(cartao('encerrado', { degustou: true })).toEqual({
+      bloqueado: true,
+      meta: 'Sua degustação terminou',
+      botao: { rotulo: 'Assinar agora', href: 'https://pay.hotmart.com/x' },
+    })
+  })
+
+  it('sem endereço de venda configurado: cadeado sem botão, e nunca um botão para lugar nenhum', () => {
+    expect(cartao('nunca', {}, null).botao).toBeNull()
+    expect(cartao('nunca', {}, '   ').botao).toBeNull()
+    expect(cartao('encerrado', {}, null).bloqueado).toBe(true)
   })
 })
 
