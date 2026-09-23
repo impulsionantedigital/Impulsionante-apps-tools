@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { PRODUTOS, ehProdutoConhecido, produtoDoMotor, rotuloDoProduto } from '@/lib/produtos/catalogo'
+import { PRODUTOS, ehProdutoInterno, rotuloDoProduto } from '@/lib/produtos/catalogo'
 import { REGISTRO } from '@/lib/indulto-comutacao/registro'
 
 describe('catálogo de produtos', () => {
@@ -16,16 +16,17 @@ describe('catálogo de produtos', () => {
     expect(new Set(PRODUTOS.map((p) => p.id)).size).toBe(PRODUTOS.length)
   })
 
-  it('reconhece só ids do catálogo', () => {
-    expect(ehProdutoConhecido('indulto-comutacao-2025')).toBe(true)
-    expect(ehProdutoConhecido('indulto-comutacao-2024')).toBe(true)
-    expect(ehProdutoConhecido('indulto-comutacao-1988')).toBe(false)
-    expect(ehProdutoConhecido(42)).toBe(false)
+  it('reconhece só ids do catálogo — e um UUID de produto externo é FALSE', () => {
+    expect(ehProdutoInterno('indulto-comutacao-2025')).toBe(true)
+    expect(ehProdutoInterno('indulto-comutacao-2024')).toBe(true)
+    expect(ehProdutoInterno('indulto-comutacao-1988')).toBe(false)
+    expect(ehProdutoInterno(42)).toBe(false)
+    // 🔴 O teste que fixa a separação dos dois significados: id de produto EXTERNO é válido, e
+    // mesmo assim `ehProdutoInterno` tem de dizer false — o CRM não entrega esse produto.
+    expect(ehProdutoInterno('8c4d2f1e-4b2a-4f6e-9d3c-1a2b3c4d5e6f')).toBe(false)
   })
 
   it('traduz motor para produto e devolve o rótulo', () => {
-    expect(produtoDoMotor('indulto-comutacao-2025')).toBe('indulto-comutacao-2025')
-    expect(produtoDoMotor('inexistente')).toBeNull()
     expect(rotuloDoProduto('indulto-comutacao-2025')).toContain('12.970/2025')
   })
 })

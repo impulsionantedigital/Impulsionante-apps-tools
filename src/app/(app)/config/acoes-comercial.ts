@@ -12,7 +12,7 @@ import { lerConfig } from '@/server/configuracoes'
 import { bonificarVendasDaOferta, encerrarVendaManual, reenviarNotificacoes, reprocessarEvento } from '@/server/vendas/processar'
 import { esquecerTokenHotmart } from '@/server/vendas/token-hotmart'
 import { CHAVE_URL_PUBLICA } from '@/lib/canais/url-publica'
-import { PRODUTOS, ehProdutoConhecido, rotuloDoProduto, type ProdutoId } from '@/lib/produtos/catalogo'
+import { PRODUTOS, ehProdutoInterno, rotuloDoProduto, type ProdutoId } from '@/lib/produtos/catalogo'
 import {
   DEGUSTACAO,
   DURACAO_PADRAO_DA_DEGUSTACAO,
@@ -228,7 +228,7 @@ export async function lerComercial(): Promise<VistaComercial | { erro: string }>
         const vencimentos = periodos
           .filter((p) => p.venda_id === v.id)
           .map((p) => (p.expira_em ? new Date(p.expira_em) : null))
-        const conhecidos = v.produtos.filter(ehProdutoConhecido)
+        const conhecidos = v.produtos.filter(ehProdutoInterno)
         return {
           id: v.id,
           membro: nomes.get(v.membro_id) ?? 'membro removido',
@@ -276,8 +276,8 @@ const OfertaSchema = z
     id: Uuid.optional(),
     codigo: z.string().trim().min(1).max(200),
     nome: z.string().trim().min(1).max(200),
-    produtos: z.array(z.string().refine(ehProdutoConhecido)).min(1).max(50),
-    produtosDegustacao: z.array(z.string().refine(ehProdutoConhecido)).max(50).optional().default([]),
+    produtos: z.array(z.string().refine(ehProdutoInterno)).min(1).max(50),
+    produtosDegustacao: z.array(z.string().refine(ehProdutoInterno)).max(50).optional().default([]),
     /** Duração normal dos produtos marcados como venda. */
     tempoDeAcesso: z.enum(DURACOES),
     /** Prazo único para todos os produtos marcados como degustação. */

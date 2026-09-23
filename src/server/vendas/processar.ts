@@ -6,7 +6,9 @@ import { emitirSenhaTemporaria, urlDeEntrada } from '@/server/auth/temporaria'
 import { resolverMembro } from '@/server/vendas/identidade'
 import { CHAVE_URL_PUBLICA } from '@/lib/canais/url-publica'
 import { detalheSeguro } from '@/lib/sanitizar-erro'
-import { PRODUTOS, ehProdutoConhecido, rotuloDoProduto, caminhoDoProduto } from '@/lib/produtos/catalogo'
+import { PRODUTOS, ehProdutoInterno, caminhoDoProduto } from '@/lib/produtos/catalogo'
+import { rotuloDeId } from '@/lib/produtos/rotulos'
+import { rotulosDosProdutos } from '@/server/produtos/rotulos'
 import { ehDuracao } from '@/lib/vendas/duracao'
 import { duracaoDaOferta, ehDiasDegustacao } from '@/lib/vendas/degustacao'
 import { decidirEmails } from '@/lib/vendas/emails'
@@ -154,13 +156,17 @@ async function aprovar(auditId: string, evento: Aprovada): Promise<Desfecho> {
     .eq('oferta_id', oferta.id)
   if (erroConfigurados) throw erroConfigurados
   const linhas = (configurados ?? []) as Array<{ produto_id: string; tipo: string }>
-  const produtos = linhas.filter((p) => p.tipo === 'venda').map((p) => p.produto_id).filter(ehProdutoConhecido)
-  const produtosDegustacao = linhas.filter((p) => p.tipo === 'degustacao').map((p) => p.produto_id).filter(ehProdutoConhecido)
+  // 🔴 SEM filtro nos produtos de VENDA: o id veio de `ofertas_produtos`, tabela nossa, e produto
+  // externo também é venda. Filtrar aqui era o que impedia a oferta 100% externa de existir.
+  const produtos = linhas.filter((p) => p.tipo === 'venda').map((p) => p.produto_id)
+  // 🔴 COM filtro na DEGUSTAÇÃO: só se concede o que este CRM entrega. O externo não tem o que
+  // liberar, e um brinde dele viraria um período que ninguém consulta.
+  const produtosDegustacao = linhas.filter((p) => p.tipo === 'degustacao').map((p) => p.produto_id).filter(ehProdutoInterno)
   // A degustação troca o prazo: em vez do nome da duração, o que vale é o número de dias dela.
   const prazo = duracaoDaOferta({ duracao, diasDegustacao: null })
   const prazoDegustacao = duracaoDaOferta({ duracao, diasDegustacao: oferta.dias_degustacao as number | null })
   if (produtos.length === 0 || prazo === null || typeof prazo === 'number') {
-    return { resultado: 'oferta_invalida', detalhe: 'sem produto de venda conhecido, ou duração inválida', workspaceId: ws }
+    return { resultado: 'oferta_invalida', detalhe: 'sem produto de venda, ou duração inválida', workspaceId: ws }
   }
   if (produtosDegustacao.length > 0 && typeof prazoDegustacao !== 'number') {
     return { resultado: 'oferta_invalida', detalhe: 'produtos de degustação sem prazo válido', workspaceId: ws }
@@ -343,7 +349,9 @@ async function garantirPeriodos(venda: LinhaVenda): Promise<void> {
   if (error) throw error
   const jaTem = new Set(((data ?? []) as Array<{ produto_id: string }>).map((p) => p.produto_id))
 
-  const produtosEsperados = venda.produtos.filter(ehProdutoConhecido)
+  // 🔴 SEM filtro: produto externo TAMBÉM tem período — é ele que responde "esta venda está
+  // vigente?" e é dele que sai o vencimento na lista de vendas.
+  const produtosEsperados = venda.produtos
   const faltando = produtosEsperados.filter((p) => !jaTem.has(p))
   if (faltando.length > 0) {
     const { existentes } = await historicoDoMembro(venda.workspace_id, venda.membro_id, venda.id)
@@ -366,7 +374,7 @@ async function garantirPeriodos(venda: LinhaVenda): Promise<void> {
   const degustacao = ((configurados ?? []) as Array<{ produto_id: string; tipo: string }>)
     .filter((p) => p.tipo === 'degustacao')
     .map((p) => p.produto_id)
-    .filter(ehProdutoConhecido)
+    .filter(ehProdutoInterno)
   if (degustacao.length > 0) {
     const oferta = await admin().from('ofertas').select('dias_degustacao').eq('id', venda.oferta_id).maybeSingle()
     if (oferta.error) throw oferta.error
@@ -490,7 +498,8 @@ export async function bonificarVendasDaOferta(ws: string, ofertaId: string): Pro
     .eq('id', ofertaId)
     .maybeSingle()
   if (erroOferta) throw erroOferta
-  const produtosDaOferta = ((oferta?.produtos ?? []) as string[]).filter(ehProdutoConhecido)
+  // 🔴 SEM filtro: o bônus vale para produto externo igual — ele é "o que a oferta ganhou".
+  const produtosDaOferta = (oferta?.produtos ?? []) as string[]
   if (produtosDaOferta.length === 0) return vazio
 
   const { data: vendas, error: erroVendas } = await cli
@@ -533,7 +542,7 @@ export async function bonificarVendasDaOferta(ws: string, ofertaId: string): Pro
       if (prazo === null) continue
       const vigente = vendaVigente({ status: venda.status, periodos: periodosPorVenda.get(venda.id) ?? [], agora })
       if (!vigente) continue
-      const produtosDaVenda = venda.produtos.filter(ehProdutoConhecido)
+      const produtosDaVenda = venda.produtos
       const bonus = calcularBonus({
         produtosDaOferta,
         produtosDaVenda,
@@ -549,7 +558,7 @@ export async function bonificarVendasDaOferta(ws: string, ofertaId: string): Pro
       const produtosDegustacao = ((configDegustacao ?? []) as Array<{ produto_id: string; tipo: string }>)
         .filter((p) => p.tipo === 'degustacao')
         .map((p) => p.produto_id)
-        .filter(ehProdutoConhecido)
+        .filter(ehProdutoInterno)
       const ofertaAtual = await cli.from('ofertas').select('dias_degustacao').eq('id', ofertaId).maybeSingle()
       if (ofertaAtual.error) throw ofertaAtual.error
       const brindes = produtosDegustacao.length > 0 && typeof ofertaAtual.data?.dias_degustacao === 'number'
@@ -646,8 +655,11 @@ export async function notificar(vendaId: string, opcoes: { manual?: boolean } = 
   const login = await urlDeEntrada()
   if (!origem || !login) return { erro: 'sem_url_publica' }
 
-  const produtos = (venda.produtos as string[]).filter(ehProdutoConhecido)
-  const novos = ((venda.produtos_novos ?? []) as string[]).filter(ehProdutoConhecido)
+  // 🔴 Sem filtro: a lista pode ter id de produto externo, e ele PRECISA aparecer no
+  // "pagamento recebido" com o nome do curso, não com um UUID.
+  const produtos = venda.produtos as string[]
+  const novos = (venda.produtos_novos ?? []) as string[]
+  const nomesProdutos = await rotulosDosProdutos(venda.workspace_id, [...produtos, ...novos])
   const decisao = decidirEmails({
     vendaAtiva: true,
     nuncaEntrou: !usuario.last_sign_in_at,
@@ -674,7 +686,7 @@ export async function notificar(vendaId: string, opcoes: { manual?: boolean } = 
   }
 
   if (decisao.entrega.length > 0) {
-    const ids = decisao.entrega.filter(ehProdutoConhecido)
+    const ids = decisao.entrega.filter(ehProdutoInterno)
     const ferramenta = PRODUTOS.find((p) => p.id === ids[0])
     const r = await enfileirar({
       workspaceId: venda.workspace_id,
@@ -683,7 +695,7 @@ export async function notificar(vendaId: string, opcoes: { manual?: boolean } = 
       chave: `venda:${venda.id}:entrega${sufixo}`,
       valores: {
         ...base,
-        PRODUCT_NAME: ids.map(rotuloDoProduto).join(', '),
+        PRODUCT_NAME: ids.map((id) => rotuloDeId(id, nomesProdutos)).join(', '),
         EXPIRES_AT: vencimentoDe(ids),
         TOOL_URL: ferramenta ? new URL(caminhoDoProduto(ferramenta.slug), origem).href : login,
       },
@@ -699,7 +711,7 @@ export async function notificar(vendaId: string, opcoes: { manual?: boolean } = 
       chave: `venda:${venda.id}:pagamento${sufixo}`,
       valores: {
         ...base,
-        PRODUCT_NAME: produtos.map(rotuloDoProduto).join(', '),
+        PRODUCT_NAME: produtos.map((id) => rotuloDeId(id, nomesProdutos)).join(', '),
         EXPIRES_AT: vencimentoDe(produtos),
         VALUE: formatarValor(venda.valor === null ? null : Number(venda.valor), venda.moeda as string | null),
         TRANSACTION: venda.transacao as string,

@@ -56,12 +56,16 @@ export const PRODUTOS = [
 export type Produto = (typeof PRODUTOS)[number]
 export type ProdutoId = Produto['id']
 
-export function ehProdutoConhecido(id: unknown): id is ProdutoId {
+/**
+ * O id é de um produto que ESTE CRM entrega?
+ *
+ * 🔴 O nome diz o que a função responde, e isso é o ponto. Antes ela se chamava `ehProdutoConhecido`
+ * e acumulava dois significados: "este id é válido?" e "este produto é entregue por este CRM?".
+ * Com produto externo (spec de 2026-09-22) as duas respostas se separam — id válido, entrega
+ * nenhuma —, e é esta função que responde só à segunda.
+ */
+export function ehProdutoInterno(id: unknown): id is ProdutoId {
   return typeof id === 'string' && PRODUTOS.some((p) => p.id === id)
-}
-
-export function produtoDoMotor(motorId: string): ProdutoId | null {
-  return ehProdutoConhecido(motorId) ? motorId : null
 }
 
 export function rotuloDoProduto(id: ProdutoId): string {

@@ -10,7 +10,7 @@ import { fraseDeBanco } from '@/lib/erro-de-banco'
 import { detalheSeguro } from '@/lib/sanitizar-erro'
 import { preparar } from './preparar'
 import { exigirEscrita } from '@/server/vendas/acesso'
-import { produtoDoMotor, slugDoMotor, caminhoDoProduto } from '@/lib/produtos/catalogo'
+import { ehProdutoInterno, slugDoMotor, caminhoDoProduto } from '@/lib/produtos/catalogo'
 import type { Entrada } from '@/lib/indulto-comutacao/tipos'
 
 const TABELA = 'indulto_comutacao_calculos'
@@ -60,7 +60,7 @@ export async function salvarCalculo(input: {
   const p = preparar(input)
   if ('erro' in p) return { erro: p.erro }
   // 🔴 O gate de verdade (§9.4): criar e editar exigem acesso ativo ao produto deste decreto.
-  const produto = produtoDoMotor(p.motor.id)
+  const produto = ehProdutoInterno(p.motor.id) ? p.motor.id : null
   const acesso = produto ? await exigirEscrita(produto) : { erro: 'Este decreto não está disponível.' }
   if ('erro' in acesso) return { erro: acesso.erro }
 
@@ -105,7 +105,7 @@ export async function atualizarCalculo(input: {
   const p = preparar(input)
   if ('erro' in p) return { erro: p.erro }
   // 🔴 O gate de verdade (§9.4): criar e editar exigem acesso ativo ao produto deste decreto.
-  const produto = produtoDoMotor(p.motor.id)
+  const produto = ehProdutoInterno(p.motor.id) ? p.motor.id : null
   const acesso = produto ? await exigirEscrita(produto) : { erro: 'Este decreto não está disponível.' }
   if ('erro' in acesso) return { erro: acesso.erro }
 

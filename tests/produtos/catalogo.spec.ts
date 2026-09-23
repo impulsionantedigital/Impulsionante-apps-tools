@@ -2,9 +2,9 @@ import { describe, it, expect } from 'vitest'
 import {
   PRODUTOS,
   caminhoDoProduto,
+  ehProdutoInterno,
   produtoPorSlug,
   slugDoMotor,
-  produtoDoMotor,
 } from '@/lib/produtos/catalogo'
 import { REGISTRO } from '@/lib/indulto-comutacao/registro'
 
@@ -44,7 +44,7 @@ describe('catálogo de produtos', () => {
 
   it('todo motor do registro tem produto no catálogo', () => {
     for (const m of REGISTRO) {
-      expect(produtoDoMotor(m.id), `motor ${m.id} sem produto`).toBe(m.id)
+      expect(ehProdutoInterno(m.id), `motor ${m.id} sem produto`).toBe(true)
     }
   })
 
