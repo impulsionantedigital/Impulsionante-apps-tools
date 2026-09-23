@@ -1,0 +1,30 @@
+/* AvisoAcesso.module.css — o bloco de recado sobre o acesso, no topo da página do produto.
+ *
+ * 🔴 Estas regras vieram de `app/(app)/ferramentas/[calculadora]/calculadora.module.css` quando o
+ * componente virou compartilhado (spec de 2026-09-22). As de lá ficaram para o resto daquela tela;
+ * o aviso não depende mais delas.
+ */
+
+.aviso {
+  padding: var(--s-4) var(--s-5);
+  background: var(--aviso-wash);
+  border: 1px solid var(--aviso);
+  border-radius: var(--r-painel);
+  color: var(--tinta);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+}
+
+/* Aviso de acesso que já TERMINOU (comprado ou degustação): pesa mais que o de vencimento, que
+ * ainda é só um lembrete de quem está com acesso. Usa o par --erro/--erro-wash, já medido nos dois
+ * temas (globals.css) — não invente tom aqui: a cor precisa passar no contraste nos dois fundos. */
+.avisoForte {
+  background: var(--erro-wash);
+  border-color: var(--erro);
+}
+
+/* O botão do aviso não deve colar no texto. */
+.aviso :global(button),
+.aviso :global(a) {
+  margin-left: var(--s-3);
+}

@@ -7,7 +7,7 @@ import { tituloDaPagina } from '@/server/marca'
 import { listarCalculos } from './calculos'
 import { estadoDoProduto } from '@/server/vendas/acesso'
 import { produtoPorSlug, caminhoDoProduto } from '@/lib/produtos/catalogo'
-import AvisoAcesso from './AvisoAcesso'
+import AvisoAcesso from '@/components/vendas/AvisoAcesso'
 import ListaCalculos from './ListaCalculos'
 import estilos from './calculadora.module.css'
 

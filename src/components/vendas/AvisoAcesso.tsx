@@ -2,14 +2,17 @@ import Botao from '@/components/ui/Botao'
 import { avisoDeAcesso, textoDoAviso, type AvisoAcesso } from '@/lib/vendas/aviso-acesso'
 import { checkoutDoProduto, type Produto } from '@/lib/produtos/catalogo'
 import { estadoEDetalheDoProduto } from '@/server/vendas/acesso'
-import estilos from './calculadora.module.css'
+import estilos from './AvisoAcesso.module.css'
 
 /**
- * O recado sobre o acesso, no topo da tela do produto.
+ * O recado sobre o acesso, no topo da tela do produto. Compartilhado pelas páginas de produto das
+ * duas famílias (indulto-comutação e detração) — a regra de qual recado sai em cada situação vive
+ * em `@/lib/vendas/aviso-acesso`, testada sem render.
  *
- * 🔴 O botão de checkout só aparece para quem PERDEU o acesso ou está em degustação. É a diferença
- * entre conversão e renovação: quem ainda tem acesso e vai renovar na Hotmart não precisa de um
- * botão aqui — ele competiria com o trabalho da pessoa, e o lembrete de vencimento já resolve.
+ * 🔴 O botão de checkout só aparece para quem PERDEU o acesso, está em degustação, ou NUNCA teve.
+ * É a diferença entre conversão e renovação: quem ainda tem acesso e vai renovar na Hotmart não
+ * precisa de um botão aqui — ele competiria com o trabalho da pessoa, e o lembrete de vencimento
+ * já resolve.
  *
  * 🔴 E o aviso de vencimento é um LEMBRETE, não uma ordem de pagamento: o CRM não cobra e não sabe
  * da assinatura da Hotmart, então o texto manda a ação para a Hotmart em vez de sugerir um botão de
@@ -24,10 +27,11 @@ export default async function AvisoAcesso({ produto }: { produto: Produto }) {
 
   // Lido do ambiente, no servidor: sem a variável (ou vazia), o aviso sai sem botão.
   const checkout = checkoutDoProduto(produto.slug)
-  const comBotao = aviso.tipo === 'trial' || aviso.tipo === 'expirado' || aviso.tipo === 'trialExpirado'
+  const comBotao =
+    aviso.tipo === 'trial' || aviso.tipo === 'expirado' || aviso.tipo === 'trialExpirado' || aviso.tipo === 'nuncaTeve'
 
   return (
-    <div className={`${estilos.avisoVersao} ${classeDoTom(aviso)}`} role="status">
+    <div className={`${estilos.aviso} ${classeDoTom(aviso)}`} role="status">
       <b>{texto.titulo}</b> {texto.corpo}
       {comBotao ? (
         checkout ? (
@@ -47,5 +51,7 @@ export default async function AvisoAcesso({ produto }: { produto: Produto }) {
 
 /** O tom do bloco: o que já perdeu acesso pesa mais que o que ainda tem tempo. */
 function classeDoTom(aviso: AvisoAcesso): string {
+  // 🔴 `nuncaTeve` NÃO entra aqui: quem nunca teve não perdeu nada, e o tom de erro leria como
+  // problema onde o recado é um convite.
   return aviso.tipo === 'expirado' || aviso.tipo === 'trialExpirado' ? estilos.avisoForte : ''
 }
