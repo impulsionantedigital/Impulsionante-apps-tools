@@ -1,9 +1,10 @@
 import Link from 'next/link'
-import { ChevronRight, Scale } from 'lucide-react'
+import { ChevronRight, Lock, Scale } from 'lucide-react'
 import CabecalhoPagina from '@/components/ui/CabecalhoPagina'
-import EstadoVazio from '@/components/ui/EstadoVazio'
+import Botao from '@/components/ui/Botao'
 import { tituloDaPagina } from '@/server/marca'
-import { PRODUTOS, caminhoDoProduto } from '@/lib/produtos/catalogo'
+import { PRODUTOS, caminhoDoProduto, checkoutDoProduto } from '@/lib/produtos/catalogo'
+import { cartaoDaVitrine } from '@/lib/vendas/aviso-acesso'
 import { estadoEDetalheDoProduto } from '@/server/vendas/acesso'
 import estilos from './ferramentas.module.css'
 
@@ -11,54 +12,69 @@ export async function generateMetadata() {
   return { title: await tituloDaPagina('Ferramentas') }
 }
 
+/**
+ * A vitrine.
+ *
+ * 🔴 O catálogo INTEIRO, sempre — e é uma inversão consciente da regra antiga "não existe vitrine
+ * do que o membro não tem" (§9.2), revista na spec de 2026-09-22. O acesso decide o que a pessoa
+ * PODE FAZER, não o que ela VÊ: quem comprou uma calculadora precisa descobrir que as outras
+ * existem, e quem comprou só um produto externo entraria numa tela vazia. Não volte a filtrar por
+ * `estado !== 'nunca'` aqui sem ler a spec.
+ *
+ * O gate de verdade não é este: `/novo` e `/[id]` redirecionam, e `exigirEscrita` recusa na server
+ * action. Mostrar o card não libera nada.
+ */
 export default async function FerramentasPage() {
-  const estados = await Promise.all(
-    PRODUTOS.map(async (produto) => ({ produto, ...(await estadoEDetalheDoProduto(produto.id)) })),
+  const cartoes = await Promise.all(
+    PRODUTOS.map(async (produto) => {
+      const { estado, detalhe } = await estadoEDetalheDoProduto(produto.id)
+      return {
+        produto,
+        cartao: cartaoDaVitrine({ estado, detalhe, checkout: checkoutDoProduto(produto.slug) }),
+      }
+    }),
   )
-  // Não existe vitrine do que o membro não tem (§9.2).
-  const visiveis = estados.filter((e) => e.estado !== 'nunca')
 
   return (
     <div className={estilos.pagina}>
       <CabecalhoPagina titulo="Ferramentas" subtitulo="Cálculos de execução penal." />
 
-      {visiveis.length === 0 ? (
-        <EstadoVazio
-          icone={<Scale size={20} strokeWidth={2} />}
-          titulo="Nenhuma ferramenta liberada"
-          texto="As ferramentas aparecem aqui assim que a compra é confirmada."
-        />
-      ) : (
-        <div className={estilos.destinos}>
-          {visiveis.map(({ produto, estado, detalhe }) => (
-            <Link
-              key={produto.id}
-              href={caminhoDoProduto(produto.slug)}
-              className={estilos.destino}
-            >
+      <div className={estilos.destinos}>
+        {cartoes.map(({ produto, cartao }) => (
+          <div key={produto.id} className={estilos.destino}>
+            {/* 🔴 O `<Link>` cobre só o texto, e o botão é irmão dele: âncora dentro de âncora é
+                HTML inválido, e o clique no botão ficaria imprevisível. */}
+            <Link href={caminhoDoProduto(produto.slug)} className={estilos.destinoLink}>
               <span className={estilos.destinoIcone}>
-                <Scale size={16} strokeWidth={1.75} />
+                {cartao.bloqueado ? (
+                  <Lock size={16} strokeWidth={1.75} aria-label="Sem acesso" />
+                ) : (
+                  <Scale size={16} strokeWidth={1.75} />
+                )}
               </span>
               <span className={estilos.destinoTexto}>
                 <span className={estilos.destinoNome}>{produto.menuTitulo}</span>
-                <span className={estilos.destinoSub}>
-                  Verifica, dispositivo por dispositivo, os requisitos de indulto e de comutação.
-                </span>
-                <span className={estilos.destinoMeta}>
-                  {estado !== 'ativo'
-                    ? 'Acesso encerrado — os seus cálculos continuam disponíveis para consulta'
-                    : detalhe.trial
-                      ? detalhe.diasRestantes === null
-                        ? 'Acesso de degustação'
-                        : `Degustação — ${detalhe.diasRestantes} dia(s) restante(s)`
-                      : produto.menuDescricao}
-                </span>
+                <span className={estilos.destinoSub}>{produto.menuDescricao}</span>
+                {cartao.meta ? <span className={estilos.destinoMeta}>{cartao.meta}</span> : null}
               </span>
               <ChevronRight size={16} strokeWidth={1.75} className={estilos.destinoSeta} />
             </Link>
-          ))}
-        </div>
-      )}
+            {cartao.botao ? (
+              <div className={estilos.destinoAcao}>
+                <Botao
+                  href={cartao.botao.href}
+                  variante="primario"
+                  tamanho="pequeno"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {cartao.botao.rotulo}
+                </Botao>
+              </div>
+            ) : null}
+          </div>
+        ))}
+      </div>
     </div>
   )
 }

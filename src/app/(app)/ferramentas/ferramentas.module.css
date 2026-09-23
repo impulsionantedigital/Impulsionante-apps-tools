@@ -8,6 +8,10 @@
  *
  * 🔴 Sem cor em hexadecimal e sem `opacity` para texto secundário: só token
  * (`--tinta-2`/`--tinta-3`), como o resto do kit (ver a nota no topo de `globals.css`).
+ *
+ * 🔴 A vitrine DIVERGIU dessas duas em 2026-09-22: aqui o card ganhou um botão de compra ao lado
+ * do link, então o hover e o foco moraram para `.destinoLink`. As outras duas continuam com o link
+ * cobrindo o card inteiro — não propague esta mudança para lá sem necessidade.
  */
 
 .pagina {
@@ -27,10 +31,22 @@
   .destinos { grid-template-columns: minmax(0, 1fr); }
 }
 
+/* O card: uma caixa que contém o link do produto e, quando há, o botão de compra. */
 .destino {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  border-radius: var(--r-controle);
+}
+
+/* 🔴 O LINK é quem tem o hover e o foco, não o card: o botão de compra é irmão dele (âncora dentro
+ * de âncora é HTML inválido), e pintar o card inteiro no hover do link faria o botão piscar junto. */
+.destinoLink {
   display: flex;
   align-items: flex-start;
   gap: var(--s-3);
+  flex: 1;
+  min-width: 0;
   padding: var(--s-3);
   border-radius: var(--r-controle);
   text-decoration: none;
@@ -38,11 +54,16 @@
   transition: background-color var(--t-rapido) var(--suave);
 }
 
-.destino:hover { background: var(--superficie-hover); }
+.destinoLink:hover { background: var(--superficie-hover); }
 
-.destino:focus-visible {
+.destinoLink:focus-visible {
   outline: 2px solid var(--acento);
   outline-offset: 2px;
+}
+
+.destinoAcao {
+  flex-shrink: 0;
+  padding-right: var(--s-3);
 }
 
 .destinoIcone {
@@ -89,8 +110,8 @@
   transition: opacity var(--t-rapido) var(--suave), transform var(--t-rapido) var(--mola);
 }
 
-.destino:hover .destinoSeta,
-.destino:focus-visible .destinoSeta {
+.destinoLink:hover .destinoSeta,
+.destinoLink:focus-visible .destinoSeta {
   opacity: 1;
   transform: none;
 }
