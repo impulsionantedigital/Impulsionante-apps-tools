@@ -508,3 +508,10 @@
   0%, 100% { opacity: 1; }
   50% { opacity: 0.35; }
 }
+
+/* O cadeado do item de menu sem acesso: encostado à direita, e mudo — ele informa, não chama. */
+.navCadeado {
+  margin-left: auto;
+  flex-shrink: 0;
+  color: var(--tinta-3);
+}

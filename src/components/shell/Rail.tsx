@@ -64,12 +64,13 @@ export default async function Rail({ user, wsAtivo, workspaces }: {
   // Comprador vê só Ferramentas. As rotas já são recusadas no proxy; isto é só o menu.
   const soFerramentas = !(await souDonoDeAlgumWorkspace())
 
-  // As calculadoras entram direto no menu, uma por decreto — sem vitrine intermediária em
-  // /ferramentas. "Não existe vitrine do que o membro não tem" vale aqui também: filtra fora
-  // quem nunca teve acesso, do mesmo jeito que a página de /ferramentas já fazia.
-  const produtosNoMenu = (
-    await Promise.all(PRODUTOS.map(async (produto) => ({ produto, estado: await estadoDoProduto(produto.id) })))
-  ).filter((p) => p.estado !== 'nunca')
+  // 🔴 TODAS as calculadoras, sempre — inclusive as que o membro não tem. É a inversão da §9.2
+  // decidida na spec de 2026-09-22: o item sem acesso aparece com cadeado e a tela abre em leitura.
+  // Não volte a filtrar por `estado !== 'nunca'` aqui: quem comprou uma calculadora precisa
+  // descobrir que as outras existem.
+  const produtosNoMenu = await Promise.all(
+    PRODUTOS.map(async (produto) => ({ produto, estado: await estadoDoProduto(produto.id) })),
+  )
 
   // Group products by familia in the specified order
   const familiaOrder = ['indulto-comutacao', 'detracao'] as const
@@ -148,13 +149,14 @@ export default async function Rail({ user, wsAtivo, workspaces }: {
               <Scale size={16} strokeWidth={2} />
               <span>{familiaLabels[familia]}</span>
             </div>
-            {produtos.map(({ produto }) => (
+            {produtos.map(({ produto, estado }) => (
               <ItemNav
                 key={produto.id}
                 href={caminhoDoProduto(produto.slug)}
                 rotulo={produto.menuTitulo}
                 descricao={produto.menuDescricao}
                 indentado
+                bloqueado={estado !== 'ativo'}
               />
             ))}
           </Fragment>
