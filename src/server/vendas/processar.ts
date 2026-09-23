@@ -638,7 +638,7 @@ export async function notificar(vendaId: string, opcoes: { manual?: boolean } = 
   const [membroR, ofertaR, periodosR] = await Promise.all([
     cli.from('membros').select('user_id, nome').eq('id', venda.membro_id).maybeSingle(),
     cli.from('ofertas').select('nome').eq('id', venda.oferta_id).maybeSingle(),
-    cli.from('vendas_periodos').select('produto_id, expira_em').eq('venda_id', venda.id),
+    cli.from('vendas_periodos').select('produto_id, expira_em, origem').eq('venda_id', venda.id),
   ])
   if (membroR.error) throw membroR.error
   if (ofertaR.error) throw ofertaR.error
@@ -660,14 +660,17 @@ export async function notificar(vendaId: string, opcoes: { manual?: boolean } = 
   const produtos = venda.produtos as string[]
   const novos = (venda.produtos_novos ?? []) as string[]
   const nomesProdutos = await rotulosDosProdutos(venda.workspace_id, [...produtos, ...novos])
+  const periodos = (periodosR.data ?? []) as Array<{ produto_id: string; expira_em: string | null; origem: string | null }>
   const decisao = decidirEmails({
     vendaAtiva: true,
     nuncaEntrou: !usuario.last_sign_in_at,
     produtosOferta: produtos,
     produtosJaTidos: produtos.filter((p) => !novos.includes(p)),
+    // 🔴 Os BRINDES desta venda vêm dos períodos de origem `degustação` — é o que separa "ganhou
+    // de bônus" de "comprou", e é só deles que sai o `EXPIRES_AT` do e-mail de brinde.
+    produtosDegustacao: periodos.filter((p) => p.origem === 'degustacao').map((p) => p.produto_id),
   })
 
-  const periodos = (periodosR.data ?? []) as Array<{ produto_id: string; expira_em: string | null }>
   const vencimentoDe = (ids: readonly string[]) =>
     formatarVencimento(vencimentoMaisTardio(
       periodos.filter((p) => ids.includes(p.produto_id)).map((p) => (p.expira_em ? new Date(p.expira_em) : null)),
@@ -715,6 +718,25 @@ export async function notificar(vendaId: string, opcoes: { manual?: boolean } = 
         EXPIRES_AT: vencimentoDe(produtos),
         VALUE: formatarValor(venda.valor === null ? null : Number(venda.valor), venda.moeda as string | null),
         TRANSACTION: venda.transacao as string,
+      },
+    })
+    if ('erro' in r) return { erro: 'falha_enfileirar' }
+  }
+
+  if (decisao.degustacao.length > 0) {
+    const ferramenta = PRODUTOS.find((p) => p.id === decisao.degustacao[0])
+    const r = await enfileirar({
+      workspaceId: venda.workspace_id,
+      tipo: 'degustacao_liberada',
+      para: email,
+      chave: `venda:${venda.id}:degustacao${sufixo}`,
+      valores: {
+        ...base,
+        PRODUCT_NAME: decisao.degustacao.map((id) => rotuloDeId(id, nomesProdutos)).join(', '),
+        // 🔴 Só os períodos de BRINDE desta venda — nunca o vencimento mais tardio, que é o da
+        // assinatura anual e anunciaria um brinde de 7 dias com a data errada.
+        EXPIRES_AT: vencimentoDe(decisao.degustacao),
+        TOOL_URL: ferramenta ? new URL(caminhoDoProduto(ferramenta.slug), origem).href : login,
       },
     })
     if ('erro' in r) return { erro: 'falha_enfileirar' }
