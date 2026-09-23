@@ -1,5 +1,5 @@
 import { Scale } from 'lucide-react'
-import { notFound, redirect } from 'next/navigation'
+import { notFound } from 'next/navigation'
 import CabecalhoPagina from '@/components/ui/CabecalhoPagina'
 import EstadoVazio from '@/components/ui/EstadoVazio'
 import Botao from '@/components/ui/Botao'
@@ -27,9 +27,13 @@ export default async function ListaPage({ params }: { params: Promise<{ calculad
   if (!produto) notFound()
 
   // O gate é do produto DESTA rota, não de qualquer produto: quem tem 2025 e não
-  // tem 2024 não pode ver a tela de 2024 só porque tem alguma calculadora.
+  // tem 2024 vê a tela de 2024 em LEITURA, e não a tela de trabalho.
+  //
+  // 🔴 Aqui havia `if (estado === 'nunca') redirect('/ferramentas')`. Ele saiu na spec de
+  // 2026-09-22: a tela passa a abrir para quem nunca teve acesso, com o aviso explicando e
+  // convidando. Isso NÃO afrouxa nada — `ativo` continua controlando o botão de criar, `/novo` e
+  // `/[id]` redirecionam, e `exigirEscrita` recusa na server action. O gate nunca foi o esconder.
   const estado = await estadoDoProduto(produto.id)
-  if (estado === 'nunca') redirect('/ferramentas')
   const ativo = estado === 'ativo'
 
   const base = caminhoDoProduto(produto.slug)
