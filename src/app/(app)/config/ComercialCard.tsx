@@ -317,13 +317,33 @@ function OfertasBloco({ vista, executar, pendente }: PropsBloco) {
                 nome longo do produto encolher em vez de esticar a coluna. */}
             <div className={estilos.ajuda} style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto auto', gap: 'var(--s-2)', alignItems: 'center', justifyItems: 'start' }}>
               <strong>Produto</strong><strong>Venda</strong><strong>Degustação</strong>
-              {vista.produtos.map((p) => (
-                <Fragment key={p.id}>
-                  <span>{p.rotulo}</span>
-                  <input aria-label={`${p.rotulo}: venda`} type="checkbox" checked={form.produtosVenda.includes(p.id)} onChange={() => alternarProduto(p.id, 'venda')} />
-                  <input aria-label={`${p.rotulo}: degustação`} type="checkbox" checked={form.produtosDegustacao.includes(p.id)} onChange={() => alternarProduto(p.id, 'degustacao')} />
-                </Fragment>
-              ))}
+              {/* Dois grupos: as calculadoras que este CRM entrega, e o que ele não entrega. A
+                  separação é o que evita marcar degustação num produto externo por engano. */}
+              {(['interno', 'externo'] as const).map((origem) => {
+                const grupo = vista.produtos.filter((p) => p.origem === origem)
+                if (grupo.length === 0) return null
+                return (
+                  <Fragment key={origem}>
+                    <span className={estilos.itemMeta} style={{ gridColumn: '1 / -1', marginTop: 'var(--s-2)' }}>
+                      {origem === 'interno' ? 'Ferramentas deste CRM' : 'Produtos externos'}
+                    </span>
+                    {grupo.map((p) => (
+                      <Fragment key={p.id}>
+                        <span>{p.rotulo}</span>
+                        <input aria-label={`${p.rotulo}: venda`} type="checkbox" checked={form.produtosVenda.includes(p.id)} onChange={() => alternarProduto(p.id, 'venda')} />
+                        {/* 🔴 Produto externo NÃO tem caixa de degustação: o CRM não entrega o acesso
+                            dele, então não pode concedê-lo nem revogá-lo. Um brinde de curso externo
+                            seria um período que ninguém consulta — e o travessão diz isso na tela. */}
+                        {p.origem === 'externo' ? (
+                          <span title="Produto externo não pode ser degustação: este CRM não entrega o acesso dele.">—</span>
+                        ) : (
+                          <input aria-label={`${p.rotulo}: degustação`} type="checkbox" checked={form.produtosDegustacao.includes(p.id)} onChange={() => alternarProduto(p.id, 'degustacao')} />
+                        )}
+                      </Fragment>
+                    ))}
+                  </Fragment>
+                )
+              })}
             </div>
           </div>
           <div className={estilos.campo}>

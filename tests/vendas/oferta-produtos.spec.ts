@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { DURACOES } from '@/lib/vendas/duracao'
 import { PRAZOS_DE_DEGUSTACAO } from '@/lib/vendas/degustacao'
+import { ehIdDeProdutoAceito, ehDegustacaoValida } from '@/lib/produtos/oferta'
 
 /**
  * A configuração de produtos de uma oferta: cada produto é VENDA ou DEGUSTAÇÃO, nunca os dois.
@@ -143,5 +144,41 @@ describe('separação de papéis usada pelo processamento', () => {
     const r = separar([{ produto_id: 'x', tipo: 'outro' }])
     expect(r.produtosVenda).toEqual([])
     expect(r.produtosDegustacao).toEqual([])
+  })
+})
+describe('produto externo na oferta (spec de 2026-09-22)', () => {
+  const externos = new Set(['8c4d2f1e-4b2a-4f6e-9d3c-1a2b3c4d5e6f'])
+
+  it('id do catálogo é aceito', () => {
+    expect(ehIdDeProdutoAceito('indulto-comutacao-2025', externos)).toBe(true)
+  })
+
+  it('UUID de produto externo do workspace é aceito', () => {
+    expect(ehIdDeProdutoAceito('8c4d2f1e-4b2a-4f6e-9d3c-1a2b3c4d5e6f', externos)).toBe(true)
+  })
+
+  it('UUID de OUTRO workspace é recusado', () => {
+    expect(ehIdDeProdutoAceito('9f8e7d6c-0000-0000-0000-000000000000', externos)).toBe(false)
+  })
+
+  it('id desconhecido é recusado', () => {
+    expect(ehIdDeProdutoAceito('produto-fantasma', externos)).toBe(false)
+  })
+
+  it('sem nenhum externo válido, só o catálogo passa', () => {
+    expect(ehIdDeProdutoAceito('indulto-comutacao-2024', new Set())).toBe(true)
+    expect(ehIdDeProdutoAceito('8c4d2f1e-4b2a-4f6e-9d3c-1a2b3c4d5e6f', new Set())).toBe(false)
+  })
+
+  it('🔴 produto externo NÃO pode ser degustação', () => {
+    // O CRM não entrega o acesso dele, então não pode concedê-lo nem revogá-lo. Um "brinde" de
+    // curso externo seria um período que ninguém consulta.
+    expect(ehDegustacaoValida(['8c4d2f1e-4b2a-4f6e-9d3c-1a2b3c4d5e6f'])).toBe(false)
+    expect(ehDegustacaoValida(['indulto-comutacao-2025', '8c4d2f1e-4b2a-4f6e-9d3c-1a2b3c4d5e6f'])).toBe(false)
+  })
+
+  it('produto interno pode ser degustação, e lista vazia é válida', () => {
+    expect(ehDegustacaoValida(['indulto-comutacao-2025'])).toBe(true)
+    expect(ehDegustacaoValida([])).toBe(true)
   })
 })

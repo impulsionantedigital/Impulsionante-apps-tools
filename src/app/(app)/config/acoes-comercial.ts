@@ -13,6 +13,7 @@ import { bonificarVendasDaOferta, encerrarVendaManual, reenviarNotificacoes, rep
 import { esquecerTokenHotmart } from '@/server/vendas/token-hotmart'
 import { CHAVE_URL_PUBLICA } from '@/lib/canais/url-publica'
 import { PRODUTOS, ehProdutoInterno, type ProdutoId } from '@/lib/produtos/catalogo'
+import { ehIdDeProdutoAceito, ehDegustacaoValida, MENSAGEM_DEGUSTACAO_EXTERNA } from '@/lib/produtos/oferta'
 import { rotuloDeId } from '@/lib/produtos/rotulos'
 import { rotulosDosProdutos } from '@/server/produtos/rotulos'
 import { lerProdutosExternos, type ProdutoExternoItem } from './acoes-produtos-externos'
@@ -80,7 +81,7 @@ export interface VistaComercial {
   ofertas: OfertaItem[]
   vendas: VendaItem[]
   eventos: EventoItem[]
-  produtos: Array<{ id: string; rotulo: string }>
+  produtos: Array<{ id: string; rotulo: string; origem: 'interno' | 'externo' }>
   produtosExternos: ProdutoExternoItem[]
   temposDeAcesso: Array<{ valor: string; rotulo: string }>
   temposDeDegustacao: Array<{ valor: string; rotulo: string }>
@@ -205,6 +206,19 @@ export async function lerComercial(): Promise<VistaComercial | { erro: string }>
       periodos.push(...((data ?? []) as typeof periodos))
     }
 
+    // 🔴 Os produtos externos do formulário: ATIVOS, mais os que alguma oferta já usa. Sem a segunda
+    // parte, abrir e salvar uma oferta que usa um produto externo desativado o apagaria em silêncio.
+    const externosR = await db
+      .from('produtos_externos')
+      .select('id, nome, ativo')
+      .eq('workspace_id', ws)
+      .order('nome', { ascending: true })
+    if (externosR.error) throw externosR.error
+    const idsEmUso = new Set([...produtosPorOferta.values()].flatMap((p) => p.venda))
+    const produtosExternosDoWs = ((externosR.data ?? []) as Array<{ id: string; nome: string; ativo: boolean }>).filter(
+      (p) => p.ativo || idsEmUso.has(p.id),
+    )
+
     const nomes = new Map<string, string>()
     if (idsMembro.length > 0) {
       const { data, error } = await db.from('membros').select('id, user_id, nome').in('id', idsMembro)
@@ -269,8 +283,13 @@ export async function lerComercial(): Promise<VistaComercial | { erro: string }>
         resultado: e.resultado,
         detalhe: e.detalhe,
       })),
-      produtosExternos: await lerProdutosExternos(ws),
-    produtos: PRODUTOS.map((p) => ({ id: p.id, rotulo: p.rotulo })),
+      produtosExternos: await lerProdutosExternos(ws),    // 🔴 A lista do formulário traz os externos ATIVOS mais os que uma oferta já usa. Sem a segunda
+    // parte, abrir e salvar uma oferta que usa um produto externo desativado apagaria aquele produto
+    // em silêncio — a lista viria sem ele, e o formulário o trataria como desmarcado.
+    produtos: [
+      ...PRODUTOS.map((p) => ({ id: p.id, rotulo: p.rotulo, origem: 'interno' as const })),
+      ...produtosExternosDoWs.map((p) => ({ id: p.id, rotulo: p.nome, origem: 'externo' as const })),
+    ],
       temposDeAcesso: DURACOES.map((valor) => ({ valor, rotulo: rotuloDoTempoDeAcesso(valor) })),
       temposDeDegustacao: PRAZOS_DE_DEGUSTACAO.map((dias) => ({ valor: String(dias), rotulo: `Degustação — ${dias} dias` })),
       souDonoDoDeploy,
@@ -288,8 +307,13 @@ const OfertaSchema = z
     id: Uuid.optional(),
     codigo: z.string().trim().min(1).max(200),
     nome: z.string().trim().min(1).max(200),
-    produtos: z.array(z.string().refine(ehProdutoInterno)).min(1).max(50),
-    produtosDegustacao: z.array(z.string().refine(ehProdutoInterno)).max(50).optional().default([]),
+    produtos: z.array(z.string()).min(1).max(50),
+    produtosDegustacao: z
+      .array(z.string())
+      .max(50)
+      .optional()
+      .default([])
+      .refine((ids) => ehDegustacaoValida(ids), { message: MENSAGEM_DEGUSTACAO_EXTERNA }),
     /** Duração normal dos produtos marcados como venda. */
     tempoDeAcesso: z.enum(DURACOES),
     /** Prazo único para todos os produtos marcados como degustação. */
@@ -317,7 +341,27 @@ export async function salvarOferta(entrada: unknown): Promise<Resposta> {
   const ws = await workspaceDoOwner()
   if (!ws) return { erro: NAO_AUTORIZADO }
   const r = OfertaSchema.safeParse(entrada)
-  if (!r.success) return { erro: 'Confira o código, o nome, os produtos e o tempo de acesso da oferta.' }
+  if (!r.success) {
+    // A recusa de degustação externa tem mensagem própria: ela é uma regra de NEGÓCIO (o CRM não
+    // entrega o externo), e engoli-la numa frase genérica deixaria a pessoa procurando o problema
+    // no lugar errado. As outras falhas continuam com a mensagem geral.
+    const recusaDegustacao = r.error.issues.some((i) => i.message === MENSAGEM_DEGUSTACAO_EXTERNA)
+    return { erro: recusaDegustacao ? MENSAGEM_DEGUSTACAO_EXTERNA : 'Confira o código, o nome, os produtos e o tempo de acesso da oferta.' }
+  }
+
+  // 🔴 A conferência de que cada produto existe é feita AQUI, depois do parse: o Zod sozinho não
+  // alcança o banco. O id é do catálogo de código OU um UUID de produto externo DESTE workspace.
+  const { data: externosDoWs, error: erroExternos } = await admin()
+    .from('produtos_externos')
+    .select('id')
+    .eq('workspace_id', ws)
+  if (erroExternos) {
+    console.error('[comercial] conferir produtos externos falhou:', detalheSeguro(erroExternos))
+    return { erro: 'Não foi possível conferir os produtos da oferta.' }
+  }
+  const externosValidos = new Set(((externosDoWs ?? []) as Array<{ id: string }>).map((p) => p.id))
+  const invalidos = [...r.data.produtos, ...r.data.produtosDegustacao].filter((p) => !ehIdDeProdutoAceito(p, externosValidos))
+  if (invalidos.length > 0) return { erro: 'Um dos produtos da oferta não existe neste espaço de trabalho.' }
 
   const { id, reprocessarVendas, tempoDeAcesso, produtosDegustacao, diasDegustacao, ...campos } = r.data
   const tempo = { duracao: tempoDeAcesso as (typeof DURACOES)[number] }
