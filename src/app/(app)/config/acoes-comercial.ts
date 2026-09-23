@@ -15,6 +15,7 @@ import { CHAVE_URL_PUBLICA } from '@/lib/canais/url-publica'
 import { PRODUTOS, ehProdutoInterno, type ProdutoId } from '@/lib/produtos/catalogo'
 import { rotuloDeId } from '@/lib/produtos/rotulos'
 import { rotulosDosProdutos } from '@/server/produtos/rotulos'
+import { lerProdutosExternos, type ProdutoExternoItem } from './acoes-produtos-externos'
 import {
   DEGUSTACAO,
   DURACAO_PADRAO_DA_DEGUSTACAO,
@@ -80,6 +81,7 @@ export interface VistaComercial {
   vendas: VendaItem[]
   eventos: EventoItem[]
   produtos: Array<{ id: string; rotulo: string }>
+  produtosExternos: ProdutoExternoItem[]
   temposDeAcesso: Array<{ valor: string; rotulo: string }>
   temposDeDegustacao: Array<{ valor: string; rotulo: string }>
   souDonoDoDeploy: boolean
@@ -267,7 +269,8 @@ export async function lerComercial(): Promise<VistaComercial | { erro: string }>
         resultado: e.resultado,
         detalhe: e.detalhe,
       })),
-      produtos: PRODUTOS.map((p) => ({ id: p.id, rotulo: p.rotulo })),
+      produtosExternos: await lerProdutosExternos(ws),
+    produtos: PRODUTOS.map((p) => ({ id: p.id, rotulo: p.rotulo })),
       temposDeAcesso: DURACOES.map((valor) => ({ valor, rotulo: rotuloDoTempoDeAcesso(valor) })),
       temposDeDegustacao: PRAZOS_DE_DEGUSTACAO.map((dias) => ({ valor: String(dias), rotulo: `Degustação — ${dias} dias` })),
       souDonoDoDeploy,

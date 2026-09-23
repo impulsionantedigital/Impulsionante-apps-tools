@@ -16,6 +16,7 @@ import {
   type VistaComercial,
 } from './acoes-comercial'
 import { salvarUrlPublica } from './acoes-canais'
+import ProdutosExternosCard from './ProdutosExternosCard'
 import { DEGUSTACAO, rotuloDaDuracao } from '@/lib/vendas/degustacao'
 import estilos from './config.module.css'
 
@@ -55,6 +56,7 @@ export default function ComercialCard({ inicial }: { inicial: VistaComercial }) 
         </p>
       ) : null}
       <WebhookBloco {...props} />
+      <ProdutosExternosCard produtos={inicial.produtosExternos} executar={executar} pendente={pendente} />
       <OfertasBloco {...props} />
       <VendasBloco {...props} />
       <EventosBloco {...props} />
