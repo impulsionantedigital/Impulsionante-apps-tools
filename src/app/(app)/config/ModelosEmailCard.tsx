@@ -27,7 +27,7 @@ export default function ModelosEmailCard({ vista }: { vista: VistaModelos }) {
       </div>
 
       <p className={estilos.ajuda}>
-        Personalize o assunto e o corpo dos quatro e-mails que o CRM pode enviar. Os campos
+        Personalize o assunto e o corpo dos cinco e-mails que o CRM pode enviar. Os campos
         entre colchetes (ex.: <code className={estilos.campoTag}>[MEMBER_NAME]</code>) são
         trocados pelo dado real na hora do envio.
       </p>

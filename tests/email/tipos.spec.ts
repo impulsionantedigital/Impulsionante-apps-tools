@@ -2,9 +2,9 @@ import { describe, it, expect } from 'vitest'
 import { TIPOS, CAMPOS, ehTipoConhecido, type TipoModelo } from '@/lib/email/tipos'
 
 describe('catálogo de tipos de modelo', () => {
-  it('tem exatamente os quatro tipos do spec', () => {
+  it('tem exatamente os cinco tipos do spec', () => {
     expect([...TIPOS]).toEqual([
-      'boas_vindas', 'recuperacao_senha', 'entrega_produto', 'pagamento_recebido',
+      'boas_vindas', 'recuperacao_senha', 'entrega_produto', 'pagamento_recebido', 'degustacao_liberada',
     ])
   })
 
@@ -48,6 +48,9 @@ describe('catálogo de tipos de modelo', () => {
     ])
     expect([...CAMPOS['pagamento_recebido']]).toEqual([
       'MEMBER_NAME', 'OFFER_NAME', 'PRODUCT_NAME', 'EXPIRES_AT', 'VALUE', 'TRANSACTION', 'LOGIN_URL',
+    ])
+    expect([...CAMPOS['degustacao_liberada']]).toEqual([
+      'MEMBER_NAME', 'PRODUCT_NAME', 'OFFER_NAME', 'EXPIRES_AT', 'TOOL_URL', 'LOGIN_URL',
     ])
   })
 

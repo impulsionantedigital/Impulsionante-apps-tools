@@ -58,4 +58,13 @@ export const PADROES: Record<TipoModelo, Modelo> = {
         botao('[LOGIN_URL]', 'Acessar minha conta'),
     ),
   },
+  degustacao_liberada: {
+    assunto: 'Você ganhou [PRODUCT_NAME] de bônus',
+    html: moldura(
+      '<p>Olá [MEMBER_NAME],</p>' +
+        '<p>Sua compra de <strong>[OFFER_NAME]</strong> liberou <strong>[PRODUCT_NAME]</strong> como bônus na sua conta.</p>' +
+        '<p>Este acesso de degustação vale até <strong>[EXPIRES_AT]</strong>, e é independente dos outros produtos que você tenha.</p>' +
+        botao('[TOOL_URL]', 'Abrir a ferramenta'),
+    ),
+  },
 }
