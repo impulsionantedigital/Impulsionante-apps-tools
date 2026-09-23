@@ -12,7 +12,9 @@ import { lerConfig } from '@/server/configuracoes'
 import { bonificarVendasDaOferta, encerrarVendaManual, reenviarNotificacoes, reprocessarEvento } from '@/server/vendas/processar'
 import { esquecerTokenHotmart } from '@/server/vendas/token-hotmart'
 import { CHAVE_URL_PUBLICA } from '@/lib/canais/url-publica'
-import { PRODUTOS, ehProdutoInterno, rotuloDoProduto, type ProdutoId } from '@/lib/produtos/catalogo'
+import { PRODUTOS, ehProdutoInterno, type ProdutoId } from '@/lib/produtos/catalogo'
+import { rotuloDeId } from '@/lib/produtos/rotulos'
+import { rotulosDosProdutos } from '@/server/produtos/rotulos'
 import {
   DEGUSTACAO,
   DURACAO_PADRAO_DA_DEGUSTACAO,
@@ -175,6 +177,11 @@ export async function lerComercial(): Promise<VistaComercial | { erro: string }>
     const idsVenda = listaVendas.map((v) => v.id)
     const idsMembro = [...new Set(listaVendas.map((v) => v.membro_id))]
 
+    // 🔴 Uma consulta para todas as vendas, não uma por venda: o rótulo do produto externo vive no
+    // banco, e a lista mostra 50 vendas.
+    const todosOsIds = [...new Set(listaVendas.flatMap((v) => v.produtos ?? []))]
+    const nomesProdutos = await rotulosDosProdutos(ws, todosOsIds)
+
     /* 🔴 A contagem vem de uma consulta PRÓPRIA, sem `limit`, e não da lista de cima: aquela é um
        `limit(50)` para exibição, e uma oferta com a 51ª venda mais antiga pareceria sem venda
        nenhuma — o botão de excluir apareceria, e o banco recusaria o delete (`on delete restrict`
@@ -228,14 +235,16 @@ export async function lerComercial(): Promise<VistaComercial | { erro: string }>
         const vencimentos = periodos
           .filter((p) => p.venda_id === v.id)
           .map((p) => (p.expira_em ? new Date(p.expira_em) : null))
-        const conhecidos = v.produtos.filter(ehProdutoInterno)
         return {
           id: v.id,
           membro: nomes.get(v.membro_id) ?? 'membro removido',
           transacao: v.transacao,
           status: v.status,
           duracao: rotuloDaDuracao(v.duracao, v.dias_degustacao),
-          produtos: conhecidos.length > 0 ? conhecidos.map(rotuloDoProduto).join(', ') : v.produtos.join(', '),
+          produtos:
+            v.produtos.length > 0
+              ? v.produtos.map((p) => rotuloDeId(p, nomesProdutos)).join(', ')
+              : '—',
           aprovadaEm: v.aprovada_em,
           vencimento: vencimentos.length > 0 ? formatarVencimento(vencimentoMaisTardio(vencimentos)) : '—',
           valor: formatarValor(v.valor === null ? null : Number(v.valor), v.moeda),
