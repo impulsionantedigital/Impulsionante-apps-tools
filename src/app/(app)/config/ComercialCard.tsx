@@ -324,7 +324,7 @@ function OfertasBloco({ vista, executar, pendente }: PropsBloco) {
                 if (grupo.length === 0) return null
                 return (
                   <Fragment key={origem}>
-                    <span className={estilos.itemMeta} style={{ gridColumn: '1 / -1', marginTop: 'var(--s-2)' }}>
+                    <span className={estilos.rotuloGrupo} style={{ gridColumn: '1 / -1', marginTop: 'var(--s-2)' }}>
                       {origem === 'interno' ? 'Ferramentas deste CRM' : 'Produtos externos'}
                     </span>
                     {grupo.map((p) => (

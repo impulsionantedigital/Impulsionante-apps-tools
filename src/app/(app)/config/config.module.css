@@ -487,6 +487,16 @@
   padding: var(--s-3) 0;
 }
 
+/* O cabeçalho de um GRUPO dentro de uma lista (ex.: "Ferramentas deste CRM" / "Produtos externos"
+ * na oferta). Menor e em itálico de propósito: é um rótulo que organiza, e não pode competir em
+ * peso com os nomes dos produtos logo abaixo. Mesma tinta dos outros secundários (`--tinta-3`). */
+.rotuloGrupo {
+  font-size: var(--fs-micro);
+  line-height: var(--lh-micro);
+  font-style: italic;
+  color: var(--tinta-3);
+}
+
 /* ── Ações discretas ──────────────────────────────────────────────────────────────────
  *
  * São até 3 por linha e a tela chega a ter 8 linhas. Com borda e fundo em cada uma, 15
