@@ -23,6 +23,12 @@ export interface DecisaoEmails {
  * 🔴 Só produto INTERNO entra em `entrega` e em `degustacao`. O produto externo tem id válido, mas
  * este CRM não o entrega: não há acesso a liberar, e o `TOOL_URL` apontaria para uma rota que não
  * existe. A venda 100% externa não dispara `entrega_produto` — só o recibo.
+ *
+ * 🔴 Quem NUNCA ENTROU não recebe `pagamento_recebido`. Decisão de 2026-09-23, tomada a partir do
+ * defeito real: três e-mails no mesmo segundo, do mesmo remetente, e o Gmail mandou os últimos para
+ * o spam — inclusive o do brinde. Para quem nunca entrou, as boas-vindas JÁ anunciam a compra (elas
+ * levam a senha e o login), então o recibo não acrescenta nada e só engrossa a rajada.
+ * Quem já entrou continua recebendo: aí não há boas-vindas, e o recibo é o único aviso.
  */
 export function decidirEmails(args: {
   vendaAtiva: boolean
@@ -36,5 +42,12 @@ export function decidirEmails(args: {
   const tidos = new Set(args.produtosJaTidos)
   const novos = [...new Set(args.produtosOferta)].filter((p) => !tidos.has(p) && ehProdutoInterno(p))
   const degustacao = [...new Set(args.produtosDegustacao ?? [])].filter(ehProdutoInterno)
-  return { boasVindas: args.nuncaEntrou, entrega: novos, degustacao, pagamentoRecebido: novos.length === 0 }
+  return {
+    boasVindas: args.nuncaEntrou,
+    entrega: novos,
+    degustacao,
+    // Sem produto novo é renovação — e aí o recibo é a única notícia. Mas quem nunca entrou recebe
+    // as boas-vindas, que já dão a conta e o login: somar o recibo faria dois e-mails onde um basta.
+    pagamentoRecebido: novos.length === 0 && !args.nuncaEntrou,
+  }
 }

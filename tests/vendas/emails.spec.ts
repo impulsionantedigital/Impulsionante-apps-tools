@@ -17,7 +17,7 @@ describe('decidirEmails', () => {
       .toEqual({ boasVindas: false, entrega: [B], degustacao: [], pagamentoRecebido: false })
   })
 
-  it('renovação do mesmo produto: só pagamento recebido', () => {
+  it('renovação do mesmo produto de quem JÁ ENTROU: só pagamento recebido', () => {
     expect(decidirEmails({ vendaAtiva: true, nuncaEntrou: false, produtosOferta: [A], produtosJaTidos: [A] }))
       .toEqual({ boasVindas: false, entrega: [], degustacao: [], pagamentoRecebido: true })
   })
@@ -27,9 +27,13 @@ describe('decidirEmails', () => {
       .toEqual({ boasVindas: false, entrega: [B], degustacao: [], pagamentoRecebido: false })
   })
 
-  it('quem nunca entrou e renova recebe as boas-vindas de novo, com o recibo', () => {
-    expect(decidirEmails({ vendaAtiva: true, nuncaEntrou: true, produtosOferta: [A], produtosJaTidos: [A] }))
-      .toEqual({ boasVindas: true, entrega: [], degustacao: [], pagamentoRecebido: true })
+  it('🔴 quem NUNCA ENTROU e renova recebe só as boas-vindas — o recibo NÃO vai junto', () => {
+    // Decisão de 2026-09-23, do defeito real: três e-mails no mesmo segundo viraram spam no Gmail.
+    // Para quem nunca entrou, as boas-vindas JÁ anunciam a compra (levam a senha e o login), então
+    // o recibo não acrescenta nada e só engrossa a rajada.
+    const d = decidirEmails({ vendaAtiva: true, nuncaEntrou: true, produtosOferta: [A], produtosJaTidos: [A] })
+    expect(d.boasVindas).toBe(true)
+    expect(d.pagamentoRecebido).toBe(false)
   })
 
   it('venda que já nasce encerrada não dispara e-mail nenhum', () => {
@@ -42,12 +46,18 @@ describe('decidirEmails', () => {
       .toEqual([A])
   })
 
-  it('venda 100% externa: sem entrega, e pagamento recebido', () => {
+  it('venda 100% externa de quem JÁ ENTROU: sem entrega, e com pagamento recebido', () => {
     const d = decidirEmails({ vendaAtiva: true, nuncaEntrou: false, produtosOferta: [CURSO], produtosJaTidos: [] })
     // 🔴 Externo nunca entra em `entrega`: não há o que liberar, e o TOOL_URL apontaria para rota
-    // inexistente. A venda 100% externa só diz "pagamento recebido".
+    // inexistente. Sem boas-vindas, o recibo é a única notícia que sobra — e por isso ele sai.
     expect(d.entrega).toEqual([])
     expect(d.pagamentoRecebido).toBe(true)
+  })
+
+  it('venda 100% externa de quem NUNCA entrou: só as boas-vindas, sem recibo', () => {
+    const d = decidirEmails({ vendaAtiva: true, nuncaEntrou: true, produtosOferta: [CURSO], produtosJaTidos: [] })
+    expect(d.boasVindas).toBe(true)
+    expect(d.pagamentoRecebido).toBe(false)
   })
 
   it('venda mista: só os INTERNOS novos na entrega', () => {

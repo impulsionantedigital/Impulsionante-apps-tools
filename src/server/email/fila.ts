@@ -41,6 +41,13 @@ export async function enfileirar(args: {
   valores: Record<string, string>
   /** Idempotência: com a mesma chave, só o primeiro enfileiramento vale (emails_fila_chave_evento_key). */
   chave?: string
+  /**
+   * Quando este e-mail deve sair. Ausente = agora.
+   *
+   * 🔴 É o ESPAÇAMENTO entre os e-mails de um mesmo evento: sem ele, os de uma compra com brinde
+   * saem no mesmo segundo, o provedor lê rajada, e os últimos caem no spam.
+   */
+  agendadoPara?: Date
 }): Promise<{ ok: true } | { erro: string }> {
   const modelo = await lerModelo(args.workspaceId, args.tipo)
   const { assunto, html } = renderizarParaFila(modelo, args.valores)
@@ -51,6 +58,11 @@ export async function enfileirar(args: {
     assunto,
     html,
     chave_evento: args.chave ?? null,
+    // `proxima_tentativa` também recebe o instante: ele é o que a reserva checa PRIMEIRO, e nas
+    // linhas novas ele nasce `now()`. Sem alinhar os dois, a linha agendada seria elegível na hora.
+    ...(args.agendadoPara
+      ? { agendado_para: args.agendadoPara.toISOString(), proxima_tentativa: args.agendadoPara.toISOString() }
+      : {}),
   })
   // Chave repetida: este e-mail já está na fila, ou já saiu. Reprocessar não pode duplicá-lo.
   if (error && args.chave && error.code === '23505') return { ok: true }

@@ -3,9 +3,46 @@
 Documento de retoma, no padrão do `ESTADO-vendas-hotmart.md`. Com ele e o `git log` dá para
 continuar sem a sessão que o escreveu.
 
-**Data:** 2026-09-23 (implementação) — o desenho é de 2026-09-22.
+**Data:** 2026-09-30 · o desenho é de 2026-09-22.
 **Os dois trabalhos estão IMPLEMENTADOS.** Plano da vitrine executado (7 tasks) e plano de produtos
-externos executado (9 tasks). Suíte: **1999 testes verdes**, `pnpm build` verde, `tsc` limpo.
+externos executado (9 tasks). Suíte: **2015 testes verdes**, `pnpm build` verde, `tsc` limpo.
+
+## 🔴 PENDENTE — a verificação manual, em parte confirmada
+
+Os **dois testes de webhook foram disparados em 30/09 e funcionaram**, e a conferência no banco
+mostrou o que o desenho queria: cada venda gerou **dois períodos com vencimentos diferentes** — o do
+produto externo e o do brinde, com prazo próprio. Está confirmado o **passo 3** do roteiro.
+
+**Ainda faltam, e são seus:**
+
+1. **Reprocessar o mesmo evento** e confirmar que nada duplica (passo 4). É o mais importante: é
+   onde um erro na reclassificação apareceria. Botão **reprocessar evento** no card Comercial.
+2. **Cancelar/estornar** e confirmar que a venda encerra e o acesso fecha (passo 5).
+
+## 🔴 O DEFEITO REAL: e-mails do mesmo evento viravam spam (30/09/2026)
+
+Comprovado em produção, e não pela leitura do código: uma compra com brinde enfileirava **três
+e-mails no mesmo segundo**, do mesmo remetente, para o mesmo endereço. O CRM marcava os três como
+enviados (o SMTP aceitava), e o **Gmail mandou os dois últimos para o SPAM** — inclusive o do
+brinde, que é o recado novo. "Aceito pelo servidor" não quer dizer "entregue na caixa".
+
+**Corrigido no mesmo dia**, com cinco mudanças:
+
+- **Migration `0074`** — coluna `emails_fila.agendado_para` e a função `reservar_emails` recriada
+  para respeitá-la. 🔴 É uma coluna NOVA e não o `proxima_tentativa`: aquele é reescrito pela
+  reserva e pelo backoff, e escrever o agendamento lá faria os dois se sobrescreverem.
+- **`INTERVALO_ENTRE_EMAILS_MS = 90s`** (`src/lib/email/espacamento.ts`). Um e-mail só NÃO é
+  espaçado; dois ou mais saem em instantes distintos.
+- **`pagamento_recebido` não vai mais para quem NUNCA entrou.** As boas-vindas já anunciam a compra
+  e levam a senha; o recibo só engrossava a rajada. Quem já entrou continua recebendo — aí não há
+  boas-vindas, e o recibo é o único aviso.
+- **O relógio bate a cada 15s**, e não 30s: com 30s o espaçamento virava imprevisível, e o e-mail
+  que entrega a senha podia esperar meia hora a mais. A guarda de reentrância impede empilhamento.
+
+**Verificado no banco de produção:** três linhas agendadas a 0s / 90s / 180s → a reserva entregou
+apenas a primeira, e as outras ficaram no futuro. (As linhas de teste foram removidas.)
+
+**Efeito colateral bom:** o mesmo mecanismo cobre qualquer evento que gere mais de um e-mail.
 
 ## O que foi entregue
 
@@ -14,11 +51,9 @@ externos executado (9 tasks). Suíte: **1999 testes verdes**, `pnpm build` verde
 | Vitrine de produtos bloqueados | 7 tasks + guarda estática | implementado |
 | Produtos externos | 9 tasks (migration `0072` + `0073`) | implementado |
 
-🔴 **Uma verificação NÃO foi feita, e é preciso dizê-lo:** a checagem MANUAL do processamento (os
-cinco passos do fim da spec de produtos externos) exige banco e um webhook real — esta máquina não
-tem as credenciais, e o `docs/DEPLOY.md` avisa que a `SUPABASE_ANON_KEY` não pode ser adivinhada nem
-colhida do site. **Ela continua pendente e precisa ser feita no ambiente que tiver as credenciais.**
-É a verificação mais importante do trabalho: é onde um erro na reclassificação apareceria.
+🔴 **A verificação manual está PARCIAL, e o resto é seu:** os dois webhooks de teste foram
+disparados e funcionaram (o **passo 3** do roteiro está confirmado no banco). **Faltam o reprocessar
+e o estorno** — o quadro completo está na seção "PENDENTE", no topo deste documento.
 
 ## Como os dois se relacionam
 
@@ -100,9 +135,9 @@ usando o que o próprio sistema oferece — todo webhook fica em `webhook_compra
 Comercial tem **reprocessar evento**. O passo mais importante é reprocessar o mesmo evento e
 confirmar que nada duplica.
 
-⚠️ **ESTA VERIFICAÇÃO AINDA NÃO FOI FEITA.** A implementação foi concluída sem acesso ao banco nem
-à Hotmart — a máquina não tem as credenciais. **É a pendência mais urgente do trabalho**, e não se
-pode afirmar que o produto externo funciona ponta a ponta antes dela.
+⚠️ **ATUALIZADO em 30/09/2026:** os dois webhooks de teste entraram e processaram — o passo 3 do
+roteiro está confirmado no banco (períodos com vencimentos distintos para o produto externo e para
+o brinde). **Reprocessar e estornar continuam pendentes.** Ver a seção "PENDENTE", no topo.
 
 **O que ficou decidido:** o plano do Trabalho 2 **não** vai incluir a criação de cobertura de
 teste para o `processar.ts`. É trabalho considerável — o arquivo toca banco em quase toda linha, e

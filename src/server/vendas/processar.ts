@@ -9,6 +9,7 @@ import { detalheSeguro } from '@/lib/sanitizar-erro'
 import { PRODUTOS, ehProdutoInterno, caminhoDoProduto } from '@/lib/produtos/catalogo'
 import { rotuloDeId } from '@/lib/produtos/rotulos'
 import { rotulosDosProdutos } from '@/server/produtos/rotulos'
+import { instanteDoEmail } from '@/lib/email/espacamento'
 import { ehDuracao } from '@/lib/vendas/duracao'
 import { duracaoDaOferta, ehDiasDegustacao } from '@/lib/vendas/degustacao'
 import { decidirEmails } from '@/lib/vendas/emails'
@@ -683,10 +684,28 @@ export async function notificar(vendaId: string, opcoes: { manual?: boolean } = 
   }
   const sufixo = opcoes.manual ? `:manual:${Date.now()}` : ''
 
+  // 🔴 ESPAÇAMENTO (§ do defeito de 2026-09-23): os e-mails deste evento NÃO saem no mesmo segundo.
+  // O comprador recebe-los em rajada fazia o provedor mandar os últimos para o spam — inclusive o
+  // do brinde, que é o recado novo.
+  //
+  // A conta é do TOTAL de e-mails que ESTE evento vai enfileirar, e não de cada bloco: é a rajada
+  // inteira que o provedor lê, não a rajada por tipo.
+  const quantos = (decisao.boasVindas ? 1 : 0) + (decisao.entrega.length > 0 ? 1 : 0) + (decisao.pagamentoRecebido ? 1 : 0) + (decisao.degustacao.length > 0 ? 1 : 0)
+  const agora = Date.now()
+  // Um e-mail só não é espaçado: sai assim que o relógio bater, como sempre saiu.
+  const quando = (indice: number) => (quantos > 1 ? instanteDoEmail(indice, agora) : undefined)
+
   if (decisao.boasVindas) {
     const r = await emitirSenhaTemporaria({ userId: membro.user_id, workspaceId: venda.workspace_id, tipo: 'boas_vindas', forcar: false })
     if ('erro' in r) return { erro: r.erro }
   }
+
+  let ordem = 0
+  // 🔴 As boas-vindas ocupam o PRIMEIRO lugar da fila: ela sai agora (índice 0), e as outras é que
+  // esperam atrás dela. O incremento aqui é o que faz o bloco seguinte começar no índice 1 — sem
+  // ele, boas-vindas (que `emitirSenhaTemporaria` enfileira sem agendamento, ou seja, "agora") e o
+  // e-mail seguinte cairiam no MESMO instante, que é a rajada que este espaçamento desfaz.
+  if (decisao.boasVindas) ordem++
 
   if (decisao.entrega.length > 0) {
     const ids = decisao.entrega.filter(ehProdutoInterno)
@@ -696,6 +715,7 @@ export async function notificar(vendaId: string, opcoes: { manual?: boolean } = 
       tipo: 'entrega_produto',
       para: email,
       chave: `venda:${venda.id}:entrega${sufixo}`,
+      agendadoPara: quando(ordem++),
       valores: {
         ...base,
         PRODUCT_NAME: ids.map((id) => rotuloDeId(id, nomesProdutos)).join(', '),
@@ -712,6 +732,7 @@ export async function notificar(vendaId: string, opcoes: { manual?: boolean } = 
       tipo: 'pagamento_recebido',
       para: email,
       chave: `venda:${venda.id}:pagamento${sufixo}`,
+      agendadoPara: quando(ordem++),
       valores: {
         ...base,
         PRODUCT_NAME: produtos.map((id) => rotuloDeId(id, nomesProdutos)).join(', '),
@@ -730,6 +751,7 @@ export async function notificar(vendaId: string, opcoes: { manual?: boolean } = 
       tipo: 'degustacao_liberada',
       para: email,
       chave: `venda:${venda.id}:degustacao${sufixo}`,
+      agendadoPara: quando(ordem++),
       valores: {
         ...base,
         PRODUCT_NAME: decisao.degustacao.map((id) => rotuloDeId(id, nomesProdutos)).join(', '),
