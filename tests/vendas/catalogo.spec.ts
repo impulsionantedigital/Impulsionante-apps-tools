@@ -26,7 +26,18 @@ describe('catálogo de produtos', () => {
     expect(ehProdutoInterno('8c4d2f1e-4b2a-4f6e-9d3c-1a2b3c4d5e6f')).toBe(false)
   })
 
-  it('traduz motor para produto e devolve o rótulo', () => {
-    expect(rotuloDoProduto('indulto-comutacao-2025')).toContain('12.970/2025')
+  it('🔴 o nome do produto é o menuTitulo, e não o rotulo por extenso', () => {
+    // Decisão de 2026-09-30: e-mails e a tela de ofertas mostram o nome CURTO, o mesmo que a pessoa
+    // já vê no menu e na vitrine. O `rotulo` continua no catálogo, com o texto que sempre teve.
+    expect(rotuloDoProduto('indulto-comutacao-2025')).toBe('GPS CIC - Calculadora 2025')
+    expect(rotuloDoProduto('indulto-comutacao-2025')).not.toContain('12.970/2025')
+    expect(rotuloDoProduto('indulto-comutacao-2024')).toBe('GPS CIC - Calculadora 2024')
+    expect(rotuloDoProduto('detracao-recolhimento-noturno')).toBe('Recolhimento Noturno')
+  })
+
+  it('o rótulo por extenso continua no catálogo, intacto', () => {
+    // Nada foi apagado do catálogo: o texto longo ainda está lá, para quem precisar dele.
+    const p = PRODUTOS.find((x) => x.id === 'indulto-comutacao-2025')!
+    expect(p.rotulo).toBe('Calculadora de Indulto e Comutação — Decreto 12.970/2025')
   })
 })

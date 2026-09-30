@@ -68,8 +68,20 @@ export function ehProdutoInterno(id: unknown): id is ProdutoId {
   return typeof id === 'string' && PRODUTOS.some((p) => p.id === id)
 }
 
+/**
+ * O nome pelo qual o produto é apresentado ao membro: e-mails, lista de vendas do Comercial e o
+ * seletor de produtos da oferta.
+ *
+ * 🔴 Devolve `menuTitulo`, e não `rotulo` — decisão de 2026-09-30. O `rotulo` é o nome por extenso
+ * ("Calculadora de Indulto e Comutação — Decreto 12.970/2025"), e num e-mail com dois produtos
+ * virava um parágrafo; o `menuTitulo` ("GPS CIC 2025") é o nome curto com que a pessoa já
+ * reconhece o produto no menu e na vitrine.
+ *
+ * O `rotulo` continua no catálogo, com o texto que sempre teve: ele não some, só não é o que esta
+ * função entrega. Quem quiser o nome por extenso deve pedir `rotulo` direto ao produto.
+ */
 export function rotuloDoProduto(id: ProdutoId): string {
-  return PRODUTOS.find((p) => p.id === id)?.rotulo ?? id
+  return PRODUTOS.find((p) => p.id === id)?.menuTitulo ?? id
 }
 
 /** O caminho da rota daquele produto. Fonte única: o `slug` + a `familia` de quem o possui —

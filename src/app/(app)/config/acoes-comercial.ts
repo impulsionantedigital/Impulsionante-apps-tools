@@ -287,7 +287,9 @@ export async function lerComercial(): Promise<VistaComercial | { erro: string }>
     // parte, abrir e salvar uma oferta que usa um produto externo desativado apagaria aquele produto
     // em silêncio — a lista viria sem ele, e o formulário o trataria como desmarcado.
     produtos: [
-      ...PRODUTOS.map((p) => ({ id: p.id, rotulo: p.rotulo, origem: 'interno' as const })),
+      // 🔴 `menuTitulo`, e não `rotulo`: o seletor da oferta usa o mesmo nome curto que o e-mail,
+      // o menu e a vitrine. O `rotulo` por extenso tornava a lista de produtos difícil de varrer.
+      ...PRODUTOS.map((p) => ({ id: p.id, rotulo: p.menuTitulo, origem: 'interno' as const })),
       ...produtosExternosDoWs.map((p) => ({ id: p.id, rotulo: p.nome, origem: 'externo' as const })),
     ],
       temposDeAcesso: DURACOES.map((valor) => ({ valor, rotulo: rotuloDoTempoDeAcesso(valor) })),

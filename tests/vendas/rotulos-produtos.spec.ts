@@ -4,8 +4,10 @@ import { rotuloDeId } from '@/lib/produtos/rotulos'
 describe('rotuloDeId', () => {
   const externos = new Map([['8c4d2f1e-4b2a-4f6e-9d3c-1a2b3c4d5e6f', 'Curso de Execução Penal']])
 
-  it('id do catálogo: o rótulo do catálogo', () => {
-    expect(rotuloDeId('indulto-comutacao-2025', externos)).toContain('12.970/2025')
+  it('id do catálogo: o nome curto do produto, o mesmo do menu e da vitrine', () => {
+    // 🔴 Decisão de 2026-09-30: e-mails e a tela de ofertas usam `menuTitulo`. Com dois produtos
+    // numa oferta, o rótulo por extenso virava um parágrafo no corpo do e-mail.
+    expect(rotuloDeId('indulto-comutacao-2025', externos)).toBe('GPS CIC - Calculadora 2025')
   })
 
   it('UUID de produto externo: o nome da tabela', () => {
