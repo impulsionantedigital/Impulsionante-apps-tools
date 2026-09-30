@@ -43,9 +43,13 @@ export const PADROES: Record<TipoModelo, Modelo> = {
     assunto: '[PRODUCT_NAME] liberado para você',
     html: moldura(
       '<p>Olá [MEMBER_NAME],</p>' +
-        '<p>Sua compra de <strong>[OFFER_NAME]</strong> foi confirmada e <strong>[PRODUCT_NAME]</strong> já está liberado na sua conta.</p>' +
+        '<p>Sua compra de <strong>[OFFER_NAME]</strong> foi confirmada e já está liberado na sua conta:</p>' +
+        // 🔴 `[PRODUCTS_LIST]` é a lista em `<ul><li>` — um item por produto. Um e-mail pode
+        // anunciar MAIS DE UM (dois produtos numa compra, dois brindes), e por isso o texto não
+        // diz "liberado X" no singular: com só um, sai uma lista de um item.
+        '[PRODUCTS_LIST]' +
         '<p>Seu acesso vale até <strong>[EXPIRES_AT]</strong>.</p>' +
-        botao('[TOOL_URL]', 'Abrir a ferramenta'),
+        botao('[TOOL_URL]', 'Abrir as ferramentas'),
     ),
   },
   pagamento_recebido: {
@@ -62,9 +66,10 @@ export const PADROES: Record<TipoModelo, Modelo> = {
     assunto: 'Você ganhou [PRODUCT_NAME] de bônus',
     html: moldura(
       '<p>Olá [MEMBER_NAME],</p>' +
-        '<p>Sua compra de <strong>[OFFER_NAME]</strong> liberou <strong>[PRODUCT_NAME]</strong> como bônus na sua conta.</p>' +
+        '<p>Sua compra de <strong>[OFFER_NAME]</strong> liberou como bônus na sua conta:</p>' +
+        '[PRODUCTS_LIST]' +
         '<p>Este acesso de degustação vale até <strong>[EXPIRES_AT]</strong>, e é independente dos outros produtos que você tenha.</p>' +
-        botao('[TOOL_URL]', 'Abrir a ferramenta'),
+        botao('[TOOL_URL]', 'Abrir as ferramentas'),
     ),
   },
 }

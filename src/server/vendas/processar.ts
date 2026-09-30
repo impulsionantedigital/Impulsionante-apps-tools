@@ -6,10 +6,11 @@ import { emitirSenhaTemporaria, urlDeEntrada } from '@/server/auth/temporaria'
 import { resolverMembro } from '@/server/vendas/identidade'
 import { CHAVE_URL_PUBLICA } from '@/lib/canais/url-publica'
 import { detalheSeguro } from '@/lib/sanitizar-erro'
-import { PRODUTOS, ehProdutoInterno, caminhoDoProduto } from '@/lib/produtos/catalogo'
+import { ehProdutoInterno } from '@/lib/produtos/catalogo'
 import { rotuloDeId } from '@/lib/produtos/rotulos'
 import { rotulosDosProdutos } from '@/server/produtos/rotulos'
 import { instanteDoEmail } from '@/lib/email/espacamento'
+import { listarProdutosHtml, listarProdutosTexto } from '@/lib/email/produtos-html'
 import { ehDuracao } from '@/lib/vendas/duracao'
 import { duracaoDaOferta, ehDiasDegustacao } from '@/lib/vendas/degustacao'
 import { decidirEmails } from '@/lib/vendas/emails'
@@ -656,6 +657,16 @@ export async function notificar(vendaId: string, opcoes: { manual?: boolean } = 
   const login = await urlDeEntrada()
   if (!origem || !login) return { erro: 'sem_url_publica' }
 
+  /**
+   * O endereço da VITRINE, que é o destino dos e-mails de produto.
+   *
+   * 🔴 Aponta para `/ferramentas`, e não para a página de UM produto. Decisão de 2026-09-30: um
+   * e-mail pode anunciar MAIS DE UM produto (dois brindes na mesma oferta), e a página de um só
+   * deixaria o outro sem caminho. A vitrine mostra todos os que a pessoa tem — e, para quem chegou
+   * pelo link, é também onde ela descobre os que ainda não tem.
+   */
+  const vitrine = new URL('/ferramentas', origem).href
+
   // 🔴 Sem filtro: a lista pode ter id de produto externo, e ele PRECISA aparecer no
   // "pagamento recebido" com o nome do curso, não com um UUID.
   const produtos = venda.produtos as string[]
@@ -709,7 +720,7 @@ export async function notificar(vendaId: string, opcoes: { manual?: boolean } = 
 
   if (decisao.entrega.length > 0) {
     const ids = decisao.entrega.filter(ehProdutoInterno)
-    const ferramenta = PRODUTOS.find((p) => p.id === ids[0])
+    const nomesEntrega = ids.map((id) => rotuloDeId(id, nomesProdutos))
     const r = await enfileirar({
       workspaceId: venda.workspace_id,
       tipo: 'entrega_produto',
@@ -718,9 +729,11 @@ export async function notificar(vendaId: string, opcoes: { manual?: boolean } = 
       agendadoPara: quando(ordem++),
       valores: {
         ...base,
-        PRODUCT_NAME: ids.map((id) => rotuloDeId(id, nomesProdutos)).join(', '),
+        // Mesma dualidade do brinde: texto corrido para o assunto, `<ul><li>` para o corpo.
+        PRODUCT_NAME: listarProdutosTexto(nomesEntrega),
+        PRODUCTS_LIST: listarProdutosHtml(nomesEntrega),
         EXPIRES_AT: vencimentoDe(ids),
-        TOOL_URL: ferramenta ? new URL(caminhoDoProduto(ferramenta.slug), origem).href : login,
+        TOOL_URL: vitrine,
       },
     })
     if ('erro' in r) return { erro: 'falha_enfileirar' }
@@ -745,7 +758,7 @@ export async function notificar(vendaId: string, opcoes: { manual?: boolean } = 
   }
 
   if (decisao.degustacao.length > 0) {
-    const ferramenta = PRODUTOS.find((p) => p.id === decisao.degustacao[0])
+    const nomesBrinde = decisao.degustacao.map((id) => rotuloDeId(id, nomesProdutos))
     const r = await enfileirar({
       workspaceId: venda.workspace_id,
       tipo: 'degustacao_liberada',
@@ -754,11 +767,15 @@ export async function notificar(vendaId: string, opcoes: { manual?: boolean } = 
       agendadoPara: quando(ordem++),
       valores: {
         ...base,
-        PRODUCT_NAME: decisao.degustacao.map((id) => rotuloDeId(id, nomesProdutos)).join(', '),
+        // A mesma lista, em duas formas: `PRODUCT_NAME` é texto corrido (assunto e fallback sem
+        // HTML); `PRODUCTS_LIST` é a `<ul><li>` que o modelo desenha. Ver `listarProdutosHtml`
+        // para o porquê de o segundo ser a exceção ao escape.
+        PRODUCT_NAME: listarProdutosTexto(nomesBrinde),
+        PRODUCTS_LIST: listarProdutosHtml(nomesBrinde),
         // 🔴 Só os períodos de BRINDE desta venda — nunca o vencimento mais tardio, que é o da
         // assinatura anual e anunciaria um brinde de 7 dias com a data errada.
         EXPIRES_AT: vencimentoDe(decisao.degustacao),
-        TOOL_URL: ferramenta ? new URL(caminhoDoProduto(ferramenta.slug), origem).href : login,
+        TOOL_URL: vitrine,
       },
     })
     if ('erro' in r) return { erro: 'falha_enfileirar' }
