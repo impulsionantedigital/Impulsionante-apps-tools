@@ -23,6 +23,36 @@ function ehTempo(v: unknown): v is Tempo {
   return typeof v === 'object' && v !== null && 'anos' in v
 }
 
+/**
+ * Quais seções nascem abertas: só a PRIMEIRA.
+ *
+ * Exportada para ser testada sem renderizar — ela é a regra inteira, e uma regra que só
+ * existe dentro do corpo de um componente só se testa por meio do React, o que amarra o
+ * teste ao framework. Aqui ela é uma função pura sobre a lista de seções.
+ */
+export function secoesIniciaisAbertas(secoes: Secao[]): Set<string> {
+  return new Set(secoes[0] ? [secoes[0].id] : [])
+}
+
+/**
+ * O que acontece ao clicar no cabeçalho de `id`: se está aberta, FECHA; se está fechada,
+ * ABRE — e, 🔴 em nenhum dos dois casos, mexe em qualquer outra seção.
+ *
+ * É esta função que torna o questionário "não um acordeão". A regra antiga devolvia
+ * `new Set([id])` ao abrir, o que fechava todas as outras; trocá-la por um `add` sobre uma
+ * cópia do conjunto é o que permite duas seções abertas ao mesmo tempo.
+ *
+ * Pura e exportada pelo mesmo motivo de `secoesIniciaisAbertas`: o teste chama ESTA função,
+ * a mesma que o componente usa, em vez de reescrever a regra numa cópia paralela que poderia
+ * passar mesmo com o defeito de volta no componente.
+ */
+export function alternarSecao(abertas: ReadonlySet<string>, id: string): Set<string> {
+  const proximo = new Set(abertas)
+  if (proximo.has(id)) proximo.delete(id)
+  else proximo.add(id)
+  return proximo
+}
+
 export default function Questionario({
   secoes,
   entrada,
@@ -35,16 +65,29 @@ export default function Questionario({
   /** Acesso encerrado: o `disabled` do fieldset desliga todos os controles de dentro. */
   desabilitado?: boolean
 }) {
-  // Acordeão de UMA seção aberta por vez (a primeira, de saída). O que se ganha com o
-  // fechamento é a coluna do lado: com as 12 seções abertas o questionário empurrava o
-  // `Resultado` para fora da tela, e o advogado não via o veredito mudar enquanto
-  // respondia — que é a única razão de a calculadora calcular ao vivo.
-  const [aberta, setAberta] = useState<string | null>(secoes[0]?.id ?? null)
+  // 🔴 NÃO é mais acordeão. Cada seção abre e fecha por conta própria, e abrir uma não fecha as
+  // outras: quem preenche o formulário costuma voltar a uma seção de cima para conferir um valor
+  // sem perder a de baixo, e o fechamento automático obrigava a reencontrá-la e reabri-la toda vez.
+  //
+  // O que a regra antiga (uma só aberta) existia para garantir continua garantido: as seções
+  // nascem FECHADAS, menos a primeira. Com 12 seções abertas de saída, o questionário empurrava o
+  // `Resultado` para fora da tela, e o advogado não via o veredito mudar enquanto respondia — que
+  // é a única razão de a calculadora calcular ao vivo. A diferença é que agora é a pessoa que
+  // decide o que fica aberto, em vez de o formulário fechar o que ela abriu.
+  //
+  // `Set` e não `string[]`: `has` na renderização de cada seção é consulta, não varredura, e um
+  // `array.includes` aqui percorreria a lista uma vez por seção a cada tecla (a tela recalcula a
+  // cada resposta) — mesmo custo pequeno, mas é o tipo errado para "pertence a".
+  const [abertas, setAbertas] = useState<Set<string>>(() => secoesIniciaisAbertas(secoes))
+
+  function alternar(id: string) {
+    setAbertas((atual) => alternarSecao(atual, id))
+  }
 
   return (
     <div className={estilos.questionario}>
       {secoes.map((secao) => {
-        const expandida = aberta === secao.id
+        const expandida = abertas.has(secao.id)
         const idConteudo = `secao-${secao.id}-conteudo`
         const idTitulo = `secao-${secao.id}-titulo`
 
@@ -63,7 +106,7 @@ export default function Questionario({
                 className={estilos.botaoSecao}
                 aria-expanded={expandida}
                 aria-controls={idConteudo}
-                onClick={() => setAberta(expandida ? null : secao.id)}
+                onClick={() => alternar(secao.id)}
               >
                 <span className={estilos.tituloSecao}>{secao.titulo}</span>
                 <ChevronDown

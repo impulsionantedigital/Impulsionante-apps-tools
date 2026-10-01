@@ -71,10 +71,10 @@
   gap: var(--s-5);
 }
 
-/* A seção do questionário é um ACORDEÃO: o `padding` saiu daqui (o botão do
- * cabeçalho e `.corpoSecao` o trazem cada um do seu lado), senão o cabeçalho
- * fechado ficaria com o respiro de um card cheio e o conjunto pareceria maior do
- * que é — justamente o que a mudança veio corrigir. */
+/* A seção do questionário é uma CAIXA QUE ABRE E FECHA por conta própria — não mais um acordeão:
+ * quantas estiverem abertas ficam abertas. O `padding` saiu daqui (o botão do cabeçalho e
+ * `.corpoSecao` o trazem cada um do seu lado), senão o cabeçalho fechado ficaria com o respiro de
+ * um card cheio e o conjunto pareceria maior do que é — justamente o que a mudança veio corrigir. */
 .secao {
   background: var(--superficie);
   border: 1px solid var(--linha);
@@ -83,9 +83,10 @@
   overflow: hidden;
 }
 
-/* A seção aberta ganha a borda do token de destaque do produto. Num acordeão, a
- * única aberta precisa se distinguir das fechadas por algo além da altura — e a
- * altura só serve a quem enxerga a tela inteira. */
+/* A seção aberta ganha a borda do token de destaque do produto. Com várias abertas ao mesmo
+ * tempo, é esta borda que diz quais estão abertas — a altura deixou de servir para isso quando o
+ * formulário parou de fechar as outras: agora o olho compara a borda das seções entre si, e a
+ * altura só serviria a quem enxerga a tela inteira. */
 .secaoAberta {
   border-color: var(--linha-forte);
 }

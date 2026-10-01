@@ -2,7 +2,10 @@ import { defineConfig } from 'vitest/config'
 import { fileURLToPath } from 'node:url'
 
 export default defineConfig({
-  test: { environment: 'node', include: ['tests/**/*.spec.ts'], passWithNoTests: true },
+  // `spec.tsx` também: os testes que RENDERIZAM um componente (ver
+  // `questionario-acordeao.spec.tsx`) precisam de JSX. Sem isto o arquivo é ignorado em
+  // silêncio e a suíte passa sem nunca tê-lo executado.
+  test: { environment: 'node', include: ['tests/**/*.spec.{ts,tsx}'], passWithNoTests: true },
   resolve: {
     alias: {
       
