@@ -23,8 +23,15 @@
   position: sticky;
   top: 0;                   /* Define a distância do topo onde ele deve travar */
   z-index: 1000;            /* Garante que fique por cima do restante do conteúdo */
-  background-color: #333;
-  color: #fff;
+  /* 🔴 O FUNDO É OBRIGATÓRIO, e não é enfeite: o painel gruda e passa POR CIMA dos cards
+   * de dispositivo que rolam atrás dele. Sem fundo opaco, o texto dos dois aparece
+   * sobreposto — o `z-index` põe o painel na frente, mas transparente ele é uma janela
+   * para o que está atrás, e nada fica legível.
+   *
+   * `var(--superficie)` e NÃO um hex: é o mesmo token que `.resumo > div` usa logo abaixo,
+   * então acompanha o tema claro e o escuro sozinho — um `#333` fixo ficaria escuro também
+   * no tema claro. */
+  background-color: var(--superficie);
   padding: 16px;
 }
 .resumo > div {
