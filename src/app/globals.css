@@ -179,6 +179,20 @@
    * seu chão sai de um token, você quer a outra. */
   --tinta-sobre-derivado: #FFFFFF;
 
+  /* ---- A tinta sobre o chão de cor CHEIA que o próprio kit pinta ----
+   *
+   * 🔴 BRANCA NOS DOIS TEMAS, e por isso fica fora do bloco claro, como os dois acima.
+   *
+   * Não é `--tinta-invertida`: aquela responde ao `--acento`, que muda com o tema porque o chão
+   * dela muda, e ela existe para o que NÃO usa a rampa cheia (o lockup da marca, o botão da tela de
+   * entrada). O botão do kit pinta com `--botao-cheio`/`--ok-cheio`/`--erro-cheio`, que são escuros
+   * nos DOIS temas justamente para sustentar tinta branca — então a tinta deles é branca nos dois,
+   * e precisa de um token que não derive do tema.
+   *
+   * ⚠️ O piso é conferido no pior caso: o `--botao-cheio` do kit dá 4,69 e o pior semântico, 4,54.
+   * Uma cor de marca que o portão aprovou contra BRANCO já entra aprovada aqui sem passo extra. */
+  --tinta-cheia: #FFFFFF;
+
   /* ---- O objeto que DESLIZA sobre um trilho de cor — hoje só o polegar do interruptor ----
    *
    * 🔴 BRANCO NOS DOIS TEMAS, e por isso fica fora do bloco claro, como os três acima e abaixo.
@@ -225,6 +239,29 @@
   --acento-hover: #9B84FF;  /* 6,80 · 6,44 · 6,06 */
   --acento-ativo: #A594FF;  /* 7,89 · 7,47 · 7,02 */
 
+  /* ---- O QUE PREENCHE: a rampa do botão de chão de cor cheia ----
+   *
+   * 🔴 ESTES SÃO OUTROS TRÊS E ESTÃO AQUI POR UM MOTIVO ESPECÍFICO. O `--acento` acima é medido
+   * contra o CHÃO porque é a cor de link e de ação; no escuro o derivador clareia a cor da marca
+   * até ela ler no fundo. O botão primário usava esse valor clareado como PINTURA, com a
+   * `--tinta-invertida` (escura aqui) por cima: 4,97 de contraste, aprovado, e lavado.
+   *
+   * O defeito MEDIDO no navegador: com esse azul pálido, o botão HABILITADO e o DESABILITADO
+   * (opacity .55) ficaram quase idênticos — o estado errado parecia o certo. Contraste não pegou
+   * porque os dois passavam; era a separação entre os dois ESTADOS que tinha sumido.
+   *
+   * Quem pinta um chão de cor cheia leva tinta BRANCA por cima, logo tem de ser escuro: a
+   * restrição é a OPOSTA da de quem escreve texto, e nenhuma cor faz as duas. São dois tokens, e
+   * não um com dois nomes.
+   *
+   * ⚠️ Estes três são IGUAIS nos dois temas (o bloco claro NÃO os repete), porque a tinta por
+   * cima é branca nos dois — a medição é contra branco, e a rampa ESCURECE: "apertar aproxima" não
+   * tem tema. Quem só troca o acento de marca recebe estes três pelo servidor (`cssDaMarca`), que
+   * os emite em bloco único por causa exatamente disso. */
+  --botao-cheio:       #7661D9;  /* branco 4,69 */
+  --botao-cheio-hover: #5C4CA9;  /* branco 6,86 */
+  --botao-cheio-ativo: #4E408F;  /* branco 8,56 */
+
   /* Chip, seleção, hover suave e a borda do item selecionado. Alfa em vez de hex porque eles
    * aparecem sobre as três superfícies.
    *
@@ -250,6 +287,21 @@
   --ok:    #00D492;  /* 10,32 ·  9,78 · 9,19 */
   --erro:  #FF6B6B;  /*  7,21 ·  6,83 · 6,42 */
   --aviso: #FFB224;  /* 11,09 · 10,51 · 9,88 */
+  /* 🔴 A RAMPA CHEIA DOS SEMÂNTICOS, e é a mesma história do `--botao-cheio`: `--ok` e `--erro`
+   * são medidos contra o CHÃO porque são cor de status e de texto; como PINTURA carregam tinta
+   * BRANCA, e no escuro eles são claros demais para isso (`#00D492` dá 1,94 com branco,
+   * `#FF6B6B` dá 2,78 — os dois reprovam com folga). Estes três são escurecidos até sustentarem
+   * branco, e por isso são tokens e não um `color-mix` do `--ok`.
+   *
+   * A tentação seria trocar só o `color` do botão e deixar o fundo claro com tinta escura — é
+   * EXATAMENTE o defeito do `--botao-cheio`, que lavava o botão e o confundia com o estado
+   * desabilitado. A rampa inteira anda junto. */
+  --ok-cheio:       #00875D;  /* branco 4,54 */
+  --ok-cheio-hover: #006949;  /* branco 6,74 */
+  --ok-cheio-ativo: #00583D;  /* branco 8,53 */
+  --erro-cheio:       #C05151;  /* branco 4,63 */
+  --erro-cheio-hover: #963E3E;  /* branco 6,87 */
+  --erro-cheio-ativo: #7F3535;  /* branco 8,53 */
   /* Os números do wash são o par sobre o PIOR chão — aqui a superfície mais CLARA
    * (`--superficie-alta`), porque no escuro a tinta é clara e um chão mais escuro só AJUDA. É o
    * espelho exato do claro, onde o pior é `--fundo`. */
@@ -571,6 +623,20 @@
   --ok-wash:    color-mix(in srgb, var(--ok) 7%, transparent);     /* --ok sobre ele: 4,56 */
   --erro-wash:  color-mix(in srgb, var(--erro) 7%, transparent);   /* --erro sobre ele: 4,54 */
   --aviso-wash: color-mix(in srgb, var(--aviso) 7%, transparent);  /* --aviso sobre ele: 4,56 */
+
+  /* 🔴 A RAMPA CHEIA DO TEMA CLARO, e ela é mais CLARA que a do escuro. Não é incoerência: no
+   * claro o `--ok`/`--erro` já são escuros (dá 5,38 e 5,39 com branco), então eles pintam bem sem
+   * nenhum passo. No escuro os mesmos pares são claros demais e escurecem — cada tema carrega o
+   * valor que sustenta a tinta branca DELE.
+   *
+   * ⚠️ E o `--botao-cheio` NÃO é repetido aqui de propósito: ele é igual nos dois temas, e repetir
+   * criaria uma segunda fonte da verdade para um número que não muda. Ver a nota dele no escuro. */
+  --ok-cheio:       #007A52;  /* branco 5,38 */
+  --ok-cheio-hover: #006B48;  /* branco 6,57 */
+  --ok-cheio-ativo: #00563A;  /* branco 8,78 */
+  --erro-cheio:       #C92D2D;  /* branco 5,39 */
+  --erro-cheio-hover: #B12828;  /* branco 6,56 */
+  --erro-cheio-ativo: #902121;  /* branco 8,66 */
 
   /* A `--tinta` do tema a 32%, e não um preto: mesma razão da sombra logo abaixo. É o valor que
    * a gaveta lateral já praticava e que foi MEDIDO funcionando (delta 2,07 na auditoria); o que

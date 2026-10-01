@@ -78,21 +78,20 @@ export const lerMarca = cache(async (): Promise<MarcaDoDeploy> => {
 
 export function cssDaMarca(m: MarcaDoDeploy): string {
   if (!m.tokens) return ''
+  // 🔴 `cheio`/`cheioHover`/`cheioAtivo` SAÍM em BLOCO ÚNICO, fora do `vars` — são os mesmos
+  // números nos dois temas (a tinta por cima é branca nos dois), e dentro de `vars` eles seriam
+  // reescritos pelo claro com o valor do escuro. Ver a nota de `Paleta['cheio']`.
   const vars = (p: Paleta) =>
     `--acento:${p.accent};--acento-hover:${p.hover};--acento-ativo:${p.active};` +
     `--acento-wash:${p.wash};--acento-linha:${p.line}`
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  return `:root{${vars(m.tokens.escuro)}}:root[data-tema="claro"]{${vars(m.tokens.claro)}}`
+
+  const cheio = (p: Paleta) =>
+    `--botao-cheio:${p.cheio};--botao-cheio-hover:${p.cheioHover};--botao-cheio-ativo:${p.cheioAtivo}`
+
+  return (
+    `:root{${vars(m.tokens.escuro)}${cheio(m.tokens.escuro)}}` +
+    `:root[data-tema="claro"]{${vars(m.tokens.claro)}${cheio(m.tokens.claro)}}`
+  )
 }
 
 

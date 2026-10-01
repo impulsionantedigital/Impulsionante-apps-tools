@@ -19,6 +19,11 @@
   --botao-cor-hover: var(--acento-hover);
   --botao-cor-ativo: var(--acento-ativo);
   --botao-wash:      var(--acento-wash);
+  /* 🔴 A rampa do que PREENCHE NÃO tem alias aqui, e é de propósito: `--botao-cheio` é lido
+   * direto. Um `--botao-cheio: var(--botao-cheio)` aqui seria auto-referência — o CSS a descarta
+   * e a propriedade fica sem valor, o que zerava o fundo do botão primário. Os quatro ganchos acima
+   * existem porque o `tom` precisa TROCAR de cor; a rampa cheia já vem com o nome certo e só os tons
+   * a sobrescrevem (ver `[data-tom]`), que para isso precisam do mesmo nome de gancho. */
 
   display: inline-flex;
   align-items: center;
@@ -72,6 +77,11 @@
   --botao-cor-hover: var(--ok);
   --botao-cor-ativo: var(--ok);
   --botao-wash:      var(--ok-wash);
+  /* A rampa cheia do tom, e não `--ok`: no escuro o `--ok` é claro demais para tinta branca
+   * (1,94 de contraste). */
+  --botao-cheio:       var(--ok-cheio);
+  --botao-cheio-hover: var(--ok-cheio-hover);
+  --botao-cheio-ativo: var(--ok-cheio-ativo);
 }
 
 .raiz[data-tom='erro'] {
@@ -79,6 +89,9 @@
   --botao-cor-hover: var(--erro);
   --botao-cor-ativo: var(--erro);
   --botao-wash:      var(--erro-wash);
+  --botao-cheio:       var(--erro-cheio);
+  --botao-cheio-hover: var(--erro-cheio-hover);
+  --botao-cheio-ativo: var(--erro-cheio-ativo);
 }
 
 /* ── As variantes ──────────────────────────────────────────────────────────────────────────
@@ -87,11 +100,15 @@
  * de active. Sem ele o botão carregando — que continua focável e continua recebendo hover,
  * porque `aria-disabled` não muda nada no navegador — acenderia como se ainda respondesse. */
 .primario {
-  background: var(--botao-cor);
-  color: var(--tinta-invertida);
+  /* 🔴 A RAMPA CHEIA e `--tinta-cheia`, e não `--acento` + `--tinta-invertida`. A tinta aqui é
+   * branca nos DOIS temas porque o chão é escuro nos dois; `--tinta-invertida` é escura no escuro,
+   * e foi ela que deixou o rótulo quase preto sobre azul pálido — aprovado em contraste
+   * (4,97) e lavado de olho, a ponto de o botão habilitado parecer o desabilitado. */
+  background: var(--botao-cheio);
+  color: var(--tinta-cheia);
 }
-.primario:hover:not(:disabled):not([aria-disabled='true']) { background: var(--botao-cor-hover); }
-.primario:active:not(:disabled):not([aria-disabled='true']) { background: var(--botao-cor-ativo); }
+.primario:hover:not(:disabled):not([aria-disabled='true']) { background: var(--botao-cheio-hover); }
+.primario:active:not(:disabled):not([aria-disabled='true']) { background: var(--botao-cheio-ativo); }
 
 .secundario {
   background: var(--superficie);
