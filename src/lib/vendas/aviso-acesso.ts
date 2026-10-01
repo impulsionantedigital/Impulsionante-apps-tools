@@ -82,7 +82,7 @@ export function textoDoAviso(aviso: AvisoAcesso): { titulo: string; corpo: strin
           'Seu acesso é uma degustação' +
           (aviso.diasRestantes === null ? '' : ` de ${dias(aviso.diasRestantes)}`) +
           '. Você está usando todos os recursos, sem as limitações de uma demonstração. ' +
-          'Quando o prazo acabar, criar e editar param — os cálculos que você fizer agora ficam guardados. ' +
+          'Quando o prazo acabar, criar e editar não será possível, mas os cálculos que você fizer agora ficam guardados. ' +
           'Para garantir o seu acesso, escolha um dos planos disponíveis.',
         acao: 'Escolher um plano',
       }
