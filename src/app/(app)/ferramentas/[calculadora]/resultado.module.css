@@ -19,6 +19,13 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: var(--s-3);
+  position: -webkit-sticky; /* Suporte para navegadores baseados em WebKit antigos */
+  position: sticky;
+  top: 0;                   /* Define a distância do topo onde ele deve travar */
+  z-index: 1000;            /* Garante que fique por cima do restante do conteúdo */
+  background-color: #333;
+  color: #fff;
+  padding: 16px;
 }
 .resumo > div {
   display: grid;
