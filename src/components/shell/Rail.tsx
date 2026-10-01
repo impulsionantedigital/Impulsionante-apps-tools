@@ -1,4 +1,5 @@
 import { Fragment } from 'react'
+import Link from 'next/link'
 import {
   LayoutGrid, LayoutDashboard, Target, CalendarClock, BarChart3,
   Contact, Building2, Settings, Zap, MessageSquare, BookOpen,
@@ -93,7 +94,15 @@ export default async function Rail({ user, wsAtivo, workspaces }: {
 
   return (
     <aside className={estilos.rail}>
-      <div className={estilos.marca}>
+      {/*
+       * 🔴 O bloco da marca é um LINK para a vitrine (`/ferramentas`). Decisão de 2026-09-30: é
+       * o gesto que qualquer pessoa tenta primeiro — clicar na logo para voltar ao início —, e no
+       * menu do produto o "início" é a vitrine, que é a tela que lista tudo o que ela tem.
+       *
+       * O `<Link>` do Next cobre o bloco inteiro, e não cada pedaço: uma âncora por elemento daria
+       * dois destinos indistinguíveis e um alvo de foco a mais por nada.
+       */}
+      <Link href="/ferramentas" className={estilos.marca} aria-label="Ir para as ferramentas">
         {/*
          * 🔴 Logo FIXA em asset, não a marca configurável (decisão de 2026-09-16): a sidebar
          * usa `public/marca/logo-clara.png` (traço claro) no tema ESCURO e
@@ -109,7 +118,7 @@ export default async function Rail({ user, wsAtivo, workspaces }: {
         <div className={estilos.marcaTexto}>
           <b>{marca.nome}</b>
         </div>
-      </div>
+      </Link>
 
       {}
       <div className={estilos.grupos}>

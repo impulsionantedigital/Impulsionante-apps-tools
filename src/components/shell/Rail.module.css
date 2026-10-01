@@ -101,6 +101,20 @@
   gap: var(--s-3);
   margin-inline: var(--s-4);
   padding: var(--s-2) var(--s-2) var(--s-4);
+  /* É um `<Link>` desde 2026-09-30 (leva à vitrine), então o visual de âncora sai todo. */
+  text-decoration: none;
+  color: inherit;
+  border-radius: var(--r-controle);
+  /* O foco e o hover ficam no BLOCO, não em cada peça: é um alvo só, e a área clicável é toda
+   * ela. Sem o hover, o bloco parecia texto morto e ninguém tentava clicar. */
+  transition: background-color var(--t-rapido) var(--suave);
+}
+
+.marca:hover { background: var(--superficie-hover); }
+
+.marca:focus-visible {
+  outline: 2px solid var(--acento);
+  outline-offset: 2px;
 }
 
 /* O anel interno e o brilho que o protótipo põe aqui continuam FORA: os dois exigiriam
