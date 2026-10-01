@@ -629,40 +629,55 @@
 
 /* ── Destinos: os cartões de link para outra tela ──────────────────────────────────────
  *
- * CÓPIA DECLARADA de `../config/config.module.css` (`.destinos` e família) — mexeu lá,
- * confira aqui. Aqui há um destino só (Testar o assistente), mas a grade de duas colunas
- * fica: ela é a mesma receita, e um segundo destino não pode exigir reescrever o CSS. */
+ * 🔴 SAÍRAM DA RECEITA DO `/config`, de propósito. Lá os destinos são uma LINHA DE LISTA sem
+ * caixa (`.destinos` em duas colunas, raio de controle, hover no lugar do fundo), porque são
+ * meia dúzia empilhada dentro de um painel e a borda de cada um somaria sete contornos na
+ * mesma tela. Aqui há UM destino, que é uma caixa autônoma no fim da aba — e caixa autônoma
+ * sem borda em `--superficie` sobre `--fundo` é 1,06:1 no escuro, ou seja, invisível.
+ *
+ * Por isso este bloco agora é a receita de PAINEL (`--superficie` · `--linha-forte` ·
+ * `--r-painel` · `--elev-1`), IMEDIATAMENTE à do `.bloco` logo acima. `--linha-forte` e não
+ * `--linha`: aqui a borda é o que DELIMITA um alvo de clique, e não um filete entre irmãos
+ * dentro de um painel.
+ *
+ * ⚠️ E não é cópia de `../config/config.module.css` — os nomes coincidem porque são o mesmo
+ * objeto (destino clicável), mas o desenho divergiu. Mudar um NÃO obriga a mudar o outro. */
 .destinos {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  column-gap: var(--s-6);
-  row-gap: var(--s-2);
+  /* Uma coluna: o cartão é uma caixa larga com uma linha de texto que rola até ~90 caracteres.
+   * Duas colunas a partir de `--content-max` (1440px) dariam 700px por cartão para 13px de
+   * texto — o subtítulo terminaria na metade e sobraria branco até a seta. */
+  grid-template-columns: minmax(0, 1fr);
   margin-top: var(--s-2);
 }
 
-@media (max-width: 720px) {
-  .destinos { grid-template-columns: minmax(0, 1fr); }
-}
-
-.destino {
+/* O LINK é a caixa. Aqui o card não tem botão ao lado (não há compra, como na vitrine), então
+ * nada impede a âncora de cobrir tudo — ícone, texto e seta num alvo de clique só. */
+.destinoLink {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: var(--s-3);
-  padding: var(--s-3);
-  border-radius: var(--r-controle);
+  min-width: 0;
+  padding: var(--s-4) var(--s-5);
+  background: var(--superficie);
+  border: 1px solid var(--linha-forte);
+  border-radius: var(--r-painel);
+  box-shadow: var(--elev-1);
   text-decoration: none;
   color: inherit;
   transition: background-color var(--t-rapido) var(--suave);
 }
 
-.destino:hover { background: var(--superficie-hover); }
+.destinoLink:hover { background: var(--superficie-hover); }
 
 /* `--icone-mudo` é permitido: o ícone tem o nome do destino escrito ao lado, que é a única
  * condição em que ele vale. */
 .destinoIcone {
   flex-shrink: 0;
   color: var(--icone-mudo);
-  /* Alinha o traço do ícone com a primeira linha de texto (13/1,45 = 19px de caixa). */
+  /* Alinha o traço do ícone com a primeira linha de texto (13/1,45 = 19px de caixa). Com o
+   * card em `align-items: center` este deslocamento centra pelo bloco de texto, e o ícone cai
+   * na linha do NOME em vez de flutuar no meio das duas. */
   margin-top: var(--s-1);
 }
 
@@ -698,14 +713,14 @@
   transition: opacity var(--t-rapido) var(--suave), transform var(--t-rapido) var(--mola);
 }
 
-.destino:hover .destinoSeta,
-.destino:focus-visible .destinoSeta {
+.destinoLink:hover .destinoSeta,
+.destinoLink:focus-visible .destinoSeta {
   opacity: 1;
   transform: none;
 }
 
 /* O anel do produto, e não o do navegador — mesma regra que as abas já carregam acima. */
-.destino:focus-visible {
+.destinoLink:focus-visible {
   outline: 2px solid var(--acento);
   outline-offset: 2px;
 }

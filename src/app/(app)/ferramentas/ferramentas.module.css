@@ -9,9 +9,25 @@
  * 🔴 Sem cor em hexadecimal e sem `opacity` para texto secundário: só token
  * (`--tinta-2`/`--tinta-3`), como o resto do kit (ver a nota no topo de `globals.css`).
  *
- * 🔴 A vitrine DIVERGIU dessas duas em 2026-09-22: aqui o card ganhou um botão de compra ao lado
- * do link, então o hover e o foco moraram para `.destinoLink`. As outras duas continuam com o link
- * cobrindo o card inteiro — não propague esta mudança para lá sem necessidade.
+ * 🔴 A vitrine DIVERGIU das duas em 2026-09-22: aqui o card ganhou um botão de compra ao lado do
+ * link, então o hover e o foco moraram para `.destinoLink`. `config` continua com o link cobrindo
+ * o card inteiro.
+ *
+ * 🔴 E DIVERGIU DE NOVO AGORA, em duas frentes — `agentes` acompanhou, `config` não:
+ *
+ *   1. O CARD VIROU UMA CAIXA (borda + superfície + elevação). Ele era linha de lista sem
+ *      contorno, e o dono não conseguia ver onde um card terminava e o outro começava: em
+ *      `--superficie` sem borda a silhueta depende da diferença de fundo, que aqui é 1,06 no
+ *      escuro. A borda passa a ser `--linha-forte` (a do que CONTÉM — input, cartão, drawer),
+ *      e o raio é `--r-painel` (14), o raio de painel: o card levanta em vez de delimitar.
+ *      Em `config` a caixa continua fora de propósito: são seis linhas empilhadas DENTRO de um
+ *      painel, e seis contornos dentro de uma caixa já contornada é caixa dentro de caixa.
+ *   2. A GRADE PASSOU A TER 3 COLUNAS em tela larga, com o card mais estreito e o vão entre
+ *      LINHAS maior que o de coluna — empilhado, o card de uma linha encostava no de baixo.
+ *
+ * ⚠️ Mexeu na família `.destino*` daqui? Confira `../agentes/agentes.module.css`, que é a
+ * segunda cópia declarada. `../config/config.module.css` é a versão SEM caixa, e lá está dito
+ * por quê.
  */
 
 .pagina {
@@ -20,34 +36,59 @@
   gap: var(--s-6);
 }
 
+/* 🔴 TRÊS POR LINHA, e não um número fixo de colunas: são três produtos hoje, e o dia que entrar
+ * um quarto o card nasce sozinho na linha de baixo. `minmax(260px, 1fr)` é o piso — numa tela
+ * larga ele dá as três colunas com folga; estreitando, a grade abre 2 e depois 1 sozinha. O piso
+ * poderia ser `320px` e ainda fechar as três aqui, mas 260 é o que garante a transição em DUAS
+ * etapas (3 → 2 → 1) em vez de pular de 3 para 1 numa janela de 900px. */
 .destinos {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  column-gap: var(--s-6);
-  row-gap: var(--s-2);
-}
-
-@media (max-width: 720px) {
-  .destinos { grid-template-columns: minmax(0, 1fr); }
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  column-gap: var(--s-4);
+  /* 🔴 O VÃO ENTRE LINHAS É MAIOR QUE ENTRE COLUNAS, e é isso que resolve o "cards colados":
+   * empilhados, dois cards se tocavam com os 4px do `--s-2` antigo — que era o vão de LINHA DE
+   * LISTA (sem borda, o realce de hover separa uma da outra). Com caixa, quem separa é a borda de
+   * cada um, e 4px de vão entre duas bordas lê como card colado no de cima. */
+  row-gap: var(--s-5);
 }
 
 /* O card: uma caixa que contém o link do produto e, quando há, o botão de compra. */
 .destino {
   display: flex;
-  align-items: center;
+  /* `stretch`, e não `center`: se um dos produtos ganhar subtítulo de duas linhas, o botão de
+   * compra do vizinho continua centrado na altura toda do card em vez de subir pro topo. Hoje
+   * os três têm a mesma altura, então os dois valores dão o mesmo desenho. */
+  align-items: stretch;
   gap: var(--s-2);
-  border-radius: var(--r-controle);
+  /* Os quatro tokens da receita de painel. `--linha-forte` e não `--linha`: aqui a borda é o que
+   * DELIMITA um objeto que a pessoa clica, não um filete entre irmãos.
+   *
+   * O `overflow: hidden` é por causa do realce de hover do link de dentro: o raio do card é
+   * `--r-painel` (14) e o do link é `--r-controle` (10) — sem ele o canto do realce ficaria
+   * quadrado por fora do canto arredondado do card. */
+  background: var(--superficie);
+  border: 1px solid var(--linha-forte);
+  border-radius: var(--r-painel);
+  box-shadow: var(--elev-1);
+  overflow: hidden;
 }
 
 /* 🔴 O LINK é quem tem o hover e o foco, não o card: o botão de compra é irmão dele (âncora dentro
  * de âncora é HTML inválido), e pintar o card inteiro no hover do link faria o botão piscar junto. */
 .destinoLink {
   display: flex;
+  /* Centralizado no CARD pelo `stretch` de cima; aqui dentro o bloco de texto é que manda. */
+  align-self: center;
+  /* `flex-start`, e não `center`: o texto do produto tem duas ou três linhas (nome, descrição,
+   * decreto), e centrado o ícone e a seta desceriam para o meio do bloco. */
   align-items: flex-start;
   gap: var(--s-3);
   flex: 1;
   min-width: 0;
-  padding: var(--s-3);
+  /* `--s-3` em cima e embaixo contra `--s-4` nas laterais: empilhado, o card carrega UM bloco de
+   * texto, então o respiro que importa é o que separa um card do seguinte — e esse é o `row-gap`.
+   * Um padding maior aqui só engordaria a caixa sem separar nada. */
+  padding: var(--s-3) var(--s-4);
   border-radius: var(--r-controle);
   text-decoration: none;
   color: inherit;
@@ -58,12 +99,15 @@
 
 .destinoLink:focus-visible {
   outline: 2px solid var(--acento);
-  outline-offset: 2px;
+  /* `-2px` (por dentro), e não `2px`: com a caixa em volta, um anel por fora dela fica recortado
+   * pelo `overflow: hidden` do card. É a mesma decisão do `.clicavel` do ListCard. */
+  outline-offset: -2px;
 }
 
 .destinoAcao {
   flex-shrink: 0;
-  padding-right: var(--s-3);
+  align-self: center;
+  padding-right: var(--s-4);
 }
 
 .destinoIcone {

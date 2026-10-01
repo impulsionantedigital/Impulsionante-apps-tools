@@ -225,7 +225,10 @@ export default function ListaDeAgentes({ inicial }: { inicial: PainelDoAgente })
 
       {}
       <div className={estilos.destinos}>
-        <Link href="/agentes/testar" className={estilos.destino}>
+        {/* 🔴 O `href` vai no `<div>` porque aqui o card é UMA caixa só (ícone + texto + seta),
+            diferente do card da vitrine (`/ferramentas`), que tem o botão de compra ao lado do
+            link. Sem compra, não há âncora-dentro-de-âncora: é o `<Link>` que carrega a caixa. */}
+        <Link href="/agentes/testar" className={estilos.destinoLink}>
           <span className={estilos.destinoIcone}>
             <MessagesSquare size={16} strokeWidth={1.75} />
           </span>
