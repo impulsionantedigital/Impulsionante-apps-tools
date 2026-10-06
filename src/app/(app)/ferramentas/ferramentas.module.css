@@ -104,6 +104,37 @@
   outline-offset: -2px;
 }
 
+/* O aviso de "os cursos ficam na Hotmart". Fundo `--acento-wash` e borda `--linha-forte`: é
+ * informação, não erro nem pendência — não usa `--aviso`, que lê como "algo deu errado". */
+.aviso {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-3);
+  padding: var(--s-4) var(--s-5);
+  border: 1px solid var(--linha-forte);
+  border-radius: var(--r-painel);
+  background: var(--acento-wash);
+}
+
+.avisoIcone {
+  flex-shrink: 0;
+  color: var(--acento);
+  margin-top: 3px;
+}
+
+.avisoTexto {
+  margin: 0;
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  color: var(--tinta-2);
+}
+
+.avisoTexto a {
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 .destinoAcao {
   flex-shrink: 0;
   align-self: center;

@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { ChevronRight, Lock, Scale } from 'lucide-react'
+import { ChevronRight, Info, Lock, Scale } from 'lucide-react'
 import CabecalhoPagina from '@/components/ui/CabecalhoPagina'
 import Botao from '@/components/ui/Botao'
 import { tituloDaPagina } from '@/server/marca'
@@ -38,6 +38,20 @@ export default async function FerramentasPage() {
   return (
     <div className={estilos.pagina}>
       <CabecalhoPagina titulo="Ferramentas" subtitulo="Cálculos de execução penal." />
+
+      {/* Quem compra o curso chega aqui achando que é a área de aulas. Este aviso devolve a pessoa
+          para o lugar certo antes que ela conclua que o acesso dela não funciona. */}
+      <aside className={estilos.aviso} role="note">
+        <Info size={16} strokeWidth={1.75} className={estilos.avisoIcone} aria-hidden="true" />
+        <p className={estilos.avisoTexto}>
+          O acesso aos cursos GPS da Pena deve ser feito com seu usuário e senha da Hotmart através
+          do link{' '}
+          <a href="https://clube.gpsdapena.com.br/" target="_blank" rel="noopener noreferrer">
+            clube.gpsdapena.com.br
+          </a>
+          . Esta área é exclusiva para acesso às ferramentas criadas pelo GPS da Pena.
+        </p>
+      </aside>
 
       <div className={estilos.destinos}>
         {cartoes.map(({ produto, cartao }) => (
