@@ -28,6 +28,7 @@ type LinhaVersao = {
   extensao: Extensao
   origem: 'envio' | 'reprocesso'
   etapa: Etapa | null
+  tentativas: number
 }
 
 function falhou(onde: string, error: { message?: string; code?: string } | null): never {
@@ -55,10 +56,10 @@ export function criarRepoSupabase(db: () => SupabaseClient = admin): RepoDocumen
   const trechos = () => db().from('base_conhecimento')
 
   return {
-    async reivindicar(reservaMs) {
+    async reivindicar(reservaMs, sinalDoBraco) {
       const { data, error } = await db()
         .rpc('base_versao_reivindicar', { p_reserva_s: Math.ceil(reservaMs / 1000) })
-        .abortSignal(sinal())
+        .abortSignal(sinalDoBraco ?? sinal())
       if (error) falhou('reivindicar', error)
       const linha = (Array.isArray(data) ? data[0] : data) as LinhaVersao | undefined | null
       if (!linha) return null
@@ -68,7 +69,7 @@ export function criarRepoSupabase(db: () => SupabaseClient = admin): RepoDocumen
         .select('nome_exibicao')
         .eq('workspace_id', linha.workspace_id)
         .eq('id', linha.documento_id)
-        .abortSignal(sinal())
+        .abortSignal(sinalDoBraco ?? sinal())
         .maybeSingle()
       if (eDoc) falhou('reivindicar: documento', eDoc)
 
@@ -81,6 +82,7 @@ export function criarRepoSupabase(db: () => SupabaseClient = admin): RepoDocumen
         extensao: linha.extensao,
         origem: linha.origem,
         etapa: linha.etapa,
+        tentativas: Number(linha.tentativas) || 1,
       }
     },
 
@@ -291,12 +293,27 @@ export function criarRepoSupabase(db: () => SupabaseClient = admin): RepoDocumen
       if (error) falhou('removerObjetos', error)
     },
 
-    async faxina() {
-      const { data, error } = await db().rpc('base_versoes_faxina').abortSignal(sinal())
+    async faxina(sinalDoBraco) {
+      const { data, error } = await db().rpc('base_versoes_faxina').abortSignal(sinalDoBraco ?? sinal())
       if (error) falhou('faxina', error)
       return ((data ?? []) as Array<{ caminho: string | null }>)
         .map((l) => l.caminho)
         .filter((c): c is string => typeof c === 'string' && c !== '')
+    },
+
+    async contagemDeFrases(v) {
+      const contar = (soSemFrase: boolean) => {
+        let q = trechos()
+          .select('id', { count: 'exact', head: true })
+          .eq('workspace_id', v.workspaceId)
+          .eq('versao_id', v.id)
+        if (soSemFrase) q = q.eq('contexto', '')
+        return q.abortSignal(sinal())
+      }
+      const [todos, sem] = await Promise.all([contar(false), contar(true)])
+      if (todos.error) falhou('contagemDeFrases', todos.error)
+      if (sem.error) falhou('contagemDeFrases', sem.error)
+      return { total: todos.count ?? 0, semFrase: sem.count ?? 0 }
     },
   }
 }

@@ -31,6 +31,10 @@ const MOTIVO_TETO = 'O arquivo geraria mais de 20.000 trechos. Divida-o em parte
 const MOTIVO_SEM_TEXTO = 'Não encontrei texto neste arquivo.'
 const MOTIVO_SEM_OBJETO = 'O arquivo não está mais guardado. Envie o arquivo de novo.'
 const MOTIVO_VETOR = 'Não consegui gerar a busca por significado agora. Tente reprocessar mais tarde.'
+const MOTIVO_EXTRACAO_INTERROMPIDA =
+  'A leitura deste arquivo foi interrompida duas vezes (o servidor pode ter ficado sem memória). Tente um arquivo menor ou divida-o em partes.'
+/** Acima desta fração de trechos sem frase de contexto, a promoção deixa um aviso no log. */
+const FRACAO_SEM_FRASE_PARA_AVISO = 0.2
 const motivoDuplicata = (nome: string) => `Este arquivo é igual a «${nome}», que já está na base.`
 
 export type VersaoReivindicada = {
@@ -42,10 +46,13 @@ export type VersaoReivindicada = {
   extensao: Extensao
   origem: 'envio' | 'reprocesso'
   etapa: Etapa | null
+  /** Quantas vezes a versão foi reivindicada, contando esta (o `base_versao_reivindicar` soma 1). */
+  tentativas: number
 }
 
 export interface RepoDocumentos {
-  reivindicar(reservaMs: number): Promise<VersaoReivindicada | null>
+  /** `sinal` aborta as consultas: o braço do tick tem só uma fatia curta para reivindicar. */
+  reivindicar(reservaMs: number, sinal?: AbortSignal): Promise<VersaoReivindicada | null>
   /** `false` = a versão sumiu (ou deixou de estar em processamento). */
   renovar(v: VersaoReivindicada, reservaMs: number): Promise<boolean>
   /** Tamanho real do objeto no Storage, em bytes; `null` = objeto não encontrado. */
@@ -73,8 +80,10 @@ export interface RepoDocumentos {
   removerObjeto(caminho: string): Promise<void>
   /** Vários objetos numa chamada só (a faxina). */
   removerObjetos(caminhos: string[]): Promise<void>
-  /** Caminhos de objetos a apagar do bucket. */
-  faxina(): Promise<string[]>
+  /** Caminhos de objetos a apagar do bucket. `sinal` aborta a consulta (fatia do braço do tick). */
+  faxina(sinal?: AbortSignal): Promise<string[]>
+  /** Trechos da versão e quantos deles ficaram com `contexto = ''` (a frase falhou). */
+  contagemDeFrases(v: VersaoReivindicada): Promise<{ total: number; semFrase: number }>
 }
 
 export type Deps = {
@@ -267,6 +276,11 @@ export async function processarVersao(v: VersaoReivindicada, d: Deps): Promise<F
 
 async function executar(v: VersaoReivindicada, d: Deps, reserva: Reserva): Promise<Fim> {
   const etapa = v.etapa
+  // Reivindicada de novo AINDA em `extraindo`: a tentativa anterior começou a ler o arquivo e
+  // nunca terminou — o caso típico é o processo morto por falta de memória no meio de um arquivo
+  // grande. Tentar de novo derrubaria o servidor (e o WhatsApp junto) outra vez. Falha sem ler;
+  // o objeto fica no bucket para o dono poder reprocessar depois, se quiser.
+  if (etapa === 'extraindo' && v.tentativas >= 2) return falhar(v, d, MOTIVO_EXTRACAO_INTERROMPIDA)
   if (etapa === null || etapa === 'extraindo') {
     const fim = await extrair(v, d, reserva)
     if (fim) return fim
@@ -281,8 +295,24 @@ async function executar(v: VersaoReivindicada, d: Deps, reserva: Reserva): Promi
 
   const antigo = await d.repo.promover(v)
   if (antigo === null) return 'sumiu'
+  await avisarSeMuitosSemFrase(v, d)
   if (antigo !== '') {
     await d.repo.removerObjeto(antigo).catch((err) => avisar('não consegui apagar o arquivo da versão antiga', err))
   }
   return 'pronto'
+}
+
+/** Só o log: a contagem de trechos sem frase de contexto, quando passa de 20%. Sem conteúdo do
+ *  arquivo nem nome do documento — só ids e números. Erro aqui nunca desfaz a promoção. */
+async function avisarSeMuitosSemFrase(v: VersaoReivindicada, d: Deps): Promise<void> {
+  try {
+    const { total, semFrase } = await d.repo.contagemDeFrases(v)
+    if (total > 0 && semFrase / total > FRACAO_SEM_FRASE_PARA_AVISO) {
+      console.warn(
+        `[base-documentos] versão ${v.id} (espaço ${v.workspaceId}) promovida com ${semFrase} de ${total} trechos sem frase de contexto`,
+      )
+    }
+  } catch (err) {
+    avisar('não consegui contar os trechos sem frase', err)
+  }
 }

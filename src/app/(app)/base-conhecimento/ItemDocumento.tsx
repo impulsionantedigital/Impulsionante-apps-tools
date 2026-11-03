@@ -6,7 +6,7 @@ import Botao from '@/components/ui/Botao'
 import { Entrada } from '@/components/ui/Campo'
 import { formatarTamanho } from '@/lib/anexo'
 import { formatarDataHora } from '@/lib/data-hora'
-import { acoesDoDocumento, formatarCusto, rotuloDoStatus } from '@/lib/base-documentos/tela'
+import { acoesDoDocumento, avisoSemContexto, formatarCusto, rotuloDoStatus } from '@/lib/base-documentos/tela'
 import {
   alternarDocumento,
   cancelarEnvio,
@@ -163,6 +163,16 @@ export default function ItemDocumento({
           {!doc.ligado ? <span className={`${estilos.selo} ${estilos.selo_neutro}`}>desligado</span> : null}
           {assistentes.length > 1 ? <span className={local.meta}>Usado por: {nomesDosAssistentes}</span> : null}
         </span>
+        {[doc.ativa, doc.pendente].map((v) => {
+          const aviso = v ? avisoSemContexto(v.semContexto) : null
+          if (!v || !aviso) return null
+          return (
+            <span key={v.id} className={local.meta}>
+              {doc.ativa && doc.pendente ? `${v === doc.ativa ? 'Em uso' : 'Nova versão'}: ` : ''}
+              {aviso}
+            </span>
+          )
+        })}
       </div>
 
       <div className={estilos.acoes}>

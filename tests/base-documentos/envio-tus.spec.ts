@@ -5,6 +5,7 @@ import {
   formatarCusto,
   formatarMB,
   precisaAcompanhar,
+  avisoSemContexto,
   rotuloDoStatus,
 } from '../../src/lib/base-documentos/tela'
 
@@ -66,6 +67,26 @@ describe('formatação', () => {
     expect(formatarMB(0)).toBe('0,0 MB')
     expect(formatarMB(6 * 1024 * 1024)).toBe('6,0 MB')
     expect(formatarMB(1.25 * 1024 * 1024)).toBe('1,3 MB')
+  })
+})
+
+describe('avisoSemContexto', () => {
+  it('nenhum trecho sem frase: nada aparece', () => {
+    expect(avisoSemContexto(0)).toBeNull()
+    expect(avisoSemContexto(-1)).toBeNull()
+    expect(avisoSemContexto(Number.NaN)).toBeNull()
+  })
+
+  it('um trecho: singular', () => {
+    expect(avisoSemContexto(1)).toBe(
+      '1 trecho ficou sem frase de contexto (a busca dele fica um pouco pior). Reprocessar pode resolver.',
+    )
+  })
+
+  it('vários trechos: plural com o número', () => {
+    expect(avisoSemContexto(37)).toBe(
+      '37 trechos ficaram sem frase de contexto (a busca deles fica um pouco pior). Reprocessar pode resolver.',
+    )
   })
 })
 

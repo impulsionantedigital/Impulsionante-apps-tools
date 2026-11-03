@@ -61,6 +61,8 @@ export type ResumoVersao = {
   feitos: number
   custoEstimadoUsd: number | null
   criadoEm: string
+  /** Trechos desta versão cuja frase de contexto falhou (`contexto = ''`). */
+  semContexto: number
 }
 
 export type DocumentoNaTela = {
@@ -682,7 +684,7 @@ export async function trocarAssistentesDoDocumento(id: string, assistentes: stri
   }
 }
 
-function resumo(v: LinhaVersao, feitos: number): ResumoVersao {
+function resumo(v: LinhaVersao, feitos: number, semContexto: number): ResumoVersao {
   const custo = v.custo_estimado_usd == null ? null : Number(v.custo_estimado_usd)
   return {
     id: v.id,
@@ -693,7 +695,21 @@ function resumo(v: LinhaVersao, feitos: number): ResumoVersao {
     feitos,
     custoEstimadoUsd: custo != null && Number.isFinite(custo) ? custo : null,
     criadoEm: v.criado_em,
+    semContexto,
   }
+}
+
+/** Trechos da versão com a frase de contexto falhada (`contexto = ''`), numa contagem só. */
+async function semContextoDaVersao(ws: string, v: LinhaVersao): Promise<number> {
+  if (v.status !== 'pronto' && v.status !== 'processando') return 0
+  const { count, error } = await admin()
+    .from('base_conhecimento')
+    .select('id', { count: 'exact', head: true })
+    .eq('workspace_id', ws)
+    .eq('versao_id', v.id)
+    .eq('contexto', '')
+  if (error) throw error
+  return count ?? 0
 }
 
 /** Quantos trechos a etapa atual já fez: contexto gravado ou vetor gravado. */
@@ -715,7 +731,8 @@ async function feitosDaVersao(ws: string, v: LinhaVersao): Promise<number> {
 /**
  * Sem N+1: documentos, versões e recortes em três consultas. O total de trechos da ativa é o
  * `trechos_total` gravado pelo processador (a versão só vira ativa com todos inseridos); a única
- * contagem extra é a do progresso, uma por versão no meio do processamento.
+ * contagem extra é a do progresso, uma por versão no meio do processamento, mais a dos trechos sem
+ * frase de contexto — só para a ativa e a pendente de cada documento.
  */
 export async function listarDocumentos(): Promise<DocumentoNaTela[] | { erro: string }> {
   const s = await abrirParaLer()
@@ -769,12 +786,15 @@ export async function listarDocumentos(): Promise<DocumentoNaTela[] | { erro: st
     })
 
     const progresso = new Map<string, number>()
-    await Promise.all(
-      montados
-        .map((m) => m.pendente)
-        .filter((v): v is LinhaVersao => v !== null)
-        .map(async (v) => progresso.set(v.id, await feitosDaVersao(ws, v))),
+    const semContexto = new Map<string, number>()
+    const pendentes = montados.map((m) => m.pendente).filter((v): v is LinhaVersao => v !== null)
+    const ativasEPendentes = [...montados.map((m) => m.ativa), ...pendentes].filter(
+      (v): v is LinhaVersao => v !== null,
     )
+    await Promise.all([
+      ...pendentes.map(async (v) => progresso.set(v.id, await feitosDaVersao(ws, v))),
+      ...ativasEPendentes.map(async (v) => semContexto.set(v.id, await semContextoDaVersao(ws, v))),
+    ])
 
     return montados.map(({ d, ativa, pendente }): DocumentoNaTela => {
       const referencia = ativa ?? pendente ?? (porDocumento.get(d.id) ?? [])[0] ?? null
@@ -788,8 +808,10 @@ export async function listarDocumentos(): Promise<DocumentoNaTela[] | { erro: st
         trechos: ativa?.trechos_total ?? 0,
         atualizadoEm: d.atualizado_em,
         assistentes: assistentesPor.get(d.id) ?? [],
-        ativa: ativa ? resumo(ativa, ativa.trechos_total ?? 0) : null,
-        pendente: pendente ? resumo(pendente, progresso.get(pendente.id) ?? 0) : null,
+        ativa: ativa ? resumo(ativa, ativa.trechos_total ?? 0, semContexto.get(ativa.id) ?? 0) : null,
+        pendente: pendente
+          ? resumo(pendente, progresso.get(pendente.id) ?? 0, semContexto.get(pendente.id) ?? 0)
+          : null,
       }
     })
   } catch (err) {

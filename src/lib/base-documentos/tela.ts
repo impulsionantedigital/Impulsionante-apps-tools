@@ -30,6 +30,18 @@ export function rotuloDoStatus(v: VersaoParaRotulo): string {
   }
 }
 
+/**
+ * A linha que aparece quando a frase de contexto falhou em alguns trechos da versão (ficaram com
+ * `contexto = ''`). `null` = nenhum: a tela não mostra nada.
+ */
+export function avisoSemContexto(semContexto: number): string | null {
+  if (!Number.isFinite(semContexto) || semContexto <= 0) return null
+  if (semContexto === 1) {
+    return '1 trecho ficou sem frase de contexto (a busca dele fica um pouco pior). Reprocessar pode resolver.'
+  }
+  return `${semContexto} trechos ficaram sem frase de contexto (a busca deles fica um pouco pior). Reprocessar pode resolver.`
+}
+
 /** `≈ US$ 0,54` — sempre com duas casas e nunca abaixo de um centavo. */
 export function formatarCusto(usd: number): string {
   const centavos = Math.max(1, Math.round(usd * 100))
