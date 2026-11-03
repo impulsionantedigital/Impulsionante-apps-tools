@@ -1,0 +1,177 @@
+/* A área de documentos da base de conhecimento. O esqueleto (bloco, lista, item, selo, ações,
+ * confirmação, erro) vem de `config.module.css`, e os controles vêm da camada de componente
+ * (`Botao`, `Entrada`). Aqui fica só o que é desta área: a zona de soltar, a barra de
+ * progresso e a lista de trechos. */
+
+/* A zona de soltar. Tracejada de propósito: é o único lugar da tela que aceita um gesto de
+ * arrastar, e o tracejado é a convenção que diz isso sem texto. */
+.zona {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--s-4);
+  padding: var(--s-4);
+  border: 1px dashed var(--linha-forte);
+  border-radius: var(--r-controle);
+  background: var(--trilho);
+  color: var(--tinta-2);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  transition: border-color var(--t-rapido) var(--suave), background var(--t-rapido) var(--suave);
+}
+
+.zonaAtiva {
+  border-color: var(--acento);
+  background: var(--superficie);
+}
+
+.zonaTexto {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  min-width: 0;
+}
+
+.zonaTexto strong {
+  font-weight: 500;
+  color: var(--tinta);
+}
+
+.dica {
+  color: var(--tinta-3);
+}
+
+/* Os <input type="file"> ficam fora da vista: quem os abre são os botões. */
+.escondido {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* O envio em andamento: nome, MB enviados/total e o botão de cancelar. */
+.envio {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.envioLinha {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--s-3);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  color: var(--tinta-2);
+}
+
+.envioNome {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--tinta);
+  font-weight: 500;
+}
+
+.numeros {
+  color: var(--tinta-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.barra {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--trilho);
+  overflow: hidden;
+}
+
+.barraCheia {
+  height: 100%;
+  background: var(--acento);
+  transition: width var(--t-rapido) var(--suave);
+}
+
+/* A linha do documento: nome em cima, os dados embaixo. */
+.meta {
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  color: var(--tinta-3);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.nomeLinha {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+}
+
+.nome {
+  overflow-wrap: anywhere;
+}
+
+.selos {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  flex-wrap: wrap;
+}
+
+/* Quebra a linha do `.item` (flex com wrap) para os painéis abertos dentro dele. */
+.painel {
+  flex-basis: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  padding: var(--s-2) 0 var(--s-3);
+}
+
+.trechos {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
+.trecho {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  padding: var(--s-3);
+  border-radius: var(--r-controle);
+  background: var(--trilho);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  color: var(--tinta-2);
+}
+
+.trechoCaminho {
+  font-weight: 500;
+  color: var(--tinta);
+  overflow-wrap: anywhere;
+}
+
+.trechoContexto {
+  color: var(--tinta-3);
+  font-style: italic;
+}
+
+.trechoTexto {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.paginacao {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  flex-wrap: wrap;
+  font-size: var(--fs-body);
+  color: var(--tinta-3);
+  font-variant-numeric: tabular-nums;
+}

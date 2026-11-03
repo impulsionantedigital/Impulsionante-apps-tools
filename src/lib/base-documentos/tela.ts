@@ -1,0 +1,55 @@
+// Frases e números que a tela de documentos mostra. Puro, sem React e sem servidor: o componente
+// de cliente importa daqui, e os testes também.
+import type { Etapa, StatusVersao } from './tipos'
+
+const MB = 1024 * 1024
+
+type VersaoParaRotulo = {
+  status: StatusVersao
+  etapa: Etapa | null
+  motivo: string | null
+  trechosTotal: number
+  feitos: number
+}
+
+/** O status da versão em português, como a pessoa lê na lista. */
+export function rotuloDoStatus(v: VersaoParaRotulo): string {
+  switch (v.status) {
+    case 'enviando':
+      return 'Enviando'
+    case 'na_fila':
+      return 'Na fila'
+    case 'pronto':
+      return 'Pronto'
+    case 'erro':
+      return `Erro: ${v.motivo?.trim() || 'motivo não informado'}`
+    case 'processando':
+      if (v.etapa === 'contextualizando') return `Gerando contexto (${v.feitos}/${v.trechosTotal})`
+      if (v.etapa === 'vetorizando') return `Gerando busca (${v.feitos}/${v.trechosTotal})`
+      return 'Lendo o arquivo'
+  }
+}
+
+/** `≈ US$ 0,54` — sempre com duas casas e nunca abaixo de um centavo. */
+export function formatarCusto(usd: number): string {
+  const centavos = Math.max(1, Math.round(usd * 100))
+  return `≈ US$ ${(centavos / 100).toFixed(2).replace('.', ',')}`
+}
+
+/** `6,0 MB` — a barra de progresso fala em MB do começo ao fim, para os dois números baterem. */
+export function formatarMB(bytes: number): string {
+  return `${(Math.max(0, bytes) / MB).toFixed(1).replace('.', ',')} MB`
+}
+
+/**
+ * A tela recarrega a lista enquanto o processador ainda tem trabalho (na fila ou processando).
+ * `enviando` fica de fora: quem anda com ele é o navegador que está enviando — e um envio
+ * abandonado ficaria `enviando` para sempre, prendendo a tela num recarregar sem fim.
+ */
+export function precisaAcompanhar(
+  documentos: ReadonlyArray<{ ativa: { status: StatusVersao } | null; pendente: { status: StatusVersao } | null }>,
+): boolean {
+  return documentos.some((d) =>
+    [d.ativa, d.pendente].some((v) => v?.status === 'na_fila' || v?.status === 'processando'),
+  )
+}

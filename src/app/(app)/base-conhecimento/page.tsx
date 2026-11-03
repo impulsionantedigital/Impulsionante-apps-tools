@@ -11,6 +11,9 @@ import { CHAVE_OPENAI } from '@/server/agente/chaves'
 import { lerAssistentesDoWorkspace } from '@/server/agente/painel'
 import { contarSemVetor, listarBase } from '@/server/crm/base-conhecimento'
 import BaseDeConhecimento from './BaseDeConhecimento'
+import Documentos from './Documentos'
+import { listarDocumentos, type DocumentoNaTela } from './acoes-documentos'
+import { limiteBytesArquivo } from '@/server/base-documentos/config'
 import estilos from '../config/config.module.css'
 import CabecalhoPagina from '@/components/ui/CabecalhoPagina'
 import { tituloDaPagina } from '@/server/marca'
@@ -21,7 +24,7 @@ export async function generateMetadata() {
 
 
 const SUBTITULO =
-  'Os fatos do seu negócio — preço, prazo, política. É daqui que o assistente tira essas respostas; o que não estiver escrito, ele diz que não sabe.'
+  'Os fatos do seu negócio — preço, prazo, política — escritos aqui ou nos documentos que você enviar. É daqui que o assistente tira essas respostas; o que não estiver aqui, ele diz que não sabe.'
 
 
 export default async function BaseDeConhecimentoPage() {
@@ -100,11 +103,30 @@ export default async function BaseDeConhecimentoPage() {
   
   const assistentes = assistentesBrutos.map((a) => ({ id: a.id, nomeInterno: a.nomeInterno }))
 
+  // Documentos: só quem administra o espaço os enxerga (as ações exigem o dono). Uma falha aqui
+  // não derruba os cards — vira a frase de erro dentro da área de documentos.
+  let documentos: DocumentoNaTela[] = []
+  let erroDocumentos: string | null = null
+  if (ws && ehOwner) {
+    const r = await listarDocumentos()
+    if (Array.isArray(r)) documentos = r
+    else erroDocumentos = r.erro
+  }
+
   return (
     <div className={estilos.pagina}>
       <CabecalhoPagina
         titulo="O que o assistente sabe"
         subtitulo={SUBTITULO}
+      />
+      <Documentos
+        documentos={documentos}
+        erroAoListar={erroDocumentos}
+        limiteBytes={limiteBytesArquivo()}
+        temChave={temChave}
+        ehDono={ehDono}
+        ehOwner={ehOwner}
+        assistentes={assistentes}
       />
       <BaseDeConhecimento
         entradas={entradas}
