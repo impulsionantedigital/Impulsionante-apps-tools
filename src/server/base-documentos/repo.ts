@@ -36,7 +36,7 @@ function falhou(onde: string, error: { message?: string; code?: string } | null)
   throw e
 }
 
-async function comTempo<T>(p: Promise<T>, ms: number, onde: string): Promise<T> {
+export async function comTempo<T>(p: Promise<T>, ms: number, onde: string): Promise<T> {
   let relogio: ReturnType<typeof setTimeout> | undefined
   try {
     return await Promise.race([
@@ -262,6 +262,16 @@ export function criarRepoSupabase(db: () => SupabaseClient = admin): RepoDocumen
         'removerObjeto',
       )
       if (error) falhou('removerObjeto', error)
+    },
+
+    async removerObjetos(caminhos) {
+      if (caminhos.length === 0) return
+      const { error } = await comTempo(
+        db().storage.from(BUCKET_ARQUIVOS).remove(caminhos),
+        TEMPO_REMOCAO_MS,
+        'removerObjetos',
+      )
+      if (error) falhou('removerObjetos', error)
     },
 
     async faxina() {

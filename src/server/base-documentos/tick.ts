@@ -8,7 +8,12 @@ import { embedarLote } from '@/server/agente/embed'
 import { extrairNoWorker } from './extrair-no-worker'
 import { gerarFraseDeContexto } from './frase-contexto'
 import { processarVersao, RESERVA_MS, type Deps } from './processar'
-import { criarRepoSupabase } from './repo'
+import { comTempo, criarRepoSupabase } from './repo'
+
+/** Objetos por chamada de remoção na faxina. */
+const OBJETOS_POR_REMOCAO = 100
+/** Teto do tempo da faxina no Storage: o braço inteiro tem 2.000 ms. */
+const TETO_FAXINA_MS = 1_500
 
 /** Processamento em andamento NESTE processo (no máximo um). */
 let emAndamento: Promise<void> | null = null
@@ -28,12 +33,22 @@ export async function drenarDocumentos(
 
   let limpos = 0
   try {
-    for (const caminho of await deps.repo.faxina()) {
+    const caminhos = await deps.repo.faxina()
+    // Em grupos, numa chamada por grupo, dentro de uma fatia curta: o braço nunca segura o tick.
+    // O que não couber fica órfão no bucket (a linha já saiu) — só o log registra.
+    const prazo = Date.now() + Math.min(TETO_FAXINA_MS, orcamento.fatiaPara('documentos'))
+    for (let i = 0; i < caminhos.length; i += OBJETOS_POR_REMOCAO) {
+      const resta = prazo - Date.now()
+      if (resta <= 0) {
+        console.warn('[base-documentos] faxina: sem tempo para apagar todos os objetos')
+        break
+      }
+      const grupo = caminhos.slice(i, i + OBJETOS_POR_REMOCAO)
       try {
-        await deps.repo.removerObjeto(caminho)
-        limpos++
+        await comTempo(deps.repo.removerObjetos(grupo), resta, 'faxina')
+        limpos += grupo.length
       } catch (err) {
-        console.warn('[base-documentos] faxina: não consegui apagar um objeto:', detalheSeguro(err))
+        console.warn('[base-documentos] faxina: não consegui apagar objetos:', detalheSeguro(err))
       }
     }
   } catch (err) {

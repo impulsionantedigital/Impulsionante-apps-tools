@@ -16,6 +16,9 @@ import type { gerarFraseDeContexto } from './frase-contexto'
 export const RESERVA_MS = 120_000
 export const TETO_TRECHOS_POR_VERSAO = 20_000
 export const CONCORRENCIA_CONTEXTO = 4
+/** Renovação periódica da reserva enquanto a versão roda: bem abaixo de `RESERVA_MS`, para que um
+ *  passo lento (download, parse antes do primeiro lote, um lote de frases) nunca a deixe vencer. */
+export const RENOVACAO_MS = 30_000
 
 const LOTE_CONTEXTO = 50
 const LOTE_VETOR = 64
@@ -63,6 +66,8 @@ export interface RepoDocumentos {
   /** Status `erro` com o motivo; reserva limpa. */
   falhar(v: VersaoReivindicada, motivo: string): Promise<void>
   removerObjeto(caminho: string): Promise<void>
+  /** Vários objetos numa chamada só (a faxina). */
+  removerObjetos(caminhos: string[]): Promise<void>
   /** Caminhos de objetos a apagar do bucket. */
   faxina(): Promise<string[]>
 }
@@ -76,6 +81,17 @@ export type Deps = {
 
 type Fim = 'pronto' | 'erro' | 'sumiu'
 
+/** Estado da reserva desta execução. `perdida` = um `renovar` devolveu `false`: a versão sumiu ou
+ *  deixou de ser nossa; a execução para com `'sumiu'` no próximo ponto de checagem. */
+type Reserva = { perdida: boolean }
+
+/** Renova agora; `false` (ou reserva já perdida) = parar. */
+async function viva(v: VersaoReivindicada, d: Deps, r: Reserva): Promise<boolean> {
+  if (r.perdida) return false
+  if (!(await d.repo.renovar(v, RESERVA_MS))) r.perdida = true
+  return !r.perdida
+}
+
 function avisar(o_que: string, err: unknown): void {
   console.warn(`[base-documentos] ${o_que}:`, detalheSeguro(err))
 }
@@ -87,11 +103,12 @@ async function falhar(v: VersaoReivindicada, d: Deps, motivo: string): Promise<'
   return 'erro'
 }
 
-async function extrair(v: VersaoReivindicada, d: Deps): Promise<Fim | null> {
+async function extrair(v: VersaoReivindicada, d: Deps, reserva: Reserva): Promise<Fim | null> {
   await d.repo.marcarEtapa(v, 'extraindo')
   // Retomada no meio da extração: os trechos da tentativa anterior estão incompletos.
   await d.repo.apagarTrechos(v)
   const dados = await d.repo.baixar(v.caminho)
+  if (reserva.perdida) return 'sumiu'
 
   type Parada = { fim: 'sumiu' } | { fim: 'erro'; motivo: string } | { fim: 'duplicata' }
   let parada: Parada | null = null
@@ -100,6 +117,10 @@ async function extrair(v: VersaoReivindicada, d: Deps): Promise<Fim | null> {
 
   const r = await d.extrair(dados, v.extensao, {
     aoHash: async (hash) => {
+      if (reserva.perdida) {
+        parada = { fim: 'sumiu' }
+        return false
+      }
       if (v.origem === 'envio') {
         const nome = await d.repo.acharDuplicata(v, hash)
         if (nome !== null) {
@@ -123,7 +144,7 @@ async function extrair(v: VersaoReivindicada, d: Deps): Promise<Fim | null> {
       inseridos += trechos.length
       custo += estimarCustoUsd(trechos)
       // A extração de um arquivo grande pode passar da reserva: renova a cada lote.
-      if (!(await d.repo.renovar(v, RESERVA_MS))) {
+      if (!(await viva(v, d, reserva))) {
         parada = { fim: 'sumiu' }
         return false
       }
@@ -148,9 +169,9 @@ async function extrair(v: VersaoReivindicada, d: Deps): Promise<Fim | null> {
   return null
 }
 
-async function contextualizar(v: VersaoReivindicada, d: Deps): Promise<Fim | null> {
+async function contextualizar(v: VersaoReivindicada, d: Deps, reserva: Reserva): Promise<Fim | null> {
   for (;;) {
-    if (!(await d.repo.renovar(v, RESERVA_MS))) return 'sumiu'
+    if (!(await viva(v, d, reserva))) return 'sumiu'
     const lote = await d.repo.semContexto(v, LOTE_CONTEXTO)
     if (lote.length === 0) break
 
@@ -158,7 +179,7 @@ async function contextualizar(v: VersaoReivindicada, d: Deps): Promise<Fim | nul
     let proximo = 0
     let semChave = false
     const trabalhador = async () => {
-      while (!semChave && proximo < lote.length) {
+      while (!semChave && !reserva.perdida && proximo < lote.length) {
         const t = lote[proximo++]
         const frase = await d.frase({ ws: v.workspaceId, documento: v.nomeExibicao, caminho: t.caminho, texto: t.texto })
         if (frase === 'sem_chave') {
@@ -170,19 +191,21 @@ async function contextualizar(v: VersaoReivindicada, d: Deps): Promise<Fim | nul
     }
     await Promise.all(Array.from({ length: Math.min(CONCORRENCIA_CONTEXTO, lote.length) }, trabalhador))
     if (semChave) return falhar(v, d, MOTIVO_SEM_CHAVE)
+    if (reserva.perdida) return 'sumiu'
   }
   await d.repo.marcarEtapa(v, 'vetorizando')
   return null
 }
 
-async function vetorizar(v: VersaoReivindicada, d: Deps): Promise<Fim | null> {
+async function vetorizar(v: VersaoReivindicada, d: Deps, reserva: Reserva): Promise<Fim | null> {
   let falhasSeguidas = 0
   for (;;) {
-    if (!(await d.repo.renovar(v, RESERVA_MS))) return 'sumiu'
+    if (!(await viva(v, d, reserva))) return 'sumiu'
     const lote = await d.repo.semVetor(v, LOTE_VETOR)
     if (lote.length === 0) return null
 
     const r = await d.vetores(lote.map(textoParaBusca), { ws: v.workspaceId })
+    if (reserva.perdida) return 'sumiu'
     if (r === 'sem_chave') return falhar(v, d, MOTIVO_SEM_CHAVE)
     if (r === null) {
       if (++falhasSeguidas >= FALHAS_SEGUIDAS_VETOR) return falhar(v, d, MOTIVO_VETOR)
@@ -201,17 +224,44 @@ async function vetorizar(v: VersaoReivindicada, d: Deps): Promise<Fim | null> {
  * LANÇAM: a reserva vence e a versão é reivindicada de novo (até cinco tentativas, ver a faxina).
  */
 export async function processarVersao(v: VersaoReivindicada, d: Deps): Promise<Fim> {
+  const reserva: Reserva = { perdida: false }
+  // Além das renovações a cada volta: um relógio que renova a cada RENOVACAO_MS enquanto um passo
+  // lento está no meio. Uma renovação por vez; erro dela só no log (a próxima tenta de novo).
+  let renovando = false
+  const relogio = setInterval(() => {
+    if (renovando || reserva.perdida) return
+    renovando = true
+    d.repo
+      .renovar(v, RESERVA_MS)
+      .then((ok) => {
+        if (!ok) reserva.perdida = true
+      })
+      .catch((err) => avisar('não consegui renovar a reserva', err))
+      .finally(() => {
+        renovando = false
+      })
+  }, RENOVACAO_MS)
+  relogio.unref?.()
+  try {
+    return await executar(v, d, reserva)
+  } finally {
+    clearInterval(relogio)
+  }
+}
+
+async function executar(v: VersaoReivindicada, d: Deps, reserva: Reserva): Promise<Fim> {
   const etapa = v.etapa
   if (etapa === null || etapa === 'extraindo') {
-    const fim = await extrair(v, d)
+    const fim = await extrair(v, d, reserva)
     if (fim) return fim
   }
   if (etapa !== 'vetorizando') {
-    const fim = await contextualizar(v, d)
+    const fim = await contextualizar(v, d, reserva)
     if (fim) return fim
   }
-  const fim = await vetorizar(v, d)
+  const fim = await vetorizar(v, d, reserva)
   if (fim) return fim
+  if (reserva.perdida) return 'sumiu'
 
   const antigo = await d.repo.promover(v)
   if (antigo === null) return 'sumiu'

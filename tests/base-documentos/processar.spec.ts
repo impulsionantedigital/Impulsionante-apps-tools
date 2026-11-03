@@ -8,6 +8,7 @@ import { PIORES_CASOS, PORTOES } from '@/lib/orcamento-tick'
 import {
   CONCORRENCIA_CONTEXTO,
   processarVersao,
+  RENOVACAO_MS,
   RESERVA_MS,
   TETO_TRECHOS_POR_VERSAO,
   type Deps,
@@ -60,6 +61,7 @@ function repoFalso(o: Opcoes = {}) {
     trechos,
     motivo: null as string | null,
     removidos: [] as string[],
+    remocoesEmLote: [] as string[][],
     baixou: false,
     sumiu: false,
     hash: null as string | null,
@@ -130,6 +132,10 @@ function repoFalso(o: Opcoes = {}) {
     removerObjeto: async (caminho) => {
       f.removidos.push(caminho)
     },
+    removerObjetos: async (caminhos) => {
+      f.remocoesEmLote.push([...caminhos])
+      f.removidos.push(...caminhos)
+    },
     faxina: async () => o.faxina ?? [],
   }
   return f
@@ -184,6 +190,7 @@ const orcamentoQueCabe: Orcamento = {
 }
 
 afterEach(async () => {
+  vi.useRealTimers()
   await _processamentoAtual()
   _reiniciarParaTeste()
 })
@@ -193,6 +200,7 @@ describe('constantes', () => {
     expect(RESERVA_MS).toBe(120_000)
     expect(TETO_TRECHOS_POR_VERSAO).toBe(20_000)
     expect(CONCORRENCIA_CONTEXTO).toBe(4)
+    expect(RENOVACAO_MS).toBeLessThanOrEqual(RESERVA_MS / 2)
     expect(PIORES_CASOS.documentos).toBe(2_000)
     expect(PORTOES.documentos).toBe(2_000)
   })
@@ -354,6 +362,84 @@ describe('processarVersao', () => {
   })
 })
 
+/** Maior intervalo sem renovação entre o início (0) e o fim da execução. */
+function maiorIntervalo(instantes: number[], fim: number): number {
+  const todos = [0, ...instantes, fim].sort((a, b) => a - b)
+  return Math.max(...todos.slice(1).map((t, i) => t - todos[i]))
+}
+
+describe('renovação da reserva durante passos lentos', () => {
+  it('download lento: a reserva é renovada a cada RESERVA_MS/2 no máximo', async () => {
+    vi.useFakeTimers({ now: 0 })
+    const f = repoFalso()
+    const renovacoes: number[] = []
+    const repo: RepoDocumentos = {
+      ...f.repo,
+      renovar: async () => {
+        renovacoes.push(Date.now())
+        return true
+      },
+      baixar: () => new Promise((r) => setTimeout(() => r(new TextEncoder().encode(f.arquivo)), 200_000)),
+    }
+    let fim = -1
+    const p = processarVersao(f.versao, deps(f, { repo })).then((r) => ((fim = Date.now()), r))
+    await vi.advanceTimersByTimeAsync(250_000)
+    expect(await p).toBe('pronto')
+    expect(renovacoes.filter((t) => t < 200_000).length).toBeGreaterThanOrEqual(6)
+    expect(maiorIntervalo(renovacoes, fim)).toBeLessThanOrEqual(RESERVA_MS / 2)
+  })
+
+  it('frases lentas (50 × 15 s): a reserva não fica sem renovação por mais de RESERVA_MS/2', async () => {
+    vi.useFakeTimers({ now: 0 })
+    const f = repoFalso({ trechosExtraidos: 50 })
+    const renovacoes: number[] = []
+    const repo: RepoDocumentos = {
+      ...f.repo,
+      renovar: async () => {
+        renovacoes.push(Date.now())
+        return true
+      },
+    }
+    const frase: Deps['frase'] = () => new Promise((r) => setTimeout(() => r('ctx'), 15_000))
+    let fim = -1
+    const p = processarVersao(f.versao, deps(f, { repo, frase })).then((r) => ((fim = Date.now()), r))
+    await vi.advanceTimersByTimeAsync(400_000)
+    expect(await p).toBe('pronto')
+    expect(fim).toBeGreaterThanOrEqual(13 * 15_000)
+    expect(maiorIntervalo(renovacoes, fim)).toBeLessThanOrEqual(RESERVA_MS / 2)
+  })
+
+  it('renovar devolve false no meio do download: para com sumiu e nada é promovido', async () => {
+    vi.useFakeTimers({ now: 0 })
+    const f = repoFalso()
+    const extrair = vi.fn(deps(f).extrair)
+    const repo: RepoDocumentos = {
+      ...f.repo,
+      renovar: async () => false,
+      baixar: () => new Promise((r) => setTimeout(() => r(new TextEncoder().encode(f.arquivo)), 100_000)),
+    }
+    const p = processarVersao(f.versao, deps(f, { repo, extrair }))
+    await vi.advanceTimersByTimeAsync(150_000)
+    expect(await p).toBe('sumiu')
+    expect(extrair).not.toHaveBeenCalled()
+    expect(f.promovida).toBe(false)
+    expect(f.motivo).toBeNull()
+  })
+
+  it('renovar devolve false durante um lote de frases lento: para com sumiu', async () => {
+    vi.useFakeTimers({ now: 0 })
+    const f = repoFalso({ trechosExtraidos: 50 })
+    // As renovações das voltas (no instante 0) passam; a do relógio, aos 30 s, diz que sumiu.
+    const repo: RepoDocumentos = { ...f.repo, renovar: async () => Date.now() < RENOVACAO_MS }
+    const frase = vi.fn<Deps['frase']>(() => new Promise((r) => setTimeout(() => r('ctx'), 15_000)))
+    const p = processarVersao(f.versao, deps(f, { repo, frase }))
+    await vi.advanceTimersByTimeAsync(400_000)
+    expect(await p).toBe('sumiu')
+    expect(f.promovida).toBe(false)
+    expect(frase.mock.calls.length).toBeLessThan(50)
+  })
+})
+
 describe('drenarDocumentos', () => {
   it('não começa segundo processamento enquanto o primeiro roda', async () => {
     const f = repoFalso()
@@ -414,6 +500,36 @@ describe('drenarDocumentos', () => {
     const r = await drenarDocumentos(orcamentoQueCabe, deps(f))
     expect(f.removidos).toEqual(['w/d/v.pdf'])
     expect(r).toEqual({ iniciou: false, emAndamento: false, limpos: 1 })
+  })
+
+  it('faxina apaga os objetos numa chamada só', async () => {
+    const f = repoFalso({ faxina: ['a', 'b', 'c'] })
+    f.fila.length = 0
+    const r = await drenarDocumentos(orcamentoQueCabe, deps(f))
+    expect(f.remocoesEmLote).toEqual([['a', 'b', 'c']])
+    expect(r.limpos).toBe(3)
+  })
+
+  it('faxina com muitos objetos: grupos de 100', async () => {
+    const caminhos = Array.from({ length: 250 }, (_, i) => `w/d/${i}.pdf`)
+    const f = repoFalso({ faxina: caminhos })
+    f.fila.length = 0
+    const r = await drenarDocumentos(orcamentoQueCabe, deps(f))
+    expect(f.remocoesEmLote.map((g) => g.length)).toEqual([100, 100, 50])
+    expect(r.limpos).toBe(250)
+  })
+
+  it('remoção lenta não segura o braço além da fatia', async () => {
+    const f = repoFalso({ faxina: ['a', 'b'] })
+    f.fila.length = 0
+    const aviso = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const repo: RepoDocumentos = { ...f.repo, removerObjetos: () => new Promise(() => {}) }
+    const inicio = Date.now()
+    const r = await drenarDocumentos({ ...orcamentoQueCabe, fatiaPara: () => 100 }, deps(f, { repo }))
+    expect(Date.now() - inicio).toBeLessThan(1_000)
+    expect(r).toEqual({ iniciou: false, emAndamento: false, limpos: 0 })
+    expect(aviso).toHaveBeenCalled()
+    aviso.mockRestore()
   })
 
   it('sem orçamento não faz nada', async () => {
