@@ -5,6 +5,7 @@
   "type": "module",
   "private": true,
   "scripts": {
+    "predev": "node scripts/empacotar-worker.mjs",
     "dev": "next dev",
     "build": "node scripts/empacotar-worker.mjs && next build",
     "start": "next start",

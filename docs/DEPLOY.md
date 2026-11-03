@@ -498,6 +498,49 @@ variável não deve ser criada.
 
 ---
 
+## 6.3.1 Base de conhecimento com arquivos (opcional)
+
+O assistente (§6.3) pode consultar arquivos que você envia pela tela da base de conhecimento
+(livros, apostilas, PDFs). O CRM lê o arquivo, divide em trechos e prepara cada trecho para a
+busca. Isso roda **em segundo plano**, depois do envio. Nada disto é obrigatório: sem arquivos
+enviados, nada muda e nada é cobrado.
+
+### O tamanho máximo do arquivo
+
+- O limite é de **100 MB** por arquivo. Para mudar, crie a variável de runtime
+  `BASE_ARQUIVO_MAX_MB` no EasyPanel (só o número, por exemplo `50`) e reinicie. É opcional.
+- **O plano gratuito do Supabase só aceita 50 MB por arquivo**, não importa o que você
+  configurar aqui. Para passar disso, use o plano Pro e, no Supabase, abra
+  **Storage → Settings** e suba o **limite global de upload** para um valor **igual ou maior**
+  que o `BASE_ARQUIVO_MAX_MB`. Se os dois não combinam, o envio de um arquivo grande falha.
+- O depósito dos arquivos (`base-arquivos`) é criado sozinho no boot, **privado**. Você não
+  precisa criar nada no Storage.
+
+### Precisa da chave da OpenAI
+
+O processamento usa a OpenAI em duas etapas: uma frase curta que situa cada trecho
+(`gpt-5-mini`) e a preparação da busca (`text-embedding-3-small`). Sem a chave cadastrada em
+**Agentes de IA → Servidor** (§6.3), o arquivo é recebido mas **não é processado**.
+
+**Custo:** a tela mostra uma estimativa antes de processar cada documento. Como ordem de
+grandeza, **1.000 trechos de uns 1.200 caracteres custam cerca de US$ 0,32**. É aproximado: o
+valor real depende do tamanho dos trechos e do preço vigente da OpenAI.
+
+### Memória do servidor
+
+Para ler um arquivo grande, o CRM abre um processo auxiliar que pode usar **até 768 MB de
+memória a mais** enquanto trabalha. Confira o **limite de memória do container** no EasyPanel
+(serviço → *Resources*): se ele for apertado (por exemplo 512 MB ou 1 GB), o servidor pode ser
+reiniciado no meio da leitura de um PDF grande. Dê folga, ou envie arquivos menores.
+
+### Depende do relógio interno
+
+O processamento anda no mesmo relógio interno do assistente. Se `HEARTBEAT_ENABLED=0` estiver
+criada, os arquivos ficam parados em "na fila" para sempre. Veja
+[O assistente depende do relógio interno](#o-assistente-depende-do-relógio-interno) e §2.3.
+
+---
+
 ## 6.4 WhatsApp por código de pareamento (opcional)
 
 É o caminho padrão do produto, e o mais parecido com o que a sua equipe já faz hoje: o número

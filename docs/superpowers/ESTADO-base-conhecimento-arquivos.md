@@ -27,3 +27,18 @@ quebra o build do Turbopack com `Module not found: Can't resolve './w.worker.ts'
 Para a Task 6: usar a variante B. O worker tem de ser JS puro (`.mjs`); dependências que ele
 importa precisam entrar no `outputFileTracingIncludes` (conferir também as dependências
 transitivas do `unpdf`, se alguma for resolvida fora de `node_modules/unpdf`).
+
+## Estado (implementação concluída, prova final pendente)
+
+Implementado: migration 0076 (bucket privado `base-arquivos`), envio TUS com token assinado,
+processador em segundo plano (extração em worker empacotado por `scripts/empacotar-worker.mjs`,
+frase de contexto + vetores), tela de arquivos, ferramentas do agente e documentação de deploy
+(`docs/DEPLOY.md` §6.3.1, `BASE_ARQUIVO_MAX_MB` no `.env.example`). Testes e build verdes.
+
+Falta para a prova final (exige Supabase real):
+
+- cabeçalhos do TUS e retomada de envio contra o Storage real, incluindo o 413 do limite;
+- `list()` do Storage devolvendo `metadata.size`;
+- migration 0076 aplicada no banco real;
+- as seis perguntas com os almanaques;
+- conferência visual da tela.
