@@ -328,6 +328,27 @@ describe('0076 aplicada num Postgres de verdade (PGlite)', () => {
     expect(await secaoDo(K20, 'vizinhos')).toEqual([])
   })
 
+  it('(f2) card playbook nunca sai na lista nem na leitura de seção; card fato sim', async () => {
+    const P = id(91)
+    const F = id(92)
+    await db.query(
+      `insert into public.base_conhecimento (id, workspace_id, titulo, conteudo, tipo)
+       values ($1, $3, 'Roteiro', 'Instrucao interna sobre o zircônio.', 'playbook'),
+              ($2, $3, 'Fato', 'O zircônio e um fato publico.', 'fato')`,
+      [P, F, W],
+    )
+    try {
+      const r = await secoes(['zircônio'])
+      expect(r.map((x) => x.id)).toEqual([F])
+      expect(Number(r[0].total)).toBe(1)
+      expect(await secaoDo(P, 'secao')).toEqual([])
+      expect(await secaoDo(P, 'vizinhos')).toEqual([])
+      expect((await secaoDo(F, 'secao')).map((x) => x.id)).toEqual([F])
+    } finally {
+      await db.query(`delete from public.base_conhecimento where id = any($1::uuid[])`, [[P, F]])
+    }
+  })
+
   it('(g) promover troca a ativa, apaga a antiga com os trechos e devolve o caminho antigo', async () => {
     const V4 = id(44)
     await versao(V4, D1, { status: 'processando' })

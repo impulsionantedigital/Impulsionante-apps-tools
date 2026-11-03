@@ -421,7 +421,7 @@ with termos as (
     from public.base_conhecimento b
     join termos t on b.fts @@ t.q
    where b.fts @@ (select c.qualquer from consulta c)
-     and b.workspace_id = p_ws and b.habilitado and (
+     and b.workspace_id = p_ws and b.habilitado and b.tipo <> 'playbook' and (
            (b.documento_id is null and coalesce(
               (select bool_or(ab.assistente_id = p_assistente) from public.assistente_blocos ab
                 where ab.bloco_id = b.id and ab.workspace_id = b.workspace_id), true))
@@ -453,7 +453,7 @@ with termos as (
                and b.documento_id is not null and coalesce(b.caminho_titulos, '') <> '')
          )
     left join public.base_documentos doc on doc.workspace_id = b.workspace_id and doc.id = b.documento_id
-   where b.habilitado and (
+   where b.habilitado and b.tipo <> 'playbook' and (
            (b.documento_id is null and coalesce(
               (select bool_or(ab.assistente_id = p_assistente) from public.assistente_blocos ab
                 where ab.bloco_id = b.id and ab.workspace_id = b.workspace_id), true))
@@ -506,7 +506,7 @@ with ponto as (
   select b.id, b.documento_id, b.versao_id, b.secao, b.posicao
     from public.base_conhecimento b
    where b.id = p_trecho
-     and b.workspace_id = p_ws and b.habilitado and (
+     and b.workspace_id = p_ws and b.habilitado and b.tipo <> 'playbook' and (
            (b.documento_id is null and coalesce(
               (select bool_or(ab.assistente_id = p_assistente) from public.assistente_blocos ab
                 where ab.bloco_id = b.id and ab.workspace_id = b.workspace_id), true))
@@ -531,7 +531,7 @@ select b.id, doc.nome_exibicao, b.caminho_titulos, b.pagina, b.posicao, b.conteu
                or (p_modo = 'vizinhos' and b.posicao between p.posicao - 1 and p.posicao + 1)))
        )
   left join public.base_documentos doc on doc.workspace_id = b.workspace_id and doc.id = b.documento_id
- where b.habilitado and (
+ where b.habilitado and b.tipo <> 'playbook' and (
          (b.documento_id is null and coalesce(
             (select bool_or(ab.assistente_id = p_assistente) from public.assistente_blocos ab
               where ab.bloco_id = b.id and ab.workspace_id = b.workspace_id), true))
