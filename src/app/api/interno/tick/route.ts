@@ -8,6 +8,7 @@ import { drenarPerfis } from '@/server/canais/perfil-tick'
 import { tickCustom } from '@/server/custom/tick'
 import { expurgar } from '@/server/canais/expurgo'
 import { drenarEmail } from '@/server/email/fila'
+import { drenarDocumentos } from '@/server/base-documentos/tick'
 import { criarOrcamento } from '@/lib/orcamento-tick'
 import { detalheSeguro } from '@/lib/sanitizar-erro'
 
@@ -110,7 +111,13 @@ export async function POST(req: Request) {
     console.warn('[tick] braço de retenção falhou:', detalheSeguro(err))
     return { rodou: false, jobs: 0, custos: 0, conversasSimulador: 0, objetos: 0 }
   })
+  // Por último: só faz a faxina e DISPARA o processamento de um documento em segundo plano — nunca
+  // o espera, para não atrasar as respostas do próximo tick.
+  const documentos = await drenarDocumentos(orcamento).catch((err) => {
+    console.warn('[tick] braço dos documentos falhou:', detalheSeguro(err))
+    return { iniciou: false, emAndamento: false, limpos: 0 }
+  })
   return Response.json({
-    data: { automacao, entrega, licenca, agente, midia, perfis, custom, expurgo, email },
+    data: { automacao, entrega, licenca, agente, midia, perfis, custom, expurgo, email, documentos },
   })
 }

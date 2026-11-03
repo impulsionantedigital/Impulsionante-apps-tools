@@ -48,18 +48,24 @@ export async function extrairNoWorker(
   ganchos: GanchosDaExtracao,
   opts: OpcoesDaExtracao = {},
 ): Promise<ResultadoDaExtracao> {
-  const caminho = opts.caminhoDoWorker ?? path.join(process.cwd(), 'src', 'server', 'workers', 'extrator.gen.mjs')
+  const caminho = opts.caminhoDoWorker ?? path.join(/* turbopackIgnore: true */ process.cwd(), 'src', 'server', 'workers', 'extrator.gen.mjs')
   const tempoMaxMs = opts.tempoMaxMs ?? TEMPO_MAX_EXTRACAO_MS
 
   // Só dá para transferir um ArrayBuffer inteiro e que não seja do pool interno do Buffer.
   const inteiro = dados.byteOffset === 0 && dados.byteLength === dados.buffer.byteLength && dados.buffer instanceof ArrayBuffer
   const enviado = inteiro ? dados : new Uint8Array(dados)
 
-  const worker = new Worker(caminho, {
-    workerData: { dados: enviado, ext },
-    transferList: [enviado.buffer as ArrayBuffer],
-    resourceLimits: { maxOldGenerationSizeMb: MEMORIA_WORKER_MB },
-  })
+  // 🔴 `Reflect.construct` em vez de `new Worker(caminho)`: o Turbopack reconhece `new Worker(…)`,
+  // resolve o caminho e tenta empacotar o worker (já empacotado) dentro da rota do tick — o build
+  // quebra. O arquivo entra no standalone pelo `outputFileTracingIncludes` do `next.config.ts`.
+  const worker: Worker = Reflect.construct(Worker, [
+    caminho,
+    {
+      workerData: { dados: enviado, ext },
+      transferList: [enviado.buffer as ArrayBuffer],
+      resourceLimits: { maxOldGenerationSizeMb: MEMORIA_WORKER_MB },
+    },
+  ])
   const saiu = new Promise<void>((resolve) => worker.once('exit', () => resolve()))
   opts.aoCriar?.(worker)
 
