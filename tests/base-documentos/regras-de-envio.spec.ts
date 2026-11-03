@@ -5,6 +5,8 @@ import {
   versaoParaCancelar,
   podeRetomar,
   escolherPendente,
+  STATUS_CANCELAVEIS,
+  objetosDoQueFoiApagado,
 } from '@/lib/base-documentos/regras-de-envio'
 import { limiteBytesArquivo } from '@/server/base-documentos/config'
 
@@ -114,4 +116,21 @@ describe('escolherPendente', () => {
     expect(escolherPendente([{ id: 'a', status: 'pronto' as const }, { id: 'e', status: 'erro' as const }], 'a')).toBeNull())
   it('sem nada além da ativa devolve null', () =>
     expect(escolherPendente([{ id: 'a', status: 'pronto' as const }], 'a')).toBeNull())
+})
+
+describe('cancelamento com corrida contra a promoção', () => {
+  it('só versões pendentes podem ser apagadas pelo cancelamento', () =>
+    expect([...STATUS_CANCELAVEIS].sort()).toEqual(['enviando', 'na_fila', 'processando']))
+  it('remove só os objetos das linhas que o banco de fato apagou', () => {
+    expect(objetosDoQueFoiApagado([{ id: 'p', caminho: 'w/d/p.md' }], [])).toEqual([])
+    expect(
+      objetosDoQueFoiApagado(
+        [
+          { id: 'p', caminho: 'w/d/p.md' },
+          { id: 'q', caminho: 'w/d/q.md' },
+        ],
+        [{ id: 'q' }],
+      ),
+    ).toEqual(['w/d/q.md'])
+  })
 })

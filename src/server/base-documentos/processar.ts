@@ -7,11 +7,13 @@
 // o teste rodar com um repositório em memória.
 import 'server-only'
 import { estimarCustoUsd, textoParaBusca } from '@/lib/base-documentos/contexto'
+import { fraseDoLimite } from '@/lib/base-documentos/regras-de-envio'
 import type { Etapa, Extensao, Trecho } from '@/lib/base-documentos/tipos'
 import { detalheSeguro } from '@/lib/sanitizar-erro'
 import type { embedarLote } from '@/server/agente/embed'
 import type { extrairNoWorker } from './extrair-no-worker'
 import type { gerarFraseDeContexto } from './frase-contexto'
+import { limiteBytesArquivo } from './config'
 
 export const RESERVA_MS = 120_000
 export const TETO_TRECHOS_POR_VERSAO = 20_000
@@ -27,6 +29,7 @@ const FALHAS_SEGUIDAS_VETOR = 3
 const MOTIVO_SEM_CHAVE = 'Falta a chave da OpenAI. Cadastre-a em Configurações para processar documentos.'
 const MOTIVO_TETO = 'O arquivo geraria mais de 20.000 trechos. Divida-o em partes menores.'
 const MOTIVO_SEM_TEXTO = 'Não encontrei texto neste arquivo.'
+const MOTIVO_SEM_OBJETO = 'O arquivo não está mais guardado. Envie o arquivo de novo.'
 const MOTIVO_VETOR = 'Não consegui gerar a busca por significado agora. Tente reprocessar mais tarde.'
 const motivoDuplicata = (nome: string) => `Este arquivo é igual a «${nome}», que já está na base.`
 
@@ -45,6 +48,8 @@ export interface RepoDocumentos {
   reivindicar(reservaMs: number): Promise<VersaoReivindicada | null>
   /** `false` = a versão sumiu (ou deixou de estar em processamento). */
   renovar(v: VersaoReivindicada, reservaMs: number): Promise<boolean>
+  /** Tamanho real do objeto no Storage, em bytes; `null` = objeto não encontrado. */
+  tamanhoDoObjeto(caminho: string): Promise<number | null>
   baixar(caminho: string): Promise<Uint8Array>
   /** `nome_exibicao` de outra versão do espaço com o mesmo hash e status diferente de `erro`. */
   acharDuplicata(v: VersaoReivindicada, hash: string): Promise<string | null>
@@ -107,6 +112,17 @@ async function extrair(v: VersaoReivindicada, d: Deps, reserva: Reserva): Promis
   await d.repo.marcarEtapa(v, 'extraindo')
   // Retomada no meio da extração: os trechos da tentativa anterior estão incompletos.
   await d.repo.apagarTrechos(v)
+  // O teto vale para o objeto que está no bucket AGORA, não para o que foi medido no envio: o
+  // token de retomada (upsert) ainda permite sobrescrever o objeto depois da confirmação, e o
+  // download vai inteiro para a memória de um servidor que atende todos os espaços.
+  const tamanho = await d.repo.tamanhoDoObjeto(v.caminho)
+  if (tamanho === null) return falhar(v, d, MOTIVO_SEM_OBJETO)
+  const limite = limiteBytesArquivo()
+  if (tamanho > limite) {
+    const fim = await falhar(v, d, fraseDoLimite(limite))
+    await d.repo.removerObjeto(v.caminho).catch((err) => avisar('não consegui apagar o arquivo grande demais', err))
+    return fim
+  }
   const dados = await d.repo.baixar(v.caminho)
   if (reserva.perdida) return 'sumiu'
 

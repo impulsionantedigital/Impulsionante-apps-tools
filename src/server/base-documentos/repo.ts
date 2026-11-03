@@ -96,6 +96,23 @@ export function criarRepoSupabase(db: () => SupabaseClient = admin): RepoDocumen
       return (data ?? []).length > 0
     },
 
+    async tamanhoDoObjeto(caminho) {
+      const barra = caminho.lastIndexOf('/')
+      const pasta = caminho.slice(0, barra)
+      const nome = caminho.slice(barra + 1)
+      const { data, error } = await comTempo(
+        db().storage.from(BUCKET_ARQUIVOS).list(pasta, { search: nome, limit: 10 }),
+        TEMPO_CONSULTA_MS,
+        'tamanhoDoObjeto',
+      )
+      if (error) falhou('tamanhoDoObjeto', error)
+      const objeto = (data ?? []).find((i) => i.name === nome)
+      if (!objeto) return null
+      const tamanho = Number((objeto.metadata as { size?: number } | null | undefined)?.size)
+      // Sem tamanho legível não há como garantir o teto: trata como ausente (vira erro, não download).
+      return Number.isFinite(tamanho) && tamanho >= 0 ? tamanho : null
+    },
+
     async baixar(caminho) {
       const { data, error } = await db()
         .storage.from(BUCKET_ARQUIVOS)

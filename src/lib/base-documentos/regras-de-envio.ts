@@ -10,7 +10,12 @@ const NOME_PADRAO = 'Documento sem nome'
 export const TIPO_RECUSADO = 'Esse tipo de arquivo não é aceito. Envie pdf, docx, md, txt, json ou csv.'
 export const ARQUIVO_VAZIO = 'O arquivo está vazio.'
 
-const STATUS_PENDENTES: ReadonlySet<StatusVersao> = new Set(['enviando', 'na_fila', 'processando'])
+/**
+ * Os status que o cancelamento pode apagar. Vai também no FILTRO do `delete`: entre ler a versão e
+ * apagá-la, a promoção pode torná-la ativa — e uma ativa nunca sai pelo cancelamento.
+ */
+export const STATUS_CANCELAVEIS: readonly StatusVersao[] = ['enviando', 'na_fila', 'processando']
+const STATUS_PENDENTES: ReadonlySet<StatusVersao> = new Set(STATUS_CANCELAVEIS)
 
 /** A frase do limite, em MB inteiros — a mesma no pedido e na conferência depois do envio. */
 export function fraseDoLimite(limiteBytes: number): string {
@@ -73,4 +78,13 @@ export function escolherPendente<T extends { id: string; status: StatusVersao }>
     if (v.status !== 'pronto') return v
   }
   return null
+}
+
+/** Os objetos a tirar do bucket: só os das linhas que o `delete` devolveu como apagadas. */
+export function objetosDoQueFoiApagado(
+  lidas: Array<{ id: string; caminho: string }>,
+  apagadas: Array<{ id: string }>,
+): string[] {
+  const ids = new Set(apagadas.map((a) => a.id))
+  return lidas.filter((l) => ids.has(l.id)).map((l) => l.caminho)
 }

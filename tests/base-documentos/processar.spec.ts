@@ -31,6 +31,8 @@ type Opcoes = {
   faxina?: string[]
   /** Trechos que a extração falsa entrega; padrão: um por título do `arquivo`. */
   trechosExtraidos?: number
+  /** Tamanho do objeto no Storage; `null` = objeto não encontrado. Padrão: o do `arquivo`. */
+  tamanho?: number | null
 }
 
 function repoFalso(o: Opcoes = {}) {
@@ -76,6 +78,8 @@ function repoFalso(o: Opcoes = {}) {
       return f.fila.shift() ?? null
     },
     renovar: async () => !f.sumiu,
+    tamanhoDoObjeto: async () =>
+      o.tamanho === undefined ? new TextEncoder().encode(arquivo).length : o.tamanho,
     baixar: async () => {
       f.baixou = true
       return new TextEncoder().encode(arquivo)
@@ -226,6 +230,32 @@ describe('processarVersao', () => {
     expect(f.motivo).toBe('Este arquivo é igual a «Almanaque das Ervas», que já está na base.')
     expect(f.removidos).toContain(f.versao.caminho)
     expect(f.trechos).toHaveLength(0)
+    expect(f.promovida).toBe(false)
+  })
+
+  it('objeto maior que o limite termina em erro com a frase do limite, sem baixar, e sai do bucket', async () => {
+    vi.stubEnv('BASE_ARQUIVO_MAX_MB', '1')
+    const f = repoFalso({ tamanho: 1024 * 1024 + 1 })
+    expect(await processarVersao(f.versao, deps(f))).toBe('erro')
+    expect(f.motivo).toBe('O arquivo passa do limite de 1 MB.')
+    expect(f.baixou).toBe(false)
+    expect(f.removidos).toContain(f.versao.caminho)
+    expect(f.promovida).toBe(false)
+    vi.unstubAllEnvs()
+  })
+
+  it('objeto exatamente no limite é processado', async () => {
+    vi.stubEnv('BASE_ARQUIVO_MAX_MB', '1')
+    const f = repoFalso({ tamanho: 1024 * 1024 })
+    expect(await processarVersao(f.versao, deps(f))).toBe('pronto')
+    vi.unstubAllEnvs()
+  })
+
+  it('objeto sem tamanho conhecido termina em erro, sem baixar', async () => {
+    const f = repoFalso({ tamanho: null })
+    expect(await processarVersao(f.versao, deps(f))).toBe('erro')
+    expect(f.motivo).toBe('O arquivo não está mais guardado. Envie o arquivo de novo.')
+    expect(f.baixou).toBe(false)
     expect(f.promovida).toBe(false)
   })
 

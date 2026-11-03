@@ -29,6 +29,8 @@ import {
 import {
   escolherPendente,
   fraseDoLimite,
+  objetosDoQueFoiApagado,
+  STATUS_CANCELAVEIS,
   nomeDeExibicaoInicial,
   podeRetomar,
   validarPedidoDeEnvio,
@@ -90,6 +92,7 @@ const DOCUMENTO_DESCONHECIDO =
 const ENVIO_DESCONHECIDO = 'Esse envio não existe mais. Escolha o arquivo e envie de novo.'
 const ARQUIVO_NAO_CHEGOU = 'O arquivo não chegou inteiro ao servidor. Escolha o arquivo e envie de novo.'
 const ENVIO_JA_TERMINOU = 'Esse envio já terminou e não pode mais ser cancelado.'
+const ENVIO_JA_PROCESSADO = 'Esse envio já terminou de processar e não pode mais ser cancelado.'
 const NOME_INVALIDO = 'O nome precisa ter entre 1 e 120 caracteres.'
 const SEM_ARQUIVO_PARA_REPROCESSAR = 'Esse documento ainda não tem um arquivo para processar de novo.'
 const ARQUIVO_ORIGINAL_SUMIU = 'O arquivo original não está mais guardado. Envie o arquivo de novo.'
@@ -101,7 +104,7 @@ const RECORTE_ASSISTENTE_DE_FORA = 2
 const TETO_NOME = 120
 const TRECHOS_POR_PAGINA = 50
 const TETO_TEXTO_DO_TRECHO = 300
-const STATUS_PENDENTES: ReadonlySet<StatusVersao> = new Set(['enviando', 'na_fila', 'processando'])
+const STATUS_PENDENTES: ReadonlySet<StatusVersao> = new Set(STATUS_CANCELAVEIS)
 
 const ROTA = '/base-conhecimento'
 const ROTA_RESUMO_DO_ASSISTENTE = '/agentes'
@@ -208,13 +211,17 @@ async function cancelarPendentes(ws: string, documentoId: string, ativaId: strin
     const alvo = versaoParaCancelar(restantes, ativaId)
     if (!alvo) return
     const linha = restantes.find((v) => v.id === alvo)!
-    const { error } = await admin()
+    // O filtro de status fecha a corrida com `base_versao_promover`: se a pendente virou ativa
+    // depois da leitura, nada é apagado — nem a linha, nem o objeto.
+    const { data, error } = await admin()
       .from('base_documento_versoes')
       .delete()
       .eq('workspace_id', ws)
       .eq('id', alvo)
+      .in('status', [...STATUS_CANCELAVEIS])
+      .select('id')
     if (error) throw error
-    await removerObjetos([linha.caminho])
+    await removerObjetos(objetosDoQueFoiApagado([linha], (data ?? []) as Array<{ id: string }>))
     restantes = restantes.filter((v) => v.id !== alvo)
   }
 }
@@ -489,13 +496,19 @@ export async function cancelarEnvio(versaoId: string): Promise<ResultadoSimples>
     const documento = await documentoDoWs(ws, versao.documento_id)
     if (versao.status === 'pronto' || documento?.versao_ativa_id === versao.id) return { erro: ENVIO_JA_TERMINOU }
 
-    const { error: eApagar } = await admin()
+    const { data: apagadas, error: eApagar } = await admin()
       .from('base_documento_versoes')
       .delete()
       .eq('workspace_id', ws)
       .eq('id', versao.id)
+      .in('status', [...STATUS_CANCELAVEIS])
+      .select('id')
     if (eApagar) return falha(eApagar)
-    await removerObjetos([versao.caminho])
+    const caminhos = objetosDoQueFoiApagado([versao], (apagadas ?? []) as Array<{ id: string }>)
+    // Nada apagado: a versão saiu de pendente entre a leitura e o delete (foi promovida ou
+    // terminou em erro). O objeto fica.
+    if (caminhos.length === 0) return { erro: ENVIO_JA_PROCESSADO }
+    await removerObjetos(caminhos)
     await apagarDocumentoSemVersao(ws, versao.documento_id)
 
     await revalidarTela()
