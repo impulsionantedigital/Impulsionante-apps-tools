@@ -1,11 +1,15 @@
 import type { Extensao, Secao } from '../tipos'
 import { extrairCsv, extrairJson } from './dados'
+import { extrairDocx } from './docx'
 import { ErroDeExtracao } from './erro'
+import { extrairPdf } from './pdf'
 import { decodificarTexto, extrairMarkdown, extrairTextoSimples } from './texto'
 
 export { ErroDeExtracao } from './erro'
 export { decodificarTexto, extrairMarkdown, extrairTextoSimples } from './texto'
 export { extrairCsv, extrairJson } from './dados'
+export { extrairDocx } from './docx'
+export { extrairPdf } from './pdf'
 
 /** Confere se os primeiros bytes combinam com a extensão declarada. */
 export function conferirConteudo(ext: Extensao, dados: Uint8Array): void {
@@ -29,7 +33,8 @@ export async function extrairSecoes(ext: Extensao, dados: Uint8Array): Promise<S
     case 'csv':
       return extrairCsv(decodificarTexto(dados))
     case 'pdf':
+      return extrairPdf(dados)
     case 'docx':
-      throw new ErroDeExtracao('Tipo ainda não suportado.')
+      return extrairDocx(dados)
   }
 }

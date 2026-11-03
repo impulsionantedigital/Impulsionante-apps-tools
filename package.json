@@ -34,13 +34,16 @@
     "@supabase/supabase-js": "^2.108.2",
     "adm-zip": "^0.6.0",
     "lucide-react": "^1.25.0",
+    "mammoth": "^1.13.0",
     "next": "~16.2.12",
+    "node-html-parser": "^9.0.6",
     "nodemailer": "^10.0.9",
     "papaparse": "^5.7.0",
     "postgres": "^3.4.9",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "server-only": "^0.0.1",
+    "unpdf": "^2.1.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
