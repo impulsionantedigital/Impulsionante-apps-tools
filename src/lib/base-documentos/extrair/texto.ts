@@ -15,6 +15,15 @@ export function extrairTextoSimples(texto: string): Secao[] {
   return [{ caminho: [], texto: texto.replace(/\r\n?/g, '\n').trim() }]
 }
 
+/** Tira espaços e a sequência de `#` de fechamento (só quando precedida de espaço/tab). */
+function limparTitulo(bruto: string): string {
+  let fim = bruto.trimEnd()
+  let i = fim.length
+  while (i > 0 && fim[i - 1] === '#') i--
+  if (i < fim.length && (i === 0 || fim[i - 1] === ' ' || fim[i - 1] === '\t')) fim = fim.slice(0, i).trimEnd()
+  return fim.trim()
+}
+
 export function extrairMarkdown(entrada: string): Secao[] {
   let texto = entrada.replace(/\r\n?/g, '\n')
   if (texto.startsWith('﻿')) texto = texto.slice(1)
@@ -45,12 +54,12 @@ export function extrairMarkdown(entrada: string): Secao[] {
       linhas.push(linha)
       continue
     }
-    const t = /^ {0,3}(#{1,6})[ \t]+(.*?)(?:[ \t]+#+)?[ \t]*$/.exec(linha)
+    const t = /^ {0,3}(#{1,6})[ \t]+(.*)$/.exec(linha)
     if (t) {
       fechar()
       const nivel = t[1].length
       while (pilha.length && pilha[pilha.length - 1].nivel >= nivel) pilha.pop()
-      pilha.push({ nivel, titulo: t[2].trim() })
+      pilha.push({ nivel, titulo: limparTitulo(t[2]) })
       continue
     }
     linhas.push(linha)

@@ -31,3 +31,13 @@ describe('extrairCsv', () => {
     expect(s.texto).toBe('nome: Arruda; orixa: Ogum; uso: banho\n\nnome: Alfazema; uso: defumação')
   })
 })
+
+describe('extrairJson: aninhamento fundo', () => {
+  it.each([
+    ['array', '['.repeat(5000) + ']'.repeat(5000)],
+    ['objeto', '{"a":'.repeat(5000) + '1' + '}'.repeat(5000)],
+  ])('%s com 5000 níveis dá ErroDeExtracao', (_n, json) => {
+    expect(() => extrairJson(json)).toThrow(ErroDeExtracao)
+    expect(() => extrairJson(json)).toThrow('O arquivo JSON tem aninhamento fundo demais.')
+  })
+})

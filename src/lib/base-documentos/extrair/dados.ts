@@ -22,7 +22,10 @@ function tituloDe(item: Record<string, unknown>): string | null {
   return null
 }
 
-function percorrer(valor: unknown, caminho: string[], saida: Secao[]): void {
+const PROFUNDIDADE_MAXIMA = 200
+
+function percorrer(valor: unknown, caminho: string[], saida: Secao[], nivel = 0): void {
+  if (nivel > PROFUNDIDADE_MAXIMA) throw new ErroDeExtracao('O arquivo JSON tem aninhamento fundo demais.')
   if (ehPrimitivo(valor)) {
     const texto = mostrar(valor)
     if (texto) saida.push({ caminho, texto })
@@ -36,7 +39,7 @@ function percorrer(valor: unknown, caminho: string[], saida: Secao[]): void {
     }
     valor.forEach((item, i) => {
       const titulo = ehObjeto(item) ? tituloDe(item) : null
-      percorrer(item, [...caminho, titulo ?? `#${i + 1}`], saida)
+      percorrer(item, [...caminho, titulo ?? `#${i + 1}`], saida, nivel + 1)
     })
     return
   }
@@ -46,7 +49,7 @@ function percorrer(valor: unknown, caminho: string[], saida: Secao[]): void {
   if (campos.length) {
     saida.push({ caminho, texto: campos.map(([k, v]) => linhaDe(k, v as Primitivo | Primitivo[])).join('\n') })
   }
-  for (const [chave, v] of entradas) if (!ehCampo(v)) percorrer(v, [...caminho, chave], saida)
+  for (const [chave, v] of entradas) if (!ehCampo(v)) percorrer(v, [...caminho, chave], saida, nivel + 1)
 }
 
 export function extrairJson(texto: string): Secao[] {

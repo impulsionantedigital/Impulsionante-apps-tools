@@ -48,3 +48,19 @@ describe('conferirConteudo / extrairSecoes', () => {
   it('extrairSecoes despacha txt', async () =>
     expect(await extrairSecoes('txt', new TextEncoder().encode('oi'))).toEqual([{ caminho: [], texto: 'oi' }]))
 })
+
+describe('extrairMarkdown: títulos', () => {
+  it('fechamento com # é removido e #hash não é título', () => {
+    expect(extrairMarkdown('## T ##\nx')[0].caminho).toEqual(['T'])
+    expect(extrairMarkdown('# C#\nx')[0].caminho).toEqual(['C#'])
+    expect(extrairMarkdown('#hash')).toEqual([{ caminho: [], texto: '#hash' }])
+  })
+  it.each([
+    ['repetição de " #"', '# ' + 'a #'.repeat(50_000) + 'x'],
+    ['espaços/tabs e #', '# ' + ' \t#'.repeat(33_000) + 'x'],
+  ])('linha patológica (%s) é rápida', (_n, linha) => {
+    const t0 = performance.now()
+    extrairMarkdown(linha)
+    expect(performance.now() - t0).toBeLessThan(200)
+  })
+})
