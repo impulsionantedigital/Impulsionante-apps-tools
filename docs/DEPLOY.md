@@ -522,16 +522,21 @@ O processamento usa a OpenAI em duas etapas: uma frase curta que situa cada trec
 (`gpt-5-mini`) e a preparação da busca (`text-embedding-3-small`). Sem a chave cadastrada em
 **Agentes de IA → Servidor** (§6.3), o arquivo é recebido mas **não é processado**.
 
-**Custo:** a tela mostra uma estimativa antes de processar cada documento. Como ordem de
-grandeza, **1.000 trechos de uns 1.200 caracteres custam cerca de US$ 0,32**. É aproximado: o
+**Custo:** a estimativa aparece na tela **durante o processamento**, logo depois que o arquivo
+é lido (antes disso o CRM ainda não sabe quantos trechos ele tem). Como ordem de grandeza, **1.000 trechos de uns 1.200 caracteres custam cerca de US$ 0,32**. É aproximado: o
 valor real depende do tamanho dos trechos e do preço vigente da OpenAI.
 
 ### Memória do servidor
 
-Para ler um arquivo grande, o CRM abre um processo auxiliar que pode usar **até 768 MB de
-memória a mais** enquanto trabalha. Confira o **limite de memória do container** no EasyPanel
+Para ler um arquivo grande, o CRM abre um processo auxiliar. Esse auxiliar tem um teto de
+**768 MB** de memória para trabalhar. Além disso, o próprio arquivo fica guardado na memória do
+CRM enquanto é lido — então, na conta, some **os 768 MB mais o tamanho do arquivo** ao que o
+servidor já usa normalmente. Confira o **limite de memória do container** no EasyPanel
 (serviço → *Resources*): se ele for apertado (por exemplo 512 MB ou 1 GB), o servidor pode ser
-reiniciado no meio da leitura de um PDF grande. Dê folga, ou envie arquivos menores.
+reiniciado no meio da leitura de um PDF grande. Dê folga, ou envie arquivos menores. Se a
+leitura de um mesmo arquivo for interrompida assim, o CRM desiste dele (para não derrubar o
+servidor de novo) e mostra o aviso na tela; o arquivo continua guardado, e dá para reprocessar
+depois de aumentar a memória.
 
 ### Depende do relógio interno
 
