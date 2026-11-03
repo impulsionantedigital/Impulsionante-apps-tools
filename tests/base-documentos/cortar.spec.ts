@@ -38,6 +38,14 @@ describe('cortarEmTrechos', () => {
     expect(t.length).toBeGreaterThan(1)
     for (const x of t) expect(x.texto.length).toBeLessThanOrEqual(MAXIMO_TRECHO + SOBREPOSICAO_TRECHO)
   })
+  it('texto enorme sem espaço nem pontuação é cortado em tempo linear', () => {
+    const texto = 'x'.repeat(2_000_000)
+    const ini = performance.now()
+    const t = cortarEmTrechos([{ caminho: [], texto }])
+    expect(performance.now() - ini).toBeLessThan(200)
+    for (const x of t) expect(x.texto.length).toBeLessThanOrEqual(MAXIMO_TRECHO + SOBREPOSICAO_TRECHO)
+    expect(t.map((x) => x.texto).join('')).toBe(texto)
+  })
   it('registros (csv) agrupam sem sobreposição e sem partir registro', () => {
     const regs = Array.from({ length: 30 }, (_, i) => `nome: item ${i}; uso: banho`)
     const t = cortarEmTrechos([{ caminho: [], texto: regs.join('\n\n'), registros: true }])

@@ -36,8 +36,9 @@ function partirNoEspaco(texto: string, faixa: Faixa): Faixa[] {
   const saida: Faixa[] = []
   let inicio = faixa.inicio
   while (faixa.fim - inicio > MAXIMO_TRECHO) {
-    let corte = texto.lastIndexOf(' ', inicio + MAXIMO_TRECHO)
-    if (corte <= inicio) corte = inicio + MAXIMO_TRECHO
+    // Busca só dentro da janela: sem espaço nela, a varredura não pode andar até o começo do texto (O(n²)).
+    const naJanela = texto.slice(inicio, inicio + MAXIMO_TRECHO + 1).lastIndexOf(' ')
+    const corte = naJanela > 0 ? inicio + naJanela : inicio + MAXIMO_TRECHO
     saida.push({ inicio, fim: corte })
     inicio = corte
     while (inicio < faixa.fim && /\s/.test(texto[inicio])) inicio++
