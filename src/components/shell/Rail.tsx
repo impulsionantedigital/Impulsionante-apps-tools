@@ -15,7 +15,8 @@ import MenuUsuario, { type UsuarioResumo } from './MenuUsuario'
 import { lerMarca } from '@/server/marca'
 import { temaDaRequisicao } from '@/server/tema'
 import { souDonoDeAlgumWorkspace } from '@/server/auth/comprador'
-import { PRODUTOS, caminhoDoProduto } from '@/lib/produtos/catalogo'
+import { produtosDoProjeto, caminhoDoProduto } from '@/lib/produtos/catalogo'
+import { projetoAtual } from '@/lib/produtos/projeto'
 import { estadoDoProduto } from '@/server/vendas/acesso'
 
 
@@ -64,13 +65,14 @@ export default async function Rail({ user, wsAtivo, workspaces }: {
   const grupos = [...porGrupo.entries()]
   // Comprador vê só Ferramentas. As rotas já são recusadas no proxy; isto é só o menu.
   const soFerramentas = !(await souDonoDeAlgumWorkspace())
+  const projeto = projetoAtual()
 
   // 🔴 TODAS as calculadoras, sempre — inclusive as que o membro não tem. É a inversão da §9.2
   // decidida na spec de 2026-09-22: o item sem acesso aparece com cadeado e a tela abre em leitura.
   // Não volte a filtrar por `estado !== 'nunca'` aqui: quem comprou uma calculadora precisa
   // descobrir que as outras existem.
   const produtosNoMenu = await Promise.all(
-    PRODUTOS.map(async (produto) => ({ produto, estado: await estadoDoProduto(produto.id) })),
+    produtosDoProjeto().map(async (produto) => ({ produto, estado: await estadoDoProduto(produto.id) })),
   )
 
   // Group products by familia in the specified order
@@ -111,10 +113,19 @@ export default async function Rail({ user, wsAtivo, workspaces }: {
          * rail para continuar legível. As duas `<img>` são renderizadas e o CSS escolhe qual
          * aparece por `:root[data-tema="claro"]` (ver `Rail.module.css`). Não é `MarcaLockup`
          * porque aquele respeita a marca do comprador (Configurações → Marca). */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/marca/logo-clara.png" alt={marca.nome} className={`${estilos.logo} ${estilos.logoClara}`} />
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/marca/logo-escura.png" alt={marca.nome} className={`${estilos.logo} ${estilos.logoEscura}`} />
+        {/* 🔴 Os dois PNGs de `public/marca/` são a logo do GPS da Pena. Em outro projeto, a sidebar
+            usa a logo da Marca do banco — ou só o nome, se não houver uma. */}
+        {projeto === 'gpsdapena' ? (
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/marca/logo-clara.png" alt={marca.nome} className={`${estilos.logo} ${estilos.logoClara}`} />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/marca/logo-escura.png" alt={marca.nome} className={`${estilos.logo} ${estilos.logoEscura}`} />
+          </>
+        ) : marca.logo ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={marca.logo} alt={marca.nome} className={estilos.logo} />
+        ) : null}
         <div className={estilos.marcaTexto}>
           <b>{marca.nome}</b>
         </div>
@@ -138,8 +149,13 @@ export default async function Rail({ user, wsAtivo, workspaces }: {
         {}
         <ItemNav href="/base-conhecimento" rotulo="Base de conhecimento"><BookOpen size={16} strokeWidth={2} /></ItemNav>
 
-        <div className={estilos.sec}>Conteúdo</div>
-        <ItemNav href="/cursos" rotulo="Cursos"><GraduationCap size={16} strokeWidth={2} /></ItemNav>
+        {/* Cursos só no Trilhas de Aruanda, por ora: o GPS vende os cursos dele na Hotmart. */}
+        {projeto === 'trilhasdearuanda' && (
+          <>
+            <div className={estilos.sec}>Conteúdo</div>
+            <ItemNav href="/cursos" rotulo="Cursos"><GraduationCap size={16} strokeWidth={2} /></ItemNav>
+          </>
+        )}
 
         {}
         <div className={estilos.sec}>Automação e análise</div>

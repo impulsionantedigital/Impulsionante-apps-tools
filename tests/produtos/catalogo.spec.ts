@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
-  PRODUTOS,
+  CATALOGO,
   caminhoDoProduto,
   ehProdutoInterno,
   produtoPorSlug,
@@ -10,12 +10,12 @@ import { REGISTRO } from '@/lib/indulto-comutacao/registro'
 
 describe('catálogo de produtos', () => {
   it('não repete slug', () => {
-    const slugs = PRODUTOS.map((p) => p.slug)
+    const slugs = CATALOGO.map((p) => p.slug)
     expect(new Set(slugs).size).toBe(slugs.length)
   })
 
   it('usa slug em forma de segmento de URL', () => {
-    for (const p of PRODUTOS) {
+    for (const p of CATALOGO) {
       expect(p.slug, p.id).toMatch(/^[a-z0-9]+(-[a-z0-9]+)*$/)
     }
   })
@@ -37,7 +37,7 @@ describe('catálogo de produtos', () => {
 
   it('todo produto de indulto-comutacao tem motor no registro', () => {
     const idsMotor = REGISTRO.map((m) => m.id)
-    for (const p of PRODUTOS.filter((p) => p.familia === 'indulto-comutacao')) {
+    for (const p of CATALOGO.filter((p) => p.familia === 'indulto-comutacao')) {
       expect(idsMotor, `produto ${p.id} sem motor`).toContain(p.id)
     }
   })

@@ -143,6 +143,7 @@ No EasyPanel, aba **Environment** do app:
 | `SUPABASE_DB_URL` | ✅ | A connection string do **Session pooler** (§1.1), **já com a senha do banco no lugar do `[YOUR-PASSWORD]`**. É por ela que o CRM cria e atualiza as tabelas sozinho. |
 | `SUPABASE_ANON_KEY` | ✅ | A chave **pública** (§1.2). |
 | `SUPABASE_SERVICE_ROLE_KEY` | ✅ | A chave **secreta** (§1.3). |
+| `PROJETO` | ✅ | Qual projeto este deploy serve: `gpsdapena` ou `trilhasdearuanda`. Decide quais produtos existem neste CRM — menu, vitrine, rotas e oferta. Ver §2.1.1. |
 
 Essas três variáveis também estão no arquivo **`.env.example`**, na raiz do seu
 repositório — dá pra copiar de lá, preencher e colar. (O CRM não lê esse arquivo: ele é
@@ -155,6 +156,29 @@ SUPABASE_DB_URL=postgresql://postgres.abcdefghijklmnop:minhasenha@aws-0-sa-east-
 SUPABASE_ANON_KEY=sb_publishable_...
 SUPABASE_SERVICE_ROLE_KEY=sb_secret_...
 ```
+
+### 2.1.1 `PROJETO` — um código, dois projetos
+
+O mesmo código serve o GPS da Pena e o Trilhas de Aruanda, cada um com o seu deploy, o seu
+Supabase e a sua marca. `PROJETO` diz a cada deploy quem ele é:
+
+```
+PROJETO=gpsdapena          # no deploy do GPS da Pena
+PROJETO=trilhasdearuanda   # no deploy do Trilhas de Aruanda
+```
+
+- Um produto que não é do projeto **não existe** naquele deploy: some do menu e da vitrine, a
+  rota dele dá 404 e a oferta recusa o id. Quais produtos são de qual projeto está no código,
+  no campo `projetos` de `src/lib/produtos/catalogo.ts`.
+- **Não tem padrão.** Sem a variável, ou com um valor fora da lista, o CRM **não sobe**, e o log
+  mostra:
+
+  ```
+  [preflight] PROBLEMA (PROJETO): PROJETO ausente ou inválido: "". Aceitos: gpsdapena, trilhasdearuanda.
+  ```
+
+  É de propósito: um deploy que não sabe quem é mostraria os produtos do outro projeto.
+- Trocar o valor vale com um restart, sem reconstruir a imagem.
 
 > ⚠️ **Cuidado com espaço sobrando ao colar.** O CRM apara os espaços em volta de toda chave
 > que lê, mas um espaço perdido na caixa de texto do EasyPanel já quebrou o primeiro acesso

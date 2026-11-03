@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { PREFIXO_CHECKOUT, checkoutDoProduto, nomeDaVariavelDeCheckout, PRODUTOS } from '@/lib/produtos/catalogo'
+import { PREFIXO_CHECKOUT, checkoutDoProduto, nomeDaVariavelDeCheckout, CATALOGO } from '@/lib/produtos/catalogo'
 
 describe('nomeDaVariavelDeCheckout', () => {
   it('maiúsculas, com o hífen do slug trocado por sublinhado', () => {
@@ -25,7 +25,7 @@ describe('nomeDaVariavelDeCheckout', () => {
   })
 
   it('todo produto do catálogo tem um nome de variável válido', () => {
-    for (const p of PRODUTOS) {
+    for (const p of CATALOGO) {
       const nome = nomeDaVariavelDeCheckout(p.slug)
       expect(nome).toMatch(/^[A-Z0-9_]+$/)
       expect(nome).toContain(PREFIXO_CHECKOUT)
@@ -33,7 +33,7 @@ describe('nomeDaVariavelDeCheckout', () => {
   })
 
   it('dois produtos diferentes nunca geram a mesma variável', () => {
-    const nomes = PRODUTOS.map((p) => nomeDaVariavelDeCheckout(p.slug))
+    const nomes = CATALOGO.map((p) => nomeDaVariavelDeCheckout(p.slug))
     expect(new Set(nomes).size).toBe(nomes.length)
   })
 })

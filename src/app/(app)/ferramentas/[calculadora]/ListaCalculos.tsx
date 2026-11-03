@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { Campo, Entrada as EntradaControle } from '@/components/ui/Campo'
 import { formatarDataHora } from '@/lib/data-hora'
-import { PRODUTOS, caminhoDoProduto } from '@/lib/produtos/catalogo'
+import { CATALOGO, caminhoDoProduto } from '@/lib/produtos/catalogo'
 import { filtrarCalculos } from './filtro-calculos'
 import type { CalculoResumo } from './calculos'
 import estilos from './calculadora.module.css'
@@ -12,7 +12,7 @@ import estilos from './calculadora.module.css'
 /** "indulto-comutacao-2025" → "Decreto 12.970/2025": o card não mostra o id interno do motor,
  * mostra o que o catálogo já usa pro mesmo produto no menu lateral (Rail.tsx). */
 function rotuloDecreto(decretoId: string): string {
-  return PRODUTOS.find((p) => p.id === decretoId)?.menuDescricao ?? decretoId
+  return CATALOGO.find((p) => p.id === decretoId)?.menuDescricao ?? decretoId
 }
 
 /**

@@ -18,13 +18,24 @@
  * (Rail.tsx) — é o que permite existir uma seção "Detração" ao lado de "Indulto e Comutação"
  * sem duplicar rota nem menu para cada produto novo daquela família.
  */
+import { projetoAtual, type Projeto } from './projeto'
+
 export type Familia = 'indulto-comutacao' | 'detracao'
 
-export const PRODUTOS = [
+/**
+ * TODOS os produtos que existem no código, de todos os projetos. Use só em teste de contrato e em
+ * manutenção — nunca para montar tela, oferta ou rota: isso é `produtosDoProjeto()`.
+ *
+ * 🔴 Todo produto declara `projetos`: em quais deploys ele existe. É código, e não uma lista na
+ * variável de ambiente, pelo mesmo motivo do resto do catálogo — um id errado aqui é erro de
+ * compilação; numa variável seria silêncio.
+ */
+export const CATALOGO = [
   {
     id: 'indulto-comutacao-2025',
     slug: 'cic-2025',
     familia: 'indulto-comutacao',
+    projetos: ['gpsdapena'],
     rotulo: 'Calculadora de Indulto e Comutação — Decreto 12.970/2025',
     // Título/descrição do item no menu lateral (Rail.tsx) — mais curtos que `rotulo`, que é o
     // nome cheio usado na vitrine de `/ferramentas`.
@@ -35,6 +46,7 @@ export const PRODUTOS = [
     id: 'indulto-comutacao-2024',
     slug: 'cic-2024',
     familia: 'indulto-comutacao',
+    projetos: ['gpsdapena'],
     rotulo: 'Calculadora de Indulto e Comutação — Decreto 12.338/2024',
     menuTitulo: 'GPS CIC - Calculadora 2024',
     menuDescricao: 'Decreto 12.338/2024',
@@ -43,6 +55,7 @@ export const PRODUTOS = [
     id: 'detracao-recolhimento-noturno',
     slug: 'recolhimento-noturno',
     familia: 'detracao',
+    projetos: ['gpsdapena'],
     nome: 'Recolhimento Noturno',
     descricao: 'Calcula dias de detração por recolhimento domiciliar noturno',
     versao: '1.0',
@@ -51,9 +64,9 @@ export const PRODUTOS = [
     menuTitulo: 'Recolhimento Noturno',
     menuDescricao: 'Tema 1.155/STJ',
   },
-] as const
+] as const satisfies ReadonlyArray<{ id: string; projetos: readonly Projeto[]; [campo: string]: unknown }>
 
-export type Produto = (typeof PRODUTOS)[number]
+export type Produto = (typeof CATALOGO)[number]
 export type ProdutoId = Produto['id']
 
 /**
@@ -64,8 +77,23 @@ export type ProdutoId = Produto['id']
  * Com produto externo (spec de 2026-09-22) as duas respostas se separam — id válido, entrega
  * nenhuma —, e é esta função que responde só à segunda.
  */
+/**
+ * Os produtos DESTE deploy: o recorte do `CATALOGO` pelo `PROJETO`. É isto que monta menu,
+ * vitrine, rota, oferta e e-mail — e é por derivarem daqui que `ehProdutoInterno`,
+ * `produtoPorSlug` e `caminhoDoProduto` não conhecem produto de outro projeto (a rota dá 404, a
+ * oferta recusa o id).
+ *
+ * 🔴 É FUNÇÃO, e não constante de módulo como a spec propunha: o `next build` carrega os módulos de
+ * servidor (ver o `Dockerfile`), e a imagem é construída sem `PROJETO` — uma constante calculada no
+ * import derrubaria o build. Chamada na hora do uso, ela lê o ambiente do container que subiu.
+ */
+export function produtosDoProjeto(env: Record<string, string | undefined> = process.env): Produto[] {
+  const projeto = projetoAtual(env)
+  return CATALOGO.filter((p) => (p.projetos as readonly Projeto[]).includes(projeto))
+}
+
 export function ehProdutoInterno(id: unknown): id is ProdutoId {
-  return typeof id === 'string' && PRODUTOS.some((p) => p.id === id)
+  return typeof id === 'string' && produtosDoProjeto().some((p) => p.id === id)
 }
 
 /**
@@ -81,7 +109,7 @@ export function ehProdutoInterno(id: unknown): id is ProdutoId {
  * função entrega. Quem quiser o nome por extenso deve pedir `rotulo` direto ao produto.
  */
 export function rotuloDoProduto(id: ProdutoId): string {
-  return PRODUTOS.find((p) => p.id === id)?.menuTitulo ?? id
+  return CATALOGO.find((p) => p.id === id)?.menuTitulo ?? id
 }
 
 /** O caminho da rota daquele produto. Fonte única: o `slug` + a `familia` de quem o possui —
@@ -94,7 +122,7 @@ export function caminhoDoProduto(slug: string): string {
 }
 
 export function produtoPorSlug(slug: string): Produto | null {
-  return PRODUTOS.find((p) => p.slug === slug) ?? null
+  return produtosDoProjeto().find((p) => p.slug === slug) ?? null
 }
 
 export const PREFIXO_CHECKOUT = 'CHECKOUT_URL_'
@@ -129,5 +157,5 @@ export function checkoutDoProduto(slug: string, env: Record<string, string | und
 }
 
 export function slugDoMotor(motorId: string): string | null {
-  return PRODUTOS.find((p) => p.id === motorId)?.slug ?? null
+  return produtosDoProjeto().find((p) => p.id === motorId)?.slug ?? null
 }

@@ -36,15 +36,29 @@ veio no merge, mas ninguém o chama.
 
 1. Como o id de curso se distingue (UUID como externo? prefixo `curso:`?), e onde
    `ehIdDeProdutoAceito`, `ehDegustacaoValida` e `rotulosDosProdutos` passam a reconhecê-lo.
-2. Se um curso pode ser degustação (brinde de oferta filha). O comprador do curso ganha
-   acesso pelo período, então tecnicamente pode.
+2. ~~Se um curso pode ser degustação (brinde de oferta filha).~~ **Decidido em 2026-11-03: pode.**
+   `ehDegustacaoValida` precisa passar a aceitar curso.
 3. O que fazer com os §8.4 e §8.5 da spec (`produto_id` mutável e ids compartilhados): com UUID,
    ambos desaparecem.
+
+## Filtro por projeto — FEITO (2026-11-03)
+
+`PROJETO=gpsdapena` ou `PROJETO=trilhasdearuanda`, obrigatória (o preflight recusa o boot sem ela).
+Diferenças em relação à §4 da spec:
+
+- **`produtosDoProjeto()` é função, não a constante `PRODUTOS`.** O `next build` carrega os módulos
+  de servidor, e a imagem é construída sem `PROJETO`: a constante calculada no import derrubaria o
+  build. `CATALOGO` é a lista inteira (para teste de contrato e para rótulo de histórico).
+- **Gate de rota num `layout.tsx`** em `ferramentas/[calculadora]` e `ferramentas/detracao/[calculadora]`.
+  As páginas de detração não conferiam o catálogo e abririam no outro projeto.
+- **Coisas do GPS que não eram produto, também presas ao projeto:** o aviso do clube Hotmart e o
+  subtítulo da vitrine, e a logo fixa da sidebar (`public/marca/*.png`). Nos outros projetos, a
+  sidebar usa a logo da Marca do banco.
+- **Item "Cursos" do menu só no `trilhasdearuanda`.**
+- Hoje nenhum produto em código é do Trilhas de Aruanda: lá, a vitrine mostra um estado vazio.
 
 ## Próximos passos (ordem da §9 da spec, ajustada)
 
 1. Guardas: teste de número de migration duplicado (§8.2).
 2. Decisão acima, e ligação de cursos com vendas.
-3. Filtro por projeto (§4): `PROJETO`, `projetos` no catálogo, e o item "Cursos" do menu só no
-   Trilhas de Aruanda.
-4. Verificação ao vivo de cursos (§8.3) no banco do Aruanda.
+3. Verificação ao vivo de cursos (§8.3) no banco do Aruanda.

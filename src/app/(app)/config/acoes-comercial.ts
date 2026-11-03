@@ -12,7 +12,7 @@ import { lerConfig } from '@/server/configuracoes'
 import { bonificarVendasDaOferta, encerrarVendaManual, reenviarNotificacoes, reprocessarEvento } from '@/server/vendas/processar'
 import { esquecerTokenHotmart } from '@/server/vendas/token-hotmart'
 import { CHAVE_URL_PUBLICA } from '@/lib/canais/url-publica'
-import { PRODUTOS, ehProdutoInterno, type ProdutoId } from '@/lib/produtos/catalogo'
+import { produtosDoProjeto, ehProdutoInterno, type ProdutoId } from '@/lib/produtos/catalogo'
 import { ehIdDeProdutoAceito, ehDegustacaoValida, MENSAGEM_DEGUSTACAO_EXTERNA } from '@/lib/produtos/oferta'
 import { rotuloDeId } from '@/lib/produtos/rotulos'
 import { rotulosDosProdutos } from '@/server/produtos/rotulos'
@@ -289,7 +289,7 @@ export async function lerComercial(): Promise<VistaComercial | { erro: string }>
     produtos: [
       // 🔴 `menuTitulo`, e não `rotulo`: o seletor da oferta usa o mesmo nome curto que o e-mail,
       // o menu e a vitrine. O `rotulo` por extenso tornava a lista de produtos difícil de varrer.
-      ...PRODUTOS.map((p) => ({ id: p.id, rotulo: p.menuTitulo, origem: 'interno' as const })),
+      ...produtosDoProjeto().map((p) => ({ id: p.id, rotulo: p.menuTitulo, origem: 'interno' as const })),
       ...produtosExternosDoWs.map((p) => ({ id: p.id, rotulo: p.nome, origem: 'externo' as const })),
     ],
       temposDeAcesso: DURACOES.map((valor) => ({ valor, rotulo: rotuloDoTempoDeAcesso(valor) })),

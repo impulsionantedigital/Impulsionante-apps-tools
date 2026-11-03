@@ -1,19 +1,19 @@
 import { describe, it, expect } from 'vitest'
-import { PRODUTOS, ehProdutoInterno, rotuloDoProduto } from '@/lib/produtos/catalogo'
+import { CATALOGO, ehProdutoInterno, rotuloDoProduto } from '@/lib/produtos/catalogo'
 import { REGISTRO } from '@/lib/indulto-comutacao/registro'
 
 describe('catálogo de produtos', () => {
   it('todo produto de indulto-comutacao é um motor do REGISTRO, e todo motor é vendável', () => {
-    const produtosIndulto = PRODUTOS.filter((p) => p.familia === 'indulto-comutacao').map((p) => p.id).sort()
+    const produtosIndulto = CATALOGO.filter((p) => p.familia === 'indulto-comutacao').map((p) => p.id).sort()
     expect(produtosIndulto).toEqual(REGISTRO.map((m) => m.id).sort())
   })
 
   it('fixa o id do produto de 2025', () => {
-    expect(PRODUTOS.map((p) => p.id)).toContain('indulto-comutacao-2025')
+    expect(CATALOGO.map((p) => p.id)).toContain('indulto-comutacao-2025')
   })
 
   it('não repete id', () => {
-    expect(new Set(PRODUTOS.map((p) => p.id)).size).toBe(PRODUTOS.length)
+    expect(new Set(CATALOGO.map((p) => p.id)).size).toBe(CATALOGO.length)
   })
 
   it('reconhece só ids do catálogo — e um UUID de produto externo é FALSE', () => {
@@ -37,7 +37,7 @@ describe('catálogo de produtos', () => {
 
   it('o rótulo por extenso continua no catálogo, intacto', () => {
     // Nada foi apagado do catálogo: o texto longo ainda está lá, para quem precisar dele.
-    const p = PRODUTOS.find((x) => x.id === 'indulto-comutacao-2025')!
+    const p = CATALOGO.find((x) => x.id === 'indulto-comutacao-2025')!
     expect(p.rotulo).toBe('Calculadora de Indulto e Comutação — Decreto 12.970/2025')
   })
 })

@@ -5,7 +5,14 @@ export default defineConfig({
   // `spec.tsx` também: os testes que RENDERIZAM um componente (ver
   // `questionario-acordeao.spec.tsx`) precisam de JSX. Sem isto o arquivo é ignorado em
   // silêncio e a suíte passa sem nunca tê-lo executado.
-  test: { environment: 'node', include: ['tests/**/*.spec.{ts,tsx}'], passWithNoTests: true },
+  test: {
+    environment: 'node',
+    include: ['tests/**/*.spec.{ts,tsx}'],
+    passWithNoTests: true,
+    // 🔴 `produtosDoProjeto()` lança sem PROJETO. A suíte roda como GPS da Pena, que é o projeto com
+    // produto em código; teste que precisa de outro recorte injeta o env na função.
+    env: { PROJETO: 'gpsdapena' },
+  },
   resolve: {
     alias: {
       

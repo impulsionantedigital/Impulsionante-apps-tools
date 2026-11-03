@@ -38,15 +38,15 @@ describe('vitrine — a inversão da §9.2 fica invertida', () => {
     // que descarte quem não tem o produto. Foi assim que a vitrine escondia essas pessoas.
     expect(txt, 'a vitrine voltou a filtrar por acesso').not.toMatch(/estado\s*!==\s*'nunca'/)
     expect(txt, 'a vitrine voltou a filtrar por acesso').not.toMatch(/\.filter\([^;]*\bnunca\b/)
-    // E o catálogo inteiro é desenhado: os cartões vêm de `PRODUTOS.map`.
-    expect(ler('app/(app)/ferramentas/page.tsx')).toMatch(/PRODUTOS\.map/)
+    // E o catálogo inteiro é desenhado: os cartões vêm de `produtosDoProjeto().map`.
+    expect(ler('app/(app)/ferramentas/page.tsx')).toMatch(/produtosDoProjeto\(\)\.map/)
   })
 
   it('o menu lateral NÃO filtra o catálogo por acesso', () => {
     const txt = codigo(ler('components/shell/Rail.tsx'))
     expect(txt, 'o menu voltou a filtrar por acesso').not.toMatch(/estado\s*!==\s*'nunca'/)
     expect(txt, 'o menu voltou a filtrar por acesso').not.toMatch(/\.filter\([^;]*\bnunca\b/)
-    expect(ler('components/shell/Rail.tsx')).toMatch(/PRODUTOS\.map/)
+    expect(ler('components/shell/Rail.tsx')).toMatch(/produtosDoProjeto\(\)\.map/)
   })
 
   it('a página do produto NÃO redireciona quem nunca teve acesso', () => {

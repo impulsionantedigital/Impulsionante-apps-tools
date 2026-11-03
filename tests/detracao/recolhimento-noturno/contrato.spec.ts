@@ -1,13 +1,13 @@
 // tests/detracao/recolhimento-noturno/contrato.spec.ts
 import { describe, it, expect } from 'vitest'
-import { PRODUTOS, caminhoDoProduto, produtoPorSlug } from '@/lib/produtos/catalogo'
+import { CATALOGO, caminhoDoProduto, produtoPorSlug } from '@/lib/produtos/catalogo'
 import { ALGORITMO_VERSAO } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-0/tipos'
 import { calcular } from '@/lib/detracao/recolhimento-noturno/versoes/rn-2-0/motor'
 import { preparar } from '@/app/(app)/ferramentas/[calculadora]/preparar'
 
 describe('contrato — reconciliação catálogo ↔ motor ↔ rotas', () => {
   it('Test 1: Catálogo tem produto detracao-recolhimento-noturno', () => {
-    expect(PRODUTOS).toContainEqual(
+    expect(CATALOGO).toContainEqual(
       expect.objectContaining({
         id: 'detracao-recolhimento-noturno',
         slug: 'recolhimento-noturno',

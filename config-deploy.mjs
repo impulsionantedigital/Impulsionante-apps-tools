@@ -78,6 +78,9 @@ export function curarPortaPooler(dbUrl) {
 }
 
 
+/** Cópia de `PROJETOS` de src/lib/produtos/projeto.ts — ver o comentário em `validarConfig`. */
+export const PROJETOS_ACEITOS = ['gpsdapena', 'trilhasdearuanda']
+
 export function validarConfig(env = {}) {
   const texto = (v) => (typeof v === 'string' ? v.trim() : '')
   const dbUrl = texto(env.SUPABASE_DB_URL)
@@ -146,6 +149,17 @@ export function validarConfig(env = {}) {
       'As duas chaves estão trocadas de lugar.',
       'A chave pública (anon / sb_publishable_) vai em SUPABASE_ANON_KEY e a secreta ' +
       '(service_role / sb_secret_) em SUPABASE_SERVICE_ROLE_KEY. ' + ONDE_ACHAR_CHAVES)
+  }
+
+  // 🔴 Qual projeto este deploy serve (src/lib/produtos/projeto.ts). Sem padrão, de propósito: um
+  // deploy que não sabe o que é mostraria o produto de outro projeto. A lista é cópia da do .ts
+  // (um .mjs não importa TypeScript); `tests/config/projeto.spec.ts` exige que as duas batam.
+  const projeto = texto(env.PROJETO)
+  if (!PROJETOS_ACEITOS.includes(projeto)) {
+    add(problemas, 'projeto_invalido', 'PROJETO',
+      `PROJETO ausente ou inválido: "${projeto}". Aceitos: ${PROJETOS_ACEITOS.join(', ')}.`,
+      'Crie a variável PROJETO no painel do deploy: gpsdapena no GPS da Pena, trilhasdearuanda no ' +
+      'Trilhas de Aruanda. Ela decide quais produtos existem neste CRM.')
   }
 
   return {
