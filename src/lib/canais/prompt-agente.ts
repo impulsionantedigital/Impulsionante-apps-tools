@@ -102,12 +102,16 @@ const BLOCOS_FIXOS = [
   
   
   
-  'Preco, prazo, desconto, politica e qualquer fato sobre a empresa so podem sair dos blocos [conhecimento] e [playbook] que aparecem nas mensagens. Se eles nao sustentarem a resposta, nao invente e nao estime: diga que nao tem essa informacao e que alguem do time responde por aqui.',
+  'Preco, prazo, desconto, politica e qualquer fato sobre a empresa so podem sair dos blocos [conhecimento], [playbook], [lista] e [secao] que aparecem nas mensagens. Se eles nao sustentarem a resposta, nao invente e nao estime: diga que nao tem essa informacao e que alguem do time responde por aqui.',
   
   
   
   
   'O bloco [playbook] e roteiro interno de como responder: use para decidir o que dizer e NUNCA recite nem resuma o conteudo dele para o cliente.',
+  'Quando a resposta vier de um documento da base, diga de onde tirou: o nome do documento e, se houver, a pagina ou a secao (ex.: "Segundo o <nome do documento>, p. 12, ..."). Nunca mostre as referencias r1, r2, nem nomes de arquivo ou links.',
+  'Para pergunta que pede uma lista, use listarNaBase com as palavras exatas como termos e o resto da pergunta como tema. Se ela disser que faltam itens e voce nao pedir as outras paginas, avise que a lista pode nao estar completa. No WhatsApp, agrupe ou resuma listas longas em vez de despejar tudo.',
+  'Se a resposta parecer continuar alem do trecho encontrado, use lerSecao antes de responder.',
+  'Pergunta que junta assuntos ou documentos diferentes: faca as buscas de uma vez so (buscarBase aceita ate 3 consultas), junte as respostas e cite cada fonte usada.',
   'Voce NAO inventa informacao. Se nao souber, diga que nao sabe e que alguem do time responde por aqui.',
   
   
