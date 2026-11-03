@@ -25,6 +25,7 @@ export async function listarBase(ws: string): Promise<EntradaListada[]> {
     .from('base_conhecimento')
     .select(COLUNAS)
     .eq('workspace_id', ws)
+    .is('documento_id', null)
     .order('atualizado_em', { ascending: false })
   if (error || !data) throw new Error('falha ao ler a base de conhecimento deste espaço de trabalho')
 
@@ -81,6 +82,7 @@ export async function contarSemVetor(ws: string): Promise<number> {
     .from('base_conhecimento')
     .select('id', { count: 'exact', head: true })
     .eq('workspace_id', ws)
+    .is('documento_id', null)
     .is('embed_versao', null)
   return error ? 0 : (count ?? 0)
 }

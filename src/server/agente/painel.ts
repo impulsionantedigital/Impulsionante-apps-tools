@@ -221,6 +221,7 @@ export async function lerPainelDoAgente(): Promise<PainelDoAgente> {
         .from('base_conhecimento')
         .select('id')
         .eq('workspace_id', ws)
+        .is('documento_id', null)
         .eq('habilitado', true)
       
       
