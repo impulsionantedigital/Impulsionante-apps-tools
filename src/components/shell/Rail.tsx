@@ -4,7 +4,7 @@ import {
   LayoutGrid, LayoutDashboard, Target, CalendarClock, BarChart3,
   Contact, Building2, Settings, Zap, MessageSquare, BookOpen,
   Wallet, FileText, Package, Truck, Receipt, Users,
-  Bot, Boxes, ClipboardList, Landmark, Sparkles, Puzzle, Scale,
+  Bot, Boxes, ClipboardList, Landmark, Sparkles, Puzzle, Scale, GraduationCap,
 } from 'lucide-react'
 import { lerMenuCustom } from '@/server/custom/menu'
 import { ICONE_PADRAO, type IconePermitido } from '@/lib/menu-custom'
@@ -137,6 +137,9 @@ export default async function Rail({ user, wsAtivo, workspaces }: {
         <ItemNav href="/empresas" rotulo="Empresas"><Building2 size={16} strokeWidth={2} /></ItemNav>
         {}
         <ItemNav href="/base-conhecimento" rotulo="Base de conhecimento"><BookOpen size={16} strokeWidth={2} /></ItemNav>
+
+        <div className={estilos.sec}>Conteúdo</div>
+        <ItemNav href="/cursos" rotulo="Cursos"><GraduationCap size={16} strokeWidth={2} /></ItemNav>
 
         {}
         <div className={estilos.sec}>Automação e análise</div>
