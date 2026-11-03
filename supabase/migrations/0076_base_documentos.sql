@@ -375,6 +375,15 @@ grant execute on function public.base_conhecimento_buscar(uuid, text, extensions
 -- Uma secao entra quando CADA termo casa com ALGUM trecho visivel dela (nao precisa ser o
 -- mesmo). Representante: com `p_embedding`, o trecho da secao mais parecido; sem, o primeiro
 -- (por posicao) que casa com o primeiro termo. `total` conta secoes.
+--
+-- ⚠️ CUSTO: os trechos que casam saem do indice gin da `fts` (a uniao OR dos termos, que vira
+-- parametro de InitPlan e entra no indice); so DEPOIS de saber quais secoes casam com todos os
+-- termos e que a funcao volta a `base_conhecimento` para os candidatos a representante — e so
+-- ali le `embedding`. Um CTE com todas as linhas visiveis do espaco seria materializado inteiro
+-- (vetor e texto de cada trecho) a cada pagina da lista.
+--
+-- Entradas saneadas aqui dentro: 1 a 3 termos nao vazios (mais que 3 → os 3 primeiros; nenhum
+-- → nenhuma linha), `p_limite` entre 1 e 50, `p_deslocamento` >= 0.
 create or replace function public.base_secoes_por_termos(
   p_ws uuid,
   p_termos text[],
@@ -388,20 +397,31 @@ create or replace function public.base_secoes_por_termos(
 )
 language sql stable security definer set search_path = extensions as $$
 with termos as (
-  select u.ordem, websearch_to_tsquery('portuguese', u.termo) as q
-    from unnest(p_termos) with ordinality as u(termo, ordem)
-), visiveis as (
-  select b.id, b.titulo, b.conteudo, b.fts, b.embedding, b.embed_versao,
-         b.caminho_titulos, b.pagina, b.posicao,
-         doc.nome_exibicao as documento,
-         -- a chave da secao: (versao, numero) para trecho titulado; a propria linha senao
-         case when b.documento_id is not null and coalesce(b.caminho_titulos, '') <> '' and b.secao is not null
+  select row_number() over (order by u.ordem) as ordem,
+         websearch_to_tsquery('portuguese', u.termo) as q
+    from (
+      select x.termo, x.ordem
+        from unnest(coalesce(p_termos, '{}'::text[])) with ordinality as x(termo, ordem)
+       where coalesce(trim(x.termo), '') <> ''
+       order by x.ordem
+       limit 3
+    ) u
+), consulta as (
+  -- Uniao OR dos termos (nulo quando nao ha termo → nenhuma linha casa).
+  select q1 || coalesce(q2, q1) || coalesce(q3, q1) as qualquer, q1 as primeiro
+    from (select (select t.q from termos t where t.ordem = 1) as q1,
+                 (select t.q from termos t where t.ordem = 2) as q2,
+                 (select t.q from termos t where t.ordem = 3) as q3) s
+), casados as (
+  select case when b.documento_id is not null and coalesce(b.caminho_titulos, '') <> '' and b.secao is not null
               then b.versao_id else b.id end as secao_dono,
          case when b.documento_id is not null and coalesce(b.caminho_titulos, '') <> '' and b.secao is not null
-              then b.secao end as secao_num
+              then b.secao end as secao_num,
+         t.ordem
     from public.base_conhecimento b
-    left join public.base_documentos doc on doc.workspace_id = b.workspace_id and doc.id = b.documento_id
-   where b.workspace_id = p_ws and b.habilitado and (
+    join termos t on b.fts @@ t.q
+   where b.fts @@ (select c.qualquer from consulta c)
+     and b.workspace_id = p_ws and b.habilitado and (
            (b.documento_id is null and coalesce(
               (select bool_or(ab.assistente_id = p_assistente) from public.assistente_blocos ab
                 where ab.bloco_id = b.id and ab.workspace_id = b.workspace_id), true))
@@ -414,34 +434,55 @@ with termos as (
                                 where ad.documento_id = d.id and ad.workspace_id = d.workspace_id), true)))
          )
 ), secoes as (
-  select v.secao_dono, v.secao_num
-    from visiveis v
-    join termos t on v.fts @@ t.q
-   group by v.secao_dono, v.secao_num
-  having count(distinct t.ordem) = (select count(*) from termos)
+  select m.secao_dono, m.secao_num
+    from casados m
+   group by m.secao_dono, m.secao_num
+  having count(distinct m.ordem) = (select count(*) from termos)
 ), representantes as (
-  select distinct on (v.secao_dono, v.secao_num)
-         v.*,
-         case when p_embedding is not null and v.embedding is not null and v.embed_versao = p_versao
-              then v.embedding <=> p_embedding end as distancia,
-         v.fts @@ (select t.q from termos t where t.ordem = 1) as casa_primeiro
-    from visiveis v
-    join secoes s on s.secao_dono = v.secao_dono and s.secao_num is not distinct from v.secao_num
-   order by v.secao_dono, v.secao_num,
+  select distinct on (s.secao_dono, s.secao_num)
+         b.id, b.titulo, b.conteudo, b.caminho_titulos, b.pagina, b.posicao,
+         doc.nome_exibicao as documento,
+         case when p_embedding is not null and b.embedding is not null and b.embed_versao = p_versao
+              then b.embedding <=> p_embedding end as distancia
+    from secoes s
+    join public.base_conhecimento b
+      on b.workspace_id = p_ws
+     and (
+           (s.secao_num is null and b.id = s.secao_dono)
+           or (s.secao_num is not null and b.versao_id = s.secao_dono and b.secao = s.secao_num
+               and b.documento_id is not null and coalesce(b.caminho_titulos, '') <> '')
+         )
+    left join public.base_documentos doc on doc.workspace_id = b.workspace_id and doc.id = b.documento_id
+   where b.habilitado and (
+           (b.documento_id is null and coalesce(
+              (select bool_or(ab.assistente_id = p_assistente) from public.assistente_blocos ab
+                where ab.bloco_id = b.id and ab.workspace_id = b.workspace_id), true))
+           or
+           (b.documento_id is not null and exists (
+              select 1 from public.base_documentos d
+               where d.workspace_id = b.workspace_id and d.id = b.documento_id
+                 and d.ligado and d.versao_ativa_id = b.versao_id
+                 and coalesce((select bool_or(ad.assistente_id = p_assistente) from public.assistente_documentos ad
+                                where ad.documento_id = d.id and ad.workspace_id = d.workspace_id), true)))
+         )
+     -- sem embedding, so concorre quem casa com o primeiro termo
+     and (p_embedding is not null or b.fts @@ (select c.primeiro from consulta c))
+   order by s.secao_dono, s.secao_num,
             distancia nulls last,
-            casa_primeiro desc,
-            v.posicao nulls last
+            (b.fts @@ (select c.primeiro from consulta c)) desc,
+            b.posicao nulls last
 )
 select r.id, r.documento, r.titulo, r.caminho_titulos, r.pagina,
        case when p_embedding is null
-            then ts_headline('portuguese', r.conteudo, (select t.q from termos t where t.ordem = 1),
+            then ts_headline('portuguese', r.conteudo, (select c.primeiro from consulta c),
                              'MaxWords=30, MinWords=10, StartSel="", StopSel=""')
             else left(r.conteudo, 300) end as recorte,
        count(*) over () as total
   from representantes r
  order by case when p_embedding is not null then r.distancia end nulls last,
           r.documento, r.posicao, r.id
- limit p_limite offset p_deslocamento;
+ limit least(greatest(coalesce(p_limite, 50), 1), 50)
+offset greatest(coalesce(p_deslocamento, 0), 0);
 $$;
 
 revoke all on function public.base_secoes_por_termos(uuid, text[], uuid, int, int, extensions.vector, text)

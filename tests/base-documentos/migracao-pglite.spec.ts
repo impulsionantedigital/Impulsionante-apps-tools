@@ -285,6 +285,33 @@ describe('0076 aplicada num Postgres de verdade (PGlite)', () => {
     ])
   })
 
+  it('(e) saneia as entradas: termos vazios ignorados, no máximo 3, limite 1..50, deslocamento >= 0', async () => {
+    const chamar = (termos: string[] | null, limite: number | null, desloc: number | null) =>
+      linhas<{ id: string; total: number }>(
+        `select * from public.base_secoes_por_termos($1, $2::text[], $3, $4, $5)`,
+        [W, termos, A2, limite, desloc],
+      )
+    expect(await chamar([], 10, 0)).toEqual([])
+    expect(await chamar(['', '   '], 10, 0)).toEqual([])
+    expect(await chamar(null, 10, 0)).toEqual([])
+    // Vazios não contam como termo: só 'entrega' vale.
+    expect((await chamar(['', 'entrega', ' '], 10, 0)).map((x) => x.id).sort()).toEqual([C1, K1, K4, K5].sort())
+    // O quarto termo (que nada casa) é descartado: os três primeiros decidem.
+    expect((await chamar(['rapida', 'frete', 'entrega', 'inexistentezzz'], 10, 0)).map((x) => x.id)).toEqual([K1])
+    const um = await chamar(['entrega'], 0, -5)
+    expect(um).toHaveLength(1)
+    expect(Number(um[0].total)).toBe(4)
+    expect(await chamar(['entrega'], 1000, 0)).toHaveLength(4)
+    expect(await chamar(['entrega'], 10, 3)).toHaveLength(1)
+  })
+
+  it('(e) sem embedding, o representante é o primeiro trecho que casa com o PRIMEIRO termo', async () => {
+    // Na seção 1 de V1, só K2 casa com 'frete'; K1 vem antes por posição mas não casa.
+    const r = await secoes(['frete', 'rapida'])
+    expect(r.map((x) => x.id)).toEqual([K2])
+    expect(r[0].recorte).toContain('frete')
+  })
+
   it('(f) seção do trecho devolve os trechos da seção em ordem, marcando o alvo', async () => {
     const r = await secaoDo(K2, 'secao')
     expect(r.map((x) => x.id)).toEqual([K1, K2])
