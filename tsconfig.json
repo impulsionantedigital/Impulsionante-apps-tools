@@ -71,6 +71,10 @@
     // é convenção declarada do repositório: `*.e2e.ts` é do Playwright, `*.spec.ts` é do vitest.
     // Os `.mjs` de apoio ficam de fora disto de graça — sem `checkJs`, o `tsc` não os confere.
     "**/*.e2e.ts",
-    "**/playwright.config.ts"
+    "**/playwright.config.ts",
+    // Saída GERADA pelo `pnpm build` (o worker de extração empacotado, ~3,5 MB de JS com unpdf e
+    // mammoth dentro). Com `allowJs`, o `tsc` tentaria inferir tipos nele e estoura a pilha
+    // ("Maximum call stack size exceeded" no `next build`). O fonte é o `.ts`, que continua conferido.
+    "**/*.gen.mjs"
   ]
 }

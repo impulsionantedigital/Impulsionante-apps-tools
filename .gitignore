@@ -58,3 +58,6 @@ temp/
 # ambiente e cache do harness Python de validacao (validacao/oraculo.py)
 .venv/
 __pycache__/
+
+# Worker de extração empacotado pelo `pnpm build` (scripts/empacotar-worker.mjs) — gerado, não versionar.
+src/server/workers/extrator.gen.mjs
