@@ -10,6 +10,7 @@ import {
   processarVersao,
   RENOVACAO_MS,
   RESERVA_MS,
+  TENTATIVAS_PARA_DESISTIR_DA_EXTRACAO,
   TETO_TRECHOS_POR_VERSAO,
   type Deps,
   type RepoDocumentos,
@@ -307,8 +308,9 @@ describe('processarVersao', () => {
     expect(f.trechos).toHaveLength(2)
   })
 
-  it('extração interrompida antes (extraindo, tentativa 2): falha sem extrair e guarda o arquivo', async () => {
-    const f = repoFalso({ etapa: 'extraindo', tentativas: 2, trechosProntosSemVetor: 3 })
+  it('extração interrompida duas vezes (extraindo, tentativa 3): falha sem extrair e guarda o arquivo', async () => {
+    expect(TENTATIVAS_PARA_DESISTIR_DA_EXTRACAO).toBe(3)
+    const f = repoFalso({ etapa: 'extraindo', tentativas: 3, trechosProntosSemVetor: 3 })
     const extrair = vi.fn(deps(f).extrair)
     expect(await processarVersao(f.versao, deps(f, { extrair }))).toBe('erro')
     expect(f.motivo).toBe(
@@ -327,6 +329,14 @@ describe('processarVersao', () => {
     const f = repoFalso({ etapa: 'extraindo', tentativas: 4 })
     expect(await processarVersao(f.versao, deps(f))).toBe('erro')
     expect(f.baixou).toBe(false)
+  })
+
+  it('extração interrompida uma vez (extraindo, tentativa 2): tenta ler de novo', async () => {
+    const f = repoFalso({ etapa: 'extraindo', tentativas: 2, trechosProntosSemVetor: 3 })
+    expect(await processarVersao(f.versao, deps(f))).toBe('pronto')
+    expect(f.baixou).toBe(true)
+    expect(f.motivo).toBeNull()
+    expect(f.trechos).toHaveLength(2)
   })
 
   it('primeira tentativa de extração (tentativas 1) segue normal', async () => {

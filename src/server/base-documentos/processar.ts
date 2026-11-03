@@ -33,6 +33,9 @@ const MOTIVO_SEM_OBJETO = 'O arquivo não está mais guardado. Envie o arquivo d
 const MOTIVO_VETOR = 'Não consegui gerar a busca por significado agora. Tente reprocessar mais tarde.'
 const MOTIVO_EXTRACAO_INTERROMPIDA =
   'A leitura deste arquivo foi interrompida duas vezes (o servidor pode ter ficado sem memória). Tente um arquivo menor ou divida-o em partes.'
+/** Reivindicações em `extraindo` a partir da qual a versão desiste sem ler: a 3ª = a leitura já
+ *  foi interrompida duas vezes. Um erro passageiro (download, banco) ainda ganha uma nova tentativa. */
+export const TENTATIVAS_PARA_DESISTIR_DA_EXTRACAO = 3
 /** Acima desta fração de trechos sem frase de contexto, a promoção deixa um aviso no log. */
 const FRACAO_SEM_FRASE_PARA_AVISO = 0.2
 const motivoDuplicata = (nome: string) => `Este arquivo é igual a «${nome}», que já está na base.`
@@ -276,11 +279,11 @@ export async function processarVersao(v: VersaoReivindicada, d: Deps): Promise<F
 
 async function executar(v: VersaoReivindicada, d: Deps, reserva: Reserva): Promise<Fim> {
   const etapa = v.etapa
-  // Reivindicada de novo AINDA em `extraindo`: a tentativa anterior começou a ler o arquivo e
-  // nunca terminou — o caso típico é o processo morto por falta de memória no meio de um arquivo
+  // Reivindicada pela 3ª vez AINDA em `extraindo`: duas tentativas começaram a ler o arquivo e
+  // nunca terminaram — o caso típico é o processo morto por falta de memória no meio de um arquivo
   // grande. Tentar de novo derrubaria o servidor (e o WhatsApp junto) outra vez. Falha sem ler;
   // o objeto fica no bucket para o dono poder reprocessar depois, se quiser.
-  if (etapa === 'extraindo' && v.tentativas >= 2) return falhar(v, d, MOTIVO_EXTRACAO_INTERROMPIDA)
+  if (etapa === 'extraindo' && v.tentativas >= TENTATIVAS_PARA_DESISTIR_DA_EXTRACAO) return falhar(v, d, MOTIVO_EXTRACAO_INTERROMPIDA)
   if (etapa === null || etapa === 'extraindo') {
     const fim = await extrair(v, d, reserva)
     if (fim) return fim
