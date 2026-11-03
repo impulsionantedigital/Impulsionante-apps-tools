@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { chaveDeRetomada } from '../../src/app/(app)/base-conhecimento/envio-tus'
 import {
+  acoesDoDocumento,
   formatarCusto,
   formatarMB,
   precisaAcompanhar,
@@ -81,5 +82,38 @@ describe('precisaAcompanhar', () => {
   it('envio parado no navegador (enviando) não prende a tela recarregando para sempre', () => {
     const doc = (ativa: unknown, pendente: unknown) => ({ ativa, pendente }) as Parameters<typeof precisaAcompanhar>[0][number]
     expect(precisaAcompanhar([doc(null, v({ status: 'enviando' }))])).toBe(false)
+  })
+})
+
+describe('acoesDoDocumento', () => {
+  const pronto = { status: 'pronto' as const }
+  const base = { ativa: pronto, pendente: null, enviandoAqui: false, variosAssistentes: true }
+
+  it('quem não administra só vê os trechos', () => {
+    expect(acoesDoDocumento({ ...base, ehOwner: false })).toEqual(['trechos'])
+    expect(acoesDoDocumento({ ...base, ativa: null, pendente: { status: 'na_fila' }, ehOwner: false })).toEqual([])
+  })
+
+  it('o dono vê tudo o que cabe ao documento', () => {
+    expect(acoesDoDocumento({ ...base, ehOwner: true })).toEqual([
+      'alternar',
+      'renomear',
+      'substituir',
+      'reprocessar',
+      'assistentes',
+      'trechos',
+      'excluir',
+    ])
+  })
+
+  it('cancelar só para pendente que não é o envio desta aba; sem arquivo não reprocessa', () => {
+    const r = acoesDoDocumento({ ...base, ativa: null, pendente: { status: 'enviando' }, ehOwner: true, variosAssistentes: false })
+    expect(r).toContain('cancelar')
+    expect(r).not.toContain('reprocessar')
+    expect(r).not.toContain('assistentes')
+    expect(r).not.toContain('trechos')
+    expect(
+      acoesDoDocumento({ ...base, pendente: { status: 'processando' }, enviandoAqui: true, ehOwner: true }),
+    ).not.toContain('cancelar')
   })
 })

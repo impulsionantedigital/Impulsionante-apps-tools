@@ -103,11 +103,11 @@ export default async function BaseDeConhecimentoPage() {
   
   const assistentes = assistentesBrutos.map((a) => ({ id: a.id, nomeInterno: a.nomeInterno }))
 
-  // Documentos: só quem administra o espaço os enxerga (as ações exigem o dono). Uma falha aqui
-  // não derruba os cards — vira a frase de erro dentro da área de documentos.
+  // Documentos: todo membro do espaço lê (como os cards); escrever é só de quem administra. Uma
+  // falha aqui não derruba os cards — vira a frase de erro dentro da área de documentos.
   let documentos: DocumentoNaTela[] = []
   let erroDocumentos: string | null = null
-  if (ws && ehOwner) {
+  if (ws) {
     const r = await listarDocumentos()
     if (Array.isArray(r)) documentos = r
     else erroDocumentos = r.erro

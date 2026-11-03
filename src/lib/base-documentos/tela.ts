@@ -53,3 +53,42 @@ export function precisaAcompanhar(
     [d.ativa, d.pendente].some((v) => v?.status === 'na_fila' || v?.status === 'processando'),
   )
 }
+
+export type AcaoDoDocumento =
+  | 'alternar'
+  | 'renomear'
+  | 'substituir'
+  | 'reprocessar'
+  | 'cancelar'
+  | 'assistentes'
+  | 'trechos'
+  | 'excluir'
+
+/**
+ * Quais botões a linha do documento mostra, na ordem da tela. Ler é de todo membro do espaço
+ * ("Ver trechos"); escrever é só de quem administra.
+ */
+export function acoesDoDocumento(d: {
+  ehOwner: boolean
+  ativa: { status: StatusVersao } | null
+  pendente: { status: StatusVersao } | null
+  /** Esta aba está mandando o arquivo da pendente — quem cancela é a barra de envio. */
+  enviandoAqui: boolean
+  variosAssistentes: boolean
+}): AcaoDoDocumento[] {
+  const trechos: AcaoDoDocumento[] = d.ativa ? ['trechos'] : []
+  if (!d.ehOwner) return trechos
+  const st = d.pendente?.status
+  const cancelavel = !d.enviandoAqui && (st === 'enviando' || st === 'na_fila' || st === 'processando')
+  const temArquivo = Boolean(d.ativa) || st === 'erro'
+  return [
+    'alternar',
+    'renomear',
+    'substituir',
+    ...(temArquivo ? (['reprocessar'] as const) : []),
+    ...(cancelavel ? (['cancelar'] as const) : []),
+    ...(d.variosAssistentes ? (['assistentes'] as const) : []),
+    ...trechos,
+    'excluir',
+  ]
+}

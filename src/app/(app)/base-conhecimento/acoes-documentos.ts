@@ -164,6 +164,18 @@ async function abrir(): Promise<{ ws: string } | { erro: string }> {
   return { ws }
 }
 
+/**
+ * Abre a sessão de uma LEITURA (lista e trechos): engine liberada e espaço da sessão. Qualquer
+ * membro lê — `resolverWorkspaceAtivo` só devolve um espaço do qual o usuário é membro. Escrever
+ * continua exigindo o dono (`abrir`). Toda consulta segue filtrando por esse `workspace_id`.
+ */
+async function abrirParaLer(): Promise<{ ws: string } | { erro: string }> {
+  await exigirEngineLiberado()
+  const ws = await wsDaSessao()
+  if (!ws) return { erro: SEM_WS }
+  return { ws }
+}
+
 /** Remover objeto é faxina: a falha só vai para o log (a linha já saiu do banco). */
 async function removerObjetos(caminhos: string[]): Promise<void> {
   if (caminhos.length === 0) return
@@ -706,7 +718,7 @@ async function feitosDaVersao(ws: string, v: LinhaVersao): Promise<number> {
  * contagem extra é a do progresso, uma por versão no meio do processamento.
  */
 export async function listarDocumentos(): Promise<DocumentoNaTela[] | { erro: string }> {
-  const s = await abrir()
+  const s = await abrirParaLer()
   if ('erro' in s) return s
   const { ws } = s
 
@@ -792,7 +804,7 @@ export async function trechosDoDocumento(
   | { total: number; itens: Array<{ caminho: string; pagina: number | null; contexto: string | null; texto: string }> }
   | { erro: string }
 > {
-  const s = await abrir()
+  const s = await abrirParaLer()
   if ('erro' in s) return s
   const { ws } = s
 

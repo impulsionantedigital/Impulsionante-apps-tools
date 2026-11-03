@@ -6,7 +6,7 @@ import Botao from '@/components/ui/Botao'
 import { Entrada } from '@/components/ui/Campo'
 import { formatarTamanho } from '@/lib/anexo'
 import { formatarDataHora } from '@/lib/data-hora'
-import { formatarCusto, rotuloDoStatus } from '@/lib/base-documentos/tela'
+import { acoesDoDocumento, formatarCusto, rotuloDoStatus } from '@/lib/base-documentos/tela'
 import {
   alternarDocumento,
   cancelarEnvio,
@@ -100,12 +100,21 @@ export default function ItemDocumento({
       setPainel(null)
       return
     }
-    rodar(() => renomearDocumento(doc.id, limpo), () => setPainel(null))
+    rodar(
+      () => renomearDocumento(doc.id, limpo),
+      () => setPainel(null),
+    )
   }
 
-  const pendenteCancelavel =
-    doc.pendente && !enviandoAqui && ['enviando', 'na_fila', 'processando'].includes(doc.pendente.status)
-  const temArquivo = Boolean(doc.ativa) || doc.pendente?.status === 'erro'
+  const acoes = new Set(
+    acoesDoDocumento({
+      ehOwner,
+      ativa: doc.ativa,
+      pendente: doc.pendente,
+      enviandoAqui,
+      variosAssistentes: assistentes.length > 1,
+    }),
+  )
   const nomesDosAssistentes =
     doc.assistentes.length === 0
       ? 'todos os assistentes'
@@ -117,7 +126,7 @@ export default function ItemDocumento({
   return (
     <li className={estilos.item}>
       <div className={estilos.itemInfo}>
-        {painel === 'renomear' ? (
+        {ehOwner && painel === 'renomear' ? (
           <div className={local.nomeLinha}>
             <Entrada
               aria-label="Nome do documento"
@@ -157,79 +166,87 @@ export default function ItemDocumento({
       </div>
 
       <div className={estilos.acoes}>
-        {ehOwner ? (
-          <>
-            <Botao
-              variante="fantasma"
-              tamanho="pequeno"
-              type="button"
-              carregando={pendente}
-              aria-label={`${doc.ligado ? 'Desligar' : 'Ligar'} ${doc.nome}`}
-              onClick={() => rodar(() => alternarDocumento(doc.id, !doc.ligado))}
-            >
-              {doc.ligado ? (
-                <>
-                  <PowerOff size={16} strokeWidth={1.75} /> Desligar
-                </>
-              ) : (
-                <>
-                  <Power size={16} strokeWidth={1.75} /> Ligar
-                </>
-              )}
-            </Botao>
-            <Botao variante="fantasma" tamanho="pequeno" type="button" carregando={pendente} onClick={() => abrir('renomear')}>
-              <Pencil size={16} strokeWidth={1.75} /> Renomear
-            </Botao>
-            <Botao
-              variante="fantasma"
-              tamanho="pequeno"
-              type="button"
-              carregando={pendente}
-              onClick={() => aoSubstituir(doc.id)}
-            >
-              <FileUp size={16} strokeWidth={1.75} /> Substituir
-            </Botao>
-            {temArquivo ? (
-              <Botao
-                variante="fantasma"
-                tamanho="pequeno"
-                type="button"
-                carregando={pendente}
-                onClick={() => rodar(() => reprocessarDocumento(doc.id))}
-              >
-                <RefreshCw size={16} strokeWidth={1.75} /> Reprocessar
-              </Botao>
-            ) : null}
-            {pendenteCancelavel && doc.pendente ? (
-              <Botao
-                variante="fantasma"
-                tamanho="pequeno"
-                type="button"
-                carregando={pendente}
-                onClick={() => rodar(() => cancelarEnvio(doc.pendente!.id))}
-              >
-                <X size={16} strokeWidth={1.75} /> Cancelar {doc.ativa ? 'nova versão' : 'envio'}
-              </Botao>
-            ) : null}
-            {assistentes.length > 1 ? (
-              <Botao
-                variante="fantasma"
-                tamanho="pequeno"
-                type="button"
-                carregando={pendente}
-                onClick={() => abrir('assistentes')}
-              >
-                <Users size={16} strokeWidth={1.75} /> Assistentes
-              </Botao>
-            ) : null}
-          </>
+        {acoes.has('alternar') ? (
+          <Botao
+            variante="fantasma"
+            tamanho="pequeno"
+            type="button"
+            carregando={pendente}
+            aria-label={`${doc.ligado ? 'Desligar' : 'Ligar'} ${doc.nome}`}
+            onClick={() => rodar(() => alternarDocumento(doc.id, !doc.ligado))}
+          >
+            {doc.ligado ? (
+              <>
+                <PowerOff size={16} strokeWidth={1.75} /> Desligar
+              </>
+            ) : (
+              <>
+                <Power size={16} strokeWidth={1.75} /> Ligar
+              </>
+            )}
+          </Botao>
         ) : null}
-        {doc.ativa ? (
+        {acoes.has('renomear') ? (
+          <Botao
+            variante="fantasma"
+            tamanho="pequeno"
+            type="button"
+            carregando={pendente}
+            onClick={() => abrir('renomear')}
+          >
+            <Pencil size={16} strokeWidth={1.75} /> Renomear
+          </Botao>
+        ) : null}
+        {acoes.has('substituir') ? (
+          <Botao
+            variante="fantasma"
+            tamanho="pequeno"
+            type="button"
+            carregando={pendente}
+            onClick={() => aoSubstituir(doc.id)}
+          >
+            <FileUp size={16} strokeWidth={1.75} /> Substituir
+          </Botao>
+        ) : null}
+        {acoes.has('reprocessar') ? (
+          <Botao
+            variante="fantasma"
+            tamanho="pequeno"
+            type="button"
+            carregando={pendente}
+            onClick={() => rodar(() => reprocessarDocumento(doc.id))}
+          >
+            <RefreshCw size={16} strokeWidth={1.75} /> Reprocessar
+          </Botao>
+        ) : null}
+        {acoes.has('cancelar') && doc.pendente ? (
+          <Botao
+            variante="fantasma"
+            tamanho="pequeno"
+            type="button"
+            carregando={pendente}
+            onClick={() => rodar(() => cancelarEnvio(doc.pendente!.id))}
+          >
+            <X size={16} strokeWidth={1.75} /> Cancelar {doc.ativa ? 'nova versão' : 'envio'}
+          </Botao>
+        ) : null}
+        {acoes.has('assistentes') ? (
+          <Botao
+            variante="fantasma"
+            tamanho="pequeno"
+            type="button"
+            carregando={pendente}
+            onClick={() => abrir('assistentes')}
+          >
+            <Users size={16} strokeWidth={1.75} /> Assistentes
+          </Botao>
+        ) : null}
+        {acoes.has('trechos') ? (
           <Botao variante="fantasma" tamanho="pequeno" type="button" onClick={() => abrir('trechos')}>
             {painel === 'trechos' ? 'Fechar trechos' : 'Ver trechos'}
           </Botao>
         ) : null}
-        {ehOwner ? (
+        {acoes.has('excluir') ? (
           <Botao
             variante="fantasma"
             tamanho="pequeno"
@@ -244,18 +261,22 @@ export default function ItemDocumento({
         ) : null}
       </div>
 
-      {painel === 'excluir' ? (
+      {ehOwner && painel === 'excluir' ? (
         <div className={estilos.confirmacao} aria-live="polite">
           <p className={estilos.ajuda}>
-            O documento, todas as versões e os trechos saem de vez, e o assistente deixa de usar o que
-            estava nele.
+            O documento, todas as versões e os trechos saem de vez, e o assistente deixa de usar o que estava nele.
           </p>
           <Botao
             variante="primario"
             tom="erro"
             type="button"
             carregando={pendente}
-            onClick={() => rodar(() => excluirDocumento(doc.id), () => setPainel(null))}
+            onClick={() =>
+              rodar(
+                () => excluirDocumento(doc.id),
+                () => setPainel(null),
+              )
+            }
           >
             Excluir mesmo assim
           </Botao>
@@ -265,7 +286,7 @@ export default function ItemDocumento({
         </div>
       ) : null}
 
-      {painel === 'assistentes' ? (
+      {ehOwner && painel === 'assistentes' ? (
         <div className={local.painel}>
           <span className={estilos.rotulo}>Quem pode usar este documento</span>
           <div className={estilos.linhaForm}>
@@ -312,8 +333,7 @@ export default function ItemDocumento({
             </p>
           ) : (
             <p className={estilos.ajuda}>
-              Por padrão, todo assistente usa este documento. Restrinja só se ele não deve valer para
-              todos.
+              Por padrão, todo assistente usa este documento. Restrinja só se ele não deve valer para todos.
             </p>
           )}
           <div className={estilos.acoes}>

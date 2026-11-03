@@ -15,13 +15,7 @@ import { TIPOS_ACEITOS } from '@/lib/base-documentos/tipos'
 import { validarPedidoDeEnvio } from '@/lib/base-documentos/regras-de-envio'
 import { formatarMB, precisaAcompanhar } from '@/lib/base-documentos/tela'
 import { hrefDaAba } from '@/lib/agentes-abas'
-import {
-  cancelarEnvio,
-  confirmarEnvio,
-  iniciarEnvio,
-  listarDocumentos,
-  type DocumentoNaTela,
-} from './acoes-documentos'
+import { cancelarEnvio, confirmarEnvio, iniciarEnvio, listarDocumentos, type DocumentoNaTela } from './acoes-documentos'
 import {
   chaveDeRetomada,
   enviarArquivo,
@@ -94,7 +88,7 @@ export default function Documentos({
   }
 
   // Enquanto o processador tem trabalho, a lista se atualiza sozinha.
-  const acompanhar = ehOwner && precisaAcompanhar(lista)
+  const acompanhar = precisaAcompanhar(lista)
   useEffect(() => {
     if (!acompanhar) return
     const id = window.setInterval(() => {
@@ -210,15 +204,13 @@ export default function Documentos({
     <section className={estilos.bloco}>
       <div className={estilos.blocoCab}>
         <h2 className={estilos.blocoTitulo}>Documentos</h2>
-        <span className={estilos.blocoMeta}>
-          {lista.length === 1 ? '1 documento' : `${lista.length} documentos`}
-        </span>
+        <span className={estilos.blocoMeta}>{lista.length === 1 ? '1 documento' : `${lista.length} documentos`}</span>
       </div>
 
       {!temChave ? (
         <p className={estilos.ajuda}>
-          Sem a chave de IA os documentos ficam guardados, mas não são processados — o assistente só
-          passa a usá-los depois que a chave for cadastrada
+          Sem a chave de IA os documentos ficam guardados, mas não são processados — o assistente só passa a usá-los
+          depois que a chave for cadastrada
           {ehDono ? (
             <>
               {' '}
@@ -234,7 +226,7 @@ export default function Documentos({
 
       {!ehOwner ? (
         <p className={estilos.ajuda}>
-          Só quem administra este espaço de trabalho pode enviar, ver ou alterar documentos.
+          Só quem administra este espaço de trabalho pode enviar, alterar ou excluir documentos.
         </p>
       ) : (
         <>
@@ -254,8 +246,8 @@ export default function Documentos({
             <div className={local.zonaTexto}>
               <strong>Solte arquivos aqui ou escolha no computador</strong>
               <span className={local.dica}>
-                PDF, DOCX, MD, TXT, JSON ou CSV, até {Math.round(limiteBytes / MB)} MB cada. Vários de
-                uma vez entram na fila e sobem um por vez.
+                PDF, DOCX, MD, TXT, JSON ou CSV, até {Math.round(limiteBytes / MB)} MB cada. Vários de uma vez entram na
+                fila e sobem um por vez.
               </span>
             </div>
             <Botao type="button" onClick={() => entradaNovos.current?.click()}>
@@ -316,9 +308,7 @@ export default function Documentos({
               >
                 <div className={local.barraCheia} style={{ width: `${progresso}%` }} />
               </div>
-              {naFila.length > 0 ? (
-                <span className={local.dica}>Na fila: {naFila.join(', ')}</span>
-              ) : null}
+              {naFila.length > 0 ? <span className={local.dica}>Na fila: {naFila.join(', ')}</span> : null}
             </div>
           ) : null}
 
@@ -327,40 +317,42 @@ export default function Documentos({
               {texto}
             </p>
           ))}
-
-          {erroLista ? (
-            <p className={estilos.erro} role="alert">
-              {erroLista}
-            </p>
-          ) : null}
-
-          {lista.length === 0 && !erroLista ? (
-            <p className={estilos.vazio}>
-              Nenhum documento ainda. O que estiver nos documentos enviados aqui passa a ser
-              consultado pelo assistente, junto com as entradas escritas abaixo.
-            </p>
-          ) : (
-            <ul className={estilos.lista}>
-              {lista.map((doc) => (
-                <ItemDocumento
-                  key={doc.id}
-                  doc={doc}
-                  ehOwner={ehOwner}
-                  assistentes={assistentes}
-                  enviandoAqui={Boolean(envio?.versaoId && doc.pendente?.id === envio.versaoId)}
-                  aoMudar={recarregar}
-                  aoSubstituir={substituir}
-                />
-              ))}
-            </ul>
-          )}
-
-          <p className={estilos.ajuda}>
-            Desligado, o documento some das respostas e continua guardado aqui. Substituir troca o
-            arquivo e mantém a versão atual respondendo até a nova ficar pronta.
-          </p>
         </>
       )}
+
+      {erroLista ? (
+        <p className={estilos.erro} role="alert">
+          {erroLista}
+        </p>
+      ) : null}
+
+      {lista.length === 0 && !erroLista ? (
+        <p className={estilos.vazio}>
+          Nenhum documento ainda. O que estiver nos documentos enviados aqui passa a ser consultado pelo assistente,
+          junto com as entradas escritas abaixo.
+        </p>
+      ) : (
+        <ul className={estilos.lista}>
+          {lista.map((doc) => (
+            <ItemDocumento
+              key={doc.id}
+              doc={doc}
+              ehOwner={ehOwner}
+              assistentes={assistentes}
+              enviandoAqui={Boolean(envio?.versaoId && doc.pendente?.id === envio.versaoId)}
+              aoMudar={recarregar}
+              aoSubstituir={substituir}
+            />
+          ))}
+        </ul>
+      )}
+
+      {ehOwner ? (
+        <p className={estilos.ajuda}>
+          Desligado, o documento some das respostas e continua guardado aqui. Substituir troca o arquivo e mantém a
+          versão atual respondendo até a nova ficar pronta.
+        </p>
+      ) : null}
     </section>
   )
 }
