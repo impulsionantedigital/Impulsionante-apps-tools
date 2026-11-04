@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { PGlite } from '@electric-sql/pglite'
 import { comCabecalho, linhaDoCabecalho, semCabecalho } from '@/lib/canais/cabecalho-agente'
-import { aplicarDisclosure, carregaDisclosure, linhaDoDisclosure } from '@/lib/canais/disclosure'
+import { aplicarDisclosure, carregaDisclosure, linhaDoDisclosure, semDisclosure } from '@/lib/canais/disclosure'
 import { montarHistorico } from '@/lib/canais/historico-agente'
 import { montarPrompt } from '@/lib/canais/prompt-agente'
 
@@ -43,16 +43,29 @@ describe('cabeçalho com o nome do assistente', () => {
     expect(semCabecalho('Ana:\nOi', 'Ana')).toBe('Oi')
   })
 
-  it('o aviso de IA continua reconhecido com o nome em cima', () => {
-    const comAviso = aplicarDisclosure(['Oi'], linhaDoDisclosure())[0]!
-    expect(carregaDisclosure(comCabecalho(comAviso, 'Ana', true))).toBe(true)
+  it('o aviso de IA vai no fim, em itálico, e a abertura fica com o assistente', () => {
+    const final = comCabecalho(aplicarDisclosure('Olá! Tem sim.', true), 'Ana', true)
+    expect(final).toBe(`*Ana:*\nOlá! Tem sim.\n\n_${linhaDoDisclosure()}_`)
+    expect(carregaDisclosure(final)).toBe(true)
     expect(carregaDisclosure(comCabecalho('Oi', 'Ana', true))).toBe(false)
+  })
+
+  it('resposta longa leva o aviso no começo, para ele não cair na última bolha', () => {
+    const longo = 'a'.repeat(3600)
+    expect(aplicarDisclosure(longo, false).startsWith(linhaDoDisclosure())).toBe(true)
+  })
+
+  it('o aviso das versões antigas continua reconhecido', () => {
+    const antigo =
+      '*Ana:*\nOi! Sou o assistente virtual (IA) da empresa. Se preferir, escreva "falar com atendente": eu paro de responder e alguém do time segue por aqui.\n\nOlá!'
+    expect(carregaDisclosure(antigo)).toBe(true)
+    expect(semDisclosure(semCabecalho(antigo))).toBe('Olá!')
   })
 
   it('o histórico devolve a fala do assistente sem rótulo e sem nome', () => {
     const h = montarHistorico([
       { direcao: 'entrada', autor: 'contato', texto: 'oi', status: 'recebida' },
-      { direcao: 'saida', autor: 'agente', texto: '*Ana:*\nOlá!', status: 'enviada' },
+      { direcao: 'saida', autor: 'agente', texto: `*Ana:*\nOlá!\n\n_${linhaDoDisclosure()}_`, status: 'enviada' },
       { direcao: 'saida', autor: 'membro', texto: 'Aqui é a Bia.', status: 'enviada' },
     ])
     expect(h.map((f) => f.content)).toEqual(['oi', 'Olá!', '[atendente] Aqui é a Bia.'])
@@ -62,12 +75,23 @@ describe('cabeçalho com o nome do assistente', () => {
 describe('prompt do assistente', () => {
   const base = { nome: 'Ana', tratamento: 'voce' as const, sobreONegocio: '' }
 
-  it('inclui as instruções do dono, abaixo das regras fixas', () => {
+  it('inclui as instruções do dono por último, sem desligar as regras fixas', () => {
     const p = montarPrompt({ ...base, instrucoes: 'Fale de um jeito acolhedor.' })
-    expect(p).toContain('Fale de um jeito acolhedor.')
-    const posInstrucoes = p.indexOf('Fale de um jeito acolhedor.')
-    expect(p.indexOf('Voce NAO inventa informacao')).toBeGreaterThan(posInstrucoes)
-    expect(p).toContain('desde que nao contrariem as regras abaixo')
+    expect(p.endsWith('Fale de um jeito acolhedor.')).toBe(true)
+    expect(p).toContain('Voce NAO inventa informacao')
+    expect(p).toContain('desde que nao contrariem as regras acima')
+  })
+
+  it('o modelo sabe que o aviso de IA é do sistema e cumprimenta uma vez só', () => {
+    const p = montarPrompt(base)
+    expect(p).toContain('Nao escreva esse aviso voce mesmo')
+    expect(p).toContain('so na primeira resposta da conversa')
+  })
+
+  it('continuação busca de novo pelo item e a citação fica com o trecho de origem', () => {
+    const p = montarPrompt(base)
+    expect(p).toContain('busque de novo pelo nome do item')
+    expect(p).toContain('Nunca junte informacao de um item com a pagina ou a secao de outro')
   })
 
   it('sem instruções não abre o bloco', () => {

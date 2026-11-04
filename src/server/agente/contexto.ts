@@ -10,6 +10,8 @@ import { IDADE_MAXIMA_JOB_MS } from '@/server/agente/orcamento'
 import type { Estouro } from '@/server/agente/tetos'
 import type { JobDaFila } from '@/server/agente/fila'
 import { devolveuDepois, escalouDepois, pediuHumanoNoLote } from '@/lib/canais/humano'
+import { semCabecalho } from '@/lib/canais/cabecalho-agente'
+import { semDisclosure } from '@/lib/canais/disclosure'
 import {
   TETO_MENSAGENS_THREAD,
   temTextoParaOModelo,
@@ -83,6 +85,36 @@ export function falasDoLote(msgs: MensagemDoPrompt[]): string[] {
     if (m.direcao === 'entrada' && temTextoParaOModelo(m.texto)) lote.unshift(m.texto)
   }
   return lote
+}
+
+// Tamanho de cada pedaço da conversa anterior que entra na consulta de contexto.
+const TETO_ASSUNTO = 300
+
+/**
+ * As consultas da busca automática deste turno. A primeira é só o que o cliente acabou de
+ * escrever. A segunda junta o assunto da conversa: a mensagem anterior do cliente e o começo da
+ * última resposta do assistente. Sem ela, uma continuação como "e com quais combina?" busca sem
+ * o nome do item e traz trecho de outro item.
+ */
+export function consultasDoTurno(msgs: MensagemDoPrompt[]): string[] {
+  const atual = falasDoLote(msgs).join(' ').trim()
+  if (!atual) return []
+  let i = msgs.length - 1
+  while (i >= 0 && !chegouAoCliente(msgs[i])) i--
+  let resposta = ''
+  let anterior = ''
+  for (; i >= 0; i--) {
+    const m = msgs[i]
+    if (!temTextoParaOModelo(m.texto)) continue
+    if (!resposta && m.direcao === 'saida' && m.autor === 'agente' && chegouAoCliente(m)) {
+      resposta = semDisclosure(semCabecalho(m.texto)).slice(0, TETO_ASSUNTO)
+    } else if (m.direcao === 'entrada') {
+      anterior = m.texto.trim().slice(0, TETO_ASSUNTO)
+      break
+    }
+  }
+  const assunto = [anterior, resposta].filter(Boolean).join(' ').trim()
+  return assunto ? [atual, `${atual} ${assunto}`] : [atual]
 }
 
 export function decidirRodada(e: EstadoDoTurno): DecisaoDeRodada {

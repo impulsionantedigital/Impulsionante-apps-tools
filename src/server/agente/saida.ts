@@ -33,7 +33,7 @@ export async function contarAvisosEntregues(
       .eq('direcao', 'saida')
       .eq('autor', 'agente')
       .in('status', ['enviada', 'entregue', 'lida'])
-      // O aviso pode vir logo abaixo do nome do assistente, por isso o `%` dos dois lados; o
+      // O aviso pode estar no fim ou no começo da mensagem, por isso o `%` dos dois lados; o
       // `carregaDisclosure` abaixo confere de verdade.
       .like('texto', `%${PREFIXO_BUSCAVEL_DO_DISCLOSURE}%`)
       .order('origem_em', { ascending: false })
