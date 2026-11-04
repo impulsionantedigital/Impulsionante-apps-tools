@@ -88,6 +88,12 @@ describe('prompt do assistente', () => {
     expect(p).toContain('so na primeira resposta da conversa')
   })
 
+  it('continuação busca de novo pelo item e a citação fica com o trecho de origem', () => {
+    const p = montarPrompt(base)
+    expect(p).toContain('busque de novo pelo nome do item')
+    expect(p).toContain('Nunca junte informacao de um item com a pagina ou a secao de outro')
+  })
+
   it('sem instruções não abre o bloco', () => {
     expect(montarPrompt(base)).not.toContain('Personalidade, tom e instrucoes')
   })

@@ -50,10 +50,10 @@ import {
 import {
   carregarContexto,
   decidirRodada,
-  falasDoLote,
+  consultasDoTurno,
   type MotivoDeNaoRodar,
 } from '@/server/agente/contexto'
-import { buscarNaBase, TIPOS_DO_BLOCO_AUTOMATICO } from '@/server/agente/busca-base'
+import { buscarDoTurno, TIPOS_DO_BLOCO_AUTOMATICO } from '@/server/agente/busca-base'
 
 
 
@@ -362,7 +362,7 @@ export async function atenderUmJob(
   
   
   
-  const achados = await buscarNaBase(ws, falasDoLote(ctx.mensagens).join(' '), {
+  const achados = await buscarDoTurno(ws, consultasDoTurno(ctx.mensagens), {
     conversaId: job.conversa_id,
     tipos: TIPOS_DO_BLOCO_AUTOMATICO,
     assistenteId: ctx.assistenteId,

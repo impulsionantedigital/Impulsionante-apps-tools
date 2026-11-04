@@ -27,6 +27,9 @@ const MAX_CONSULTAS = 3
 
 const TETO_JUNTOS = 16
 
+// A busca automática do turno junta duas consultas de LIMITE cada e guarda até isto.
+const LIMITE_DO_TURNO = 8
+
 
 const MAX_TERMOS = 3
 const TETO_TERMO = 200
@@ -140,6 +143,24 @@ export async function buscarVarias(
   const ok = resultados.filter((r): r is AchadoDaBase[] => r !== 'indisponivel')
   if (ok.length === 0) return 'indisponivel'
   return juntarConsultas(ok)
+}
+
+/**
+ * Busca automática do turno: roda as consultas em paralelo com o mesmo filtro de tipos e junta
+ * intercalando, a primeira consulta na frente. Só fica indisponível se todas falharem.
+ */
+export async function buscarDoTurno(
+  ws: string,
+  consultas: string[],
+  opts: { conversaId: string | null; tipos: TiposDaBusca; assistenteId: string | null },
+): Promise<AchadoDaBase[] | 'indisponivel'> {
+  const limpas = consultas.map((c) => (c ?? '').trim()).filter(Boolean).slice(0, 2)
+  if (limpas.length === 0) return []
+  const prazo = AbortSignal.timeout(ORCAMENTO_BUSCA_MS)
+  const resultados = await Promise.all(limpas.map((c) => buscarNaBase(ws, c, { ...opts, sinal: prazo })))
+  const ok = resultados.filter((r): r is AchadoDaBase[] => r !== 'indisponivel')
+  if (ok.length === 0) return 'indisponivel'
+  return juntarConsultas(ok).slice(0, LIMITE_DO_TURNO)
 }
 
 // `total: null` = pagina alem do fim (zero linhas, total desconhecido).
