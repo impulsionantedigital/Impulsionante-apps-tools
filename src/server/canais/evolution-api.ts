@@ -10,7 +10,7 @@ export const EVENTOS_DO_WEBHOOK = ['MESSAGES_UPSERT', 'MESSAGES_UPDATE', 'CONNEC
 export type EstadoEvolution = 'open' | 'connecting' | 'close'
 
 // `tetoResposta`: recusa a resposta pelo `content-length` antes de ler o corpo (anexo em base64).
-type Deps = { fetchFn?: typeof fetch; tetoResposta?: number }
+type Deps = { fetchFn?: typeof fetch; tetoResposta?: number; esperaMs?: number }
 
 export class ErroRespostaGrande extends Error {}
 
@@ -161,9 +161,19 @@ export async function conectarInstancia(
   instancia: string,
   deps: Deps = {},
 ): Promise<{ qr: string | null }> {
-  const r = await chamar(caminho(serverUrl, 'instance/connect', instancia), apiKey, undefined, [apiKey, serverUrl], 'GET', deps)
-  return { qr: texto(r.code) }
+  // O 2.3.x responde `{ count: 0 }` enquanto o QR ainda não nasceu (leva 1–3 s depois do connect),
+  // então pergunta de novo algumas vezes antes de desistir.
+  const espera = deps.esperaMs ?? 1_500
+  for (let i = 0; i < TENTATIVAS_QR; i++) {
+    const r = await chamar(caminho(serverUrl, 'instance/connect', instancia), apiKey, undefined, [apiKey, serverUrl], 'GET', deps)
+    const qr = texto(r.code) ?? texto((r.qrcode as { code?: unknown } | undefined)?.code)
+    if (qr) return { qr }
+    if (i < TENTATIVAS_QR - 1 && espera > 0) await new Promise((ok) => setTimeout(ok, espera))
+  }
+  return { qr: null }
 }
+
+const TENTATIVAS_QR = 6
 
 export async function estadoDaInstancia(
   serverUrl: string,

@@ -103,6 +103,28 @@ describe('evolution-api', () => {
     expect(chamadas[0]).toMatchObject({ url: `${SRV}/instance/connect/loja`, metodo: 'GET' })
   })
 
+  it('conectarInstancia: o 2.3.x responde {count:0} antes do QR — tenta de novo até o code chegar', async () => {
+    const { fetchFn, chamadas } = falso([
+      [200, { count: 0 }],
+      [200, { count: 0 }],
+      [200, { pairingCode: null, code: '2@xyz', count: 1 }],
+    ])
+    expect(await conectarInstancia(SRV, KEY, 'loja', { fetchFn, esperaMs: 0 })).toEqual({ qr: '2@xyz' })
+    expect(chamadas).toHaveLength(3)
+  })
+
+  it('conectarInstancia: aceita o formato { qrcode: { code } }', async () => {
+    const { fetchFn } = falso([[200, { qrcode: { code: '2@aninhado' } }]])
+    expect(await conectarInstancia(SRV, KEY, 'loja', { fetchFn, esperaMs: 0 })).toEqual({ qr: '2@aninhado' })
+  })
+
+  it('conectarInstancia: desiste depois de algumas tentativas sem code', async () => {
+    const { fetchFn, chamadas } = falso([[200, { count: 0 }]])
+    expect(await conectarInstancia(SRV, KEY, 'loja', { fetchFn, esperaMs: 0 })).toEqual({ qr: null })
+    expect(chamadas.length).toBeGreaterThan(1)
+    expect(chamadas.length).toBeLessThanOrEqual(8)
+  })
+
   it('apagarInstancia: logout que falha não impede o delete', async () => {
     const { fetchFn, chamadas } = falso([
       [500, {}],
