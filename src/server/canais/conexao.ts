@@ -43,6 +43,7 @@ import {
   apagarSegredosDoCanal,
   aparadoOuLanca,
   CHAVE_ADMIN,
+  CHAVE_EVOLUTION_GLOBAL,
   chaveToken,
   chaveWebhook,
   cunharSegredo,
@@ -54,9 +55,17 @@ import {
   credenciaisCloud,
   credenciaisInstagram,
   SLUG_CLOUD,
+  SLUG_EVOLUTION,
   SLUG_INSTAGRAM,
   type ProviderSlug,
 } from '@/server/canais/types'
+import {
+  apagarInstancia,
+  conectarInstancia,
+  criarInstancia,
+  estadoDaInstancia,
+  registrarWebhookEvolution,
+} from '@/server/canais/evolution-api'
 import { getSecret } from '@/server/secrets'
 
 
@@ -123,6 +132,19 @@ function usaConexaoPareada(canal: CanalLinha): boolean {
   return getProvider(canal.provider)?.capabilities.conexaoPareada === true
 }
 
+
+// Qual servidor de mensagens atende um canal pareado. Todo ramo que fala com o servidor passa por
+// aqui: um canal Evolution nunca pode cair numa rota da uazapi (nem o contrário).
+export function rotasDoProvider(provider: string): 'uazapi' | 'evolution' {
+  return provider === SLUG_EVOLUTION ? 'evolution' : 'uazapi'
+}
+
+function instanciaDoCanal(canal: CanalLinha): string {
+  const instancia = comoTexto(canal.external_id)
+  if (!instancia)
+    throw new Error('Este canal está sem o nome da instância na Evolution. Apague este canal e crie-o de novo.')
+  return instancia
+}
 
 function exigirConexaoPareada(canal: CanalLinha): void {
   if (!usaConexaoPareada(canal)) {
@@ -355,6 +377,147 @@ export async function criarCanal(
 }
 
 
+export async function criarCanalEvolution(
+  workspaceId: string,
+  dados: { nome: string; serverUrl: string },
+): Promise<{ canalId: string }> {
+  await exigirEngineLiberado()
+  await exigirDonoDoDeploy()
+
+  const serverUrl = validarServerUrl(dados.serverUrl)
+  const nome = dados.nome.trim()
+  if (!nome) throw new Error('Dê um nome a este canal antes de continuar.')
+
+  const urlPublica = comoTexto(await lerConfig(CHAVE_URL_PUBLICA))
+  if (!urlPublica) {
+    throw new Error(
+      'Falta o "Endereço público deste CRM". Preencha-o no primeiro bloco desta tela: sem ele o servidor de mensagens não tem para onde entregar as mensagens.',
+    )
+  }
+
+  const chaveGlobal = await getSecret(CHAVE_EVOLUTION_GLOBAL)
+  if (!chaveGlobal)
+    throw new Error('Falta a "Chave global da Evolution". Salve-a na aba da Evolution antes de conectar um número.')
+
+  const segredoWebhook = cunharSegredo()
+
+  const { data: linha, error } = await admin()
+    .from('canais')
+    .insert({
+      workspace_id: workspaceId,
+      provider: SLUG_EVOLUTION,
+      nome,
+      external_id: nome,
+      status_conexao: 'desconectado',
+      config: { server_url: serverUrl },
+    })
+    .select('id')
+    .single()
+
+  const codigo = (error as { code?: string } | null)?.code
+  if (codigo === '23505') {
+    throw new Error('Não dá para usar esse nome neste CRM. Escolha outro — se você já tem um canal com esse nome, apague-o antes.')
+  }
+  const canalId = (linha as { id: string } | null)?.id
+  if (!canalId) throw new Error('Não consegui salvar este canal agora. Tente de novo em alguns instantes.')
+
+  let criada: { instancia: string; apiKey: string | null }
+  try {
+    criada = await criarInstancia(serverUrl, chaveGlobal, nome)
+  } catch (err) {
+    await desfazerCanal(workspaceId, canalId)
+    throw err
+  }
+
+  const { instancia, apiKey } = criada
+  // Desfaz no servidor (com a chave da instância) e aqui. Erro no servidor não importa: o que
+  // sobrar lá aparece no manager da Evolution.
+  const desfazerTudo = async () => {
+    if (apiKey) {
+      try {
+        await apagarInstancia(serverUrl, apiKey, instancia)
+      } catch {
+        
+      }
+    }
+    await desfazerCanal(workspaceId, canalId)
+  }
+
+  if (!apiKey) {
+    await desfazerTudo()
+    throw new Error(
+      'A Evolution criou a instância mas não devolveu a chave dela. Nada foi guardado aqui — confira no manager da Evolution se sobrou uma instância pela metade.',
+    )
+  }
+
+  if (instancia !== nome) {
+    const { error: erroDoNome } = await admin()
+      .from('canais')
+      .update({ external_id: instancia })
+      .eq('workspace_id', workspaceId)
+      .eq('id', canalId)
+    if (erroDoNome) {
+      await desfazerTudo()
+      throw new Error('Não consegui salvar este canal agora. Tente de novo em alguns instantes.')
+    }
+  }
+
+  if (!(await gravarSegredosDoCanal(canalId, apiKey, segredoWebhook))) {
+    await desfazerTudo()
+    throw new Error(
+      'Não consegui guardar a credencial deste canal com segurança. Nada foi criado — tente de novo.',
+    )
+  }
+
+  try {
+    await registrarWebhookEvolution(
+      serverUrl,
+      apiKey,
+      instancia,
+      urlDoWebhook(urlPublica, SLUG_EVOLUTION, canalId, segredoWebhook),
+    )
+  } catch (err) {
+    await desfazerTudo()
+    throw err
+  }
+
+  return { canalId }
+}
+
+
+// Pergunta à Evolution se o número já está pareado e grava o estado. `null` (estado que a
+// Evolution não sabe dizer) não muda nada.
+export async function estadoDoCanalEvolution(
+  workspaceId: string,
+  canalId: string,
+): Promise<{ estado: 'conectado' | 'pareando' | 'desconectado' }> {
+  await exigirEngineLiberado()
+  await exigirOwnerDoWorkspace(workspaceId)
+
+  const canal = await canalDoWorkspace(workspaceId, canalId)
+  if (canal.provider !== SLUG_EVOLUTION) throw new Error('Este canal não é da Evolution.')
+  const atual = (s: string): 'conectado' | 'pareando' | 'desconectado' =>
+    s === 'conectado' || s === 'pareando' ? s : 'desconectado'
+
+  const serverUrl = comoTexto(canal.config?.server_url)
+  const token = await getSecret(chaveToken(canalId))
+  if (!serverUrl || !token) return { estado: atual(canal.status_conexao) }
+
+  const bruto = await estadoDaInstancia(serverUrl, token, instanciaDoCanal(canal))
+  if (bruto === null) return { estado: atual(canal.status_conexao) }
+  const estado = bruto === 'open' ? 'conectado' : bruto === 'connecting' ? 'pareando' : 'desconectado'
+
+  if (estado !== canal.status_conexao) {
+    await admin()
+      .from('canais')
+      .update({ status_conexao: estado, atualizado_em: new Date().toISOString() })
+      .eq('workspace_id', workspaceId)
+      .eq('id', canalId)
+  }
+  return { estado }
+}
+
+
 export async function criarCanalCloud(
   workspaceId: string,
   dados: {
@@ -575,7 +738,13 @@ export async function reconectarCanal(
       'Este canal está sem a credencial guardada criptografada. Apague este canal e crie-o de novo.',
     )
 
-  const r = await chamarProvider(`${serverUrl}/instance/connect`, { token }, {}, [token, serverUrl])
+  let qr: string | null
+  if (rotasDoProvider(canal.provider) === 'evolution') {
+    qr = (await conectarInstancia(serverUrl, token, instanciaDoCanal(canal))).qr
+  } else {
+    const r = await chamarProvider(`${serverUrl}/instance/connect`, { token }, {}, [token, serverUrl])
+    qr = comoTexto(r.qrcode) ?? comoTexto((r.instance as { qrcode?: unknown } | undefined)?.qrcode)
+  }
 
   await admin()
     .from('canais')
@@ -583,7 +752,7 @@ export async function reconectarCanal(
     .eq('workspace_id', workspaceId)
     .eq('id', canalId)
 
-  return { qr: comoTexto(r.qrcode) ?? comoTexto((r.instance as { qrcode?: unknown } | undefined)?.qrcode) }
+  return { qr }
 }
 
 
@@ -622,6 +791,15 @@ export async function registrarWebhookDoCanal(
       'Este canal está sem o segredo do endereço de recebimento. Apague este canal e crie-o de novo.',
     )
 
+  if (rotasDoProvider(canal.provider) === 'evolution') {
+    await registrarWebhookEvolution(
+      serverUrl,
+      token,
+      instanciaDoCanal(canal),
+      urlDoWebhook(urlPublica, SLUG_EVOLUTION, canalId, segredoWebhook),
+    )
+    return
+  }
   await registrarWebhook(serverUrl, token, urlPublica, canalId, segredoWebhook)
 }
 
@@ -675,7 +853,12 @@ export async function excluirCanal(workspaceId: string, canalId: string): Promis
 
     if (serverUrl && token) {
       try {
-        await chamarProvider(`${serverUrl}/instance`, { token }, undefined, [token, serverUrl], 'DELETE')
+        if (rotasDoProvider(canal.provider) === 'evolution') {
+          const instancia = comoTexto(canal.external_id)
+          if (instancia) await apagarInstancia(serverUrl, token, instancia)
+        } else {
+          await chamarProvider(`${serverUrl}/instance`, { token }, undefined, [token, serverUrl], 'DELETE')
+        }
       } catch {
         
       }

@@ -6,14 +6,16 @@ import { resolverWorkspaceAtivo } from '@/server/auth/workspace-ativo'
 import { ehDonoDoDeploy } from '@/server/auth/dono-deploy'
 import { gravarConfig } from '@/server/configuracoes'
 import { setSecret } from '@/server/secrets'
-import { CHAVE_ADMIN } from '@/server/canais/segredos'
+import { CHAVE_ADMIN, CHAVE_EVOLUTION_GLOBAL } from '@/server/canais/segredos'
 import { PISO_SEGREDO_CANAL } from '@/server/canais/types'
 import { CHAVE_URL_PUBLICA, normalizarUrlPublica } from '@/lib/canais/url-publica'
 import { qrParaImagem } from '@/lib/canais/qr'
 import {
   criarCanal,
   criarCanalCloud,
+  criarCanalEvolution,
   criarCanalInstagram,
+  estadoDoCanalEvolution,
   editarConfig,
   excluirCanal,
   reconectarCanal,
@@ -79,6 +81,53 @@ export async function salvarAdminToken(bruto: string): Promise<ResultadoSimples>
   try {
     await setSecret(CHAVE_ADMIN, token)
     return { ok: true }
+  } catch (err) {
+    return falha(err)
+  }
+}
+
+
+export async function salvarChaveEvolution(bruta: string): Promise<ResultadoSimples> {
+  await exigirEngineLiberado()
+  if (!(await ehDonoDoDeploy())) return { erro: 'Só quem instalou este CRM pode alterar a chave global da Evolution.' }
+  const chave = (bruta ?? '').trim()
+  if (chave.length < PISO_SEGREDO_CANAL) {
+    return { erro: 'Essa chave é curta demais pra ser a AUTHENTICATION_API_KEY da Evolution.' }
+  }
+  try {
+    await setSecret(CHAVE_EVOLUTION_GLOBAL, chave)
+    return { ok: true }
+  } catch (err) {
+    return falha(err)
+  }
+}
+
+
+export async function conectarCanalEvolution(dados: {
+  nome: string
+  serverUrl: string
+}): Promise<{ ok: true; canalId: string } | { erro: string }> {
+  await exigirEngineLiberado()
+  const ws = await wsDaSessao()
+  if (!ws) return { erro: 'Você não está em nenhum espaço de trabalho.' }
+  try {
+    const { canalId } = await criarCanalEvolution(ws, dados)
+    return { ok: true, canalId }
+  } catch (err) {
+    return falha(err)
+  }
+}
+
+
+export async function consultarEstadoEvolution(
+  canalId: string,
+): Promise<{ ok: true; estado: 'conectado' | 'pareando' | 'desconectado' } | { erro: string }> {
+  await exigirEngineLiberado()
+  const ws = await wsDaSessao()
+  if (!ws) return { erro: 'Você não está em nenhum espaço de trabalho.' }
+  try {
+    const { estado } = await estadoDoCanalEvolution(ws, canalId)
+    return { ok: true, estado }
   } catch (err) {
     return falha(err)
   }
