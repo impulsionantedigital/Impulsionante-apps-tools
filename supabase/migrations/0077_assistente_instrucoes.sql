@@ -15,6 +15,6 @@ begin
        and conrelid = 'public.assistentes'::regclass
   ) then
     alter table public.assistentes
-      add constraint assistentes_instrucoes_tamanho check (length(instrucoes) <= 4000);
+      add constraint assistentes_instrucoes_tamanho check (length(instrucoes) <= 12000);
   end if;
 end $$;

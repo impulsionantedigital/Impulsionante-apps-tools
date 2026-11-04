@@ -83,19 +83,38 @@ describe('prompt do assistente', () => {
   })
 })
 
-describe('migration 0077', () => {
-  it('roda duas vezes e recusa instrução longa demais', async () => {
+describe('migrations 0077 e 0078', () => {
+  const ler = (n: string) => readFileSync(`supabase/migrations/${n}`, 'utf8')
+
+  it('instalação nova: rodam duas vezes e aceitam até 12000', async () => {
     const db = new PGlite()
     await db.exec(`create table public.assistentes (id int primary key);`)
-    const sql = readFileSync('supabase/migrations/0077_assistente_instrucoes.sql', 'utf8')
-    await db.exec(sql)
-    await db.exec(sql)
-    await db.query(`insert into public.assistentes (id, instrucoes) values (1, $1)`, ['x'.repeat(4000)])
+    for (let i = 0; i < 2; i++) {
+      await db.exec(ler('0077_assistente_instrucoes.sql'))
+      await db.exec(ler('0078_assistente_instrucoes_12000.sql'))
+    }
+    await db.query(`insert into public.assistentes (id, instrucoes) values (1, $1)`, ['x'.repeat(12000)])
     await expect(
-      db.query(`insert into public.assistentes (id, instrucoes) values (2, $1)`, ['x'.repeat(4001)]),
+      db.query(`insert into public.assistentes (id, instrucoes) values (2, $1)`, ['x'.repeat(12001)]),
     ).rejects.toThrow()
     const { rows } = await db.query<{ instrucoes: string }>(`insert into public.assistentes (id) values (3) returning instrucoes`)
     expect(rows[0]?.instrucoes).toBe('')
+    await db.close()
+  })
+
+  it('instalação que já tinha o teto de 4000: a 0078 alarga', async () => {
+    const db = new PGlite()
+    await db.exec(`
+      create table public.assistentes (id int primary key, instrucoes text not null default '');
+      alter table public.assistentes
+        add constraint assistentes_instrucoes_tamanho check (length(instrucoes) <= 4000);
+    `)
+    await db.exec(ler('0078_assistente_instrucoes_12000.sql'))
+    await db.exec(ler('0078_assistente_instrucoes_12000.sql'))
+    await db.query(`insert into public.assistentes (id, instrucoes) values (1, $1)`, ['x'.repeat(12000)])
+    await expect(
+      db.query(`insert into public.assistentes (id, instrucoes) values (2, $1)`, ['x'.repeat(12001)]),
+    ).rejects.toThrow()
     await db.close()
   })
 })
