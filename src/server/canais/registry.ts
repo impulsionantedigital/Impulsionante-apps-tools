@@ -30,6 +30,7 @@ import { uazapiAdapter } from '@/server/canais/providers/uazapi'
 import { simuladorAdapter } from '@/server/canais/providers/simulador'
 import { whatsappCloudAdapter } from '@/server/canais/providers/whatsappCloud'
 import { instagramAdapter } from '@/server/canais/providers/instagram'
+import { evolutionAdapter } from '@/server/canais/providers/evolution'
 import {
   ehProviderSlug,
   SLUG_CLOUD,
@@ -64,7 +65,7 @@ const ADAPTERS: Record<ProviderSlug, CanalAdapter> = {
   
   
   [SLUG_INSTAGRAM]: instagramAdapter,
-  [SLUG_EVOLUTION]: simuladorAdapter, // trocado na Task 2
+  [SLUG_EVOLUTION]: evolutionAdapter,
 }
 
 
