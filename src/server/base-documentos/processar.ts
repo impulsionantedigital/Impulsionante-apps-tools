@@ -60,7 +60,8 @@ export interface RepoDocumentos {
   renovar(v: VersaoReivindicada, reservaMs: number): Promise<boolean>
   /** Tamanho real do objeto no Storage, em bytes; `null` = objeto não encontrado. */
   tamanhoDoObjeto(caminho: string): Promise<number | null>
-  baixar(caminho: string): Promise<Uint8Array>
+  /** Lê o objeto em fluxo e para em `teto` bytes: 'grande_demais' quando passa. */
+  baixar(caminho: string, teto: number): Promise<Uint8Array | 'grande_demais'>
   /** `nome_exibicao` de outra versão do espaço com o mesmo hash e status diferente de `erro`. */
   acharDuplicata(v: VersaoReivindicada, hash: string): Promise<string | null>
   gravarHash(v: VersaoReivindicada, hash: string): Promise<void>
@@ -130,12 +131,15 @@ async function extrair(v: VersaoReivindicada, d: Deps, reserva: Reserva): Promis
   const tamanho = await d.repo.tamanhoDoObjeto(v.caminho)
   if (tamanho === null) return falhar(v, d, MOTIVO_SEM_OBJETO)
   const limite = limiteBytesArquivo()
-  if (tamanho > limite) {
+  const grandeDemais = async () => {
     const fim = await falhar(v, d, fraseDoLimite(limite))
     await d.repo.removerObjeto(v.caminho).catch((err) => avisar('não consegui apagar o arquivo grande demais', err))
     return fim
   }
-  const dados = await d.repo.baixar(v.caminho)
+  if (tamanho > limite) return grandeDemais()
+  // O teto vale também durante a leitura: o objeto pode ter crescido depois da medição acima.
+  const dados = await d.repo.baixar(v.caminho, limite)
+  if (dados === 'grande_demais') return grandeDemais()
   if (reserva.perdida) return 'sumiu'
 
   type Parada = { fim: 'sumiu' } | { fim: 'erro'; motivo: string } | { fim: 'duplicata' }

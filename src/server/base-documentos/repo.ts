@@ -8,6 +8,7 @@ import 'server-only'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { BUCKET_ARQUIVOS, type Etapa, type Extensao, type Trecho } from '@/lib/base-documentos/tipos'
 import { admin } from '@/server/supabase'
+import { lerComTeto } from '@/lib/base-documentos/ler-com-teto'
 import type { RepoDocumentos, VersaoReivindicada } from './processar'
 
 const TEMPO_CONSULTA_MS = 20_000
@@ -115,12 +116,27 @@ export function criarRepoSupabase(db: () => SupabaseClient = admin): RepoDocumen
       return Number.isFinite(tamanho) && tamanho >= 0 ? tamanho : null
     },
 
-    async baixar(caminho) {
-      const { data, error } = await db()
-        .storage.from(BUCKET_ARQUIVOS)
-        .download(caminho, {}, { signal: AbortSignal.timeout(TEMPO_DOWNLOAD_MS) })
-      if (error || !data) falhou('baixar', error)
-      return new Uint8Array(await data.arrayBuffer())
+    async baixar(caminho, teto) {
+      // Link assinado + fetch em fluxo, em vez de `.download()` (que traz o objeto inteiro de uma
+      // vez): assim o teto vale DURANTE a leitura, e um objeto que cresceu depois de medido não
+      // chega a ocupar a memória.
+      const { data: link, error } = await comTempo(
+        db().storage.from(BUCKET_ARQUIVOS).createSignedUrl(caminho, 120),
+        TEMPO_CONSULTA_MS,
+        'baixar: link',
+      )
+      if (error || !link?.signedUrl) falhou('baixar: link', error)
+      const resposta = await fetch(link.signedUrl, { signal: AbortSignal.timeout(TEMPO_DOWNLOAD_MS) })
+      if (!resposta.ok || !resposta.body) {
+        await resposta.body?.cancel().catch(() => {})
+        falhou('baixar', { message: `HTTP ${resposta.status}` })
+      }
+      const declarado = Number(resposta.headers.get('content-length'))
+      if (Number.isFinite(declarado) && declarado > teto) {
+        await resposta.body.cancel().catch(() => {})
+        return 'grande_demais'
+      }
+      return lerComTeto(resposta.body, teto)
     },
 
     async acharDuplicata(v, hash) {

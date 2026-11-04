@@ -36,6 +36,8 @@ type Opcoes = {
   trechosExtraidos?: number
   /** Tamanho do objeto no Storage; `null` = objeto não encontrado. Padrão: o do `arquivo`. */
   tamanho?: number | null
+  /** O objeto cresceu entre a medição e o download (sobrescrito pelo token de retomada). */
+  cresceuNoBucket?: boolean
 }
 
 function repoFalso(o: Opcoes = {}) {
@@ -69,6 +71,7 @@ function repoFalso(o: Opcoes = {}) {
     removidos: [] as string[],
     remocoesEmLote: [] as string[][],
     baixou: false,
+    tetoDoDownload: null as number | null,
     sumiu: false,
     hash: null as string | null,
     apagouTrechos: 0,
@@ -84,8 +87,10 @@ function repoFalso(o: Opcoes = {}) {
     renovar: async () => !f.sumiu,
     tamanhoDoObjeto: async () =>
       o.tamanho === undefined ? new TextEncoder().encode(arquivo).length : o.tamanho,
-    baixar: async () => {
+    baixar: async (_caminho, teto) => {
       f.baixou = true
+      f.tetoDoDownload = teto
+      if (o.cresceuNoBucket) return 'grande_demais'
       return new TextEncoder().encode(arquivo)
     },
     acharDuplicata: async () => o.duplicataDe ?? null,
@@ -256,6 +261,18 @@ describe('processarVersao', () => {
     vi.stubEnv('BASE_ARQUIVO_MAX_MB', '1')
     const f = repoFalso({ tamanho: 1024 * 1024 })
     expect(await processarVersao(f.versao, deps(f))).toBe('pronto')
+    expect(f.tetoDoDownload).toBe(1024 * 1024)
+    vi.unstubAllEnvs()
+  })
+
+  it('objeto que cresceu entre a medição e o download termina em erro e sai do bucket', async () => {
+    vi.stubEnv('BASE_ARQUIVO_MAX_MB', '1')
+    const f = repoFalso({ tamanho: 10, cresceuNoBucket: true })
+    expect(await processarVersao(f.versao, deps(f))).toBe('erro')
+    expect(f.motivo).toBe('O arquivo passa do limite de 1 MB.')
+    expect(f.removidos).toContain(f.versao.caminho)
+    expect(f.promovida).toBe(false)
+    expect(f.trechos).toHaveLength(0)
     vi.unstubAllEnvs()
   })
 
