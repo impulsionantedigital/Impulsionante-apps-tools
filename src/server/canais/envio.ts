@@ -14,7 +14,7 @@ import { redeDaJanela, textoErroForaDaJanela, type RedeDaJanela } from '@/lib/ca
 import { proximaTentativa } from '@/lib/canais/politicaRetry'
 import { redigirValores } from '@/lib/canais/redigir'
 import { splitMensagem } from '@/lib/canais/splitMensagem'
-import { segredosDe } from '@/server/canais/types'
+import { segredosDe, SLUG_EVOLUTION } from '@/server/canais/types'
 import type { CanalAdapter, CanalCreds, EnvioResultado } from '@/server/canais/types'
 
 
@@ -132,7 +132,7 @@ async function contexto(ws: string, conversaId: string): Promise<Contexto> {
     provider: typeof k.provider === 'string' ? k.provider : '',
     serverUrl: typeof k.config?.server_url === 'string' ? k.config.server_url : '',
     externalId: typeof k.external_id === 'string' ? k.external_id : null,
-    destino: destinoDe(c.chave_externa),
+    destino: destinoDe(c.chave_externa, typeof k.provider === 'string' ? k.provider : undefined),
   }
 }
 
@@ -208,7 +208,9 @@ async function desfecharEnvio(
 }
 
 
-export function destinoDe(chaveExterna: string): string {
+// A Evolution resolve o JID inteiro (grupo, @lid); cortado no @ ele vira um "telefone" que não existe.
+export function destinoDe(chaveExterna: string, provider?: string): string {
+  if (provider === SLUG_EVOLUTION) return chaveExterna
   const corte = chaveExterna.indexOf('@')
   return corte === -1 ? chaveExterna : chaveExterna.slice(0, corte)
 }
