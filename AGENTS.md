@@ -1,5 +1,9 @@
 # Regras para agentes de código (Claude Code, Cursor, Codex, …)
 
+> **Idioma: português do Brasil, sempre.** Toda resposta ao usuário, resumo, comentário de
+> código, mensagem de commit e documento é escrito em português do Brasil — nunca em inglês,
+> inclusive depois de a conversa ser compactada.
+
 > **Este repositório é 100% próprio.** Ele nasceu de uma cópia do Awave CRM, mas não recebe
 > mais nada do produto original: **não existe atualização em um clique aqui, e a tela que a
 > disparava não existe mais.** Não há versão nova para baixar, nada substitui arquivo nenhum,
