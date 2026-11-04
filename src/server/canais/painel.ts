@@ -4,7 +4,7 @@ import { resolverWorkspaceAtivo } from '@/server/auth/workspace-ativo'
 import { ehDonoDoDeploy } from '@/server/auth/dono-deploy'
 import { lerConfig } from '@/server/configuracoes'
 import { getSecret } from '@/server/secrets'
-import { CHAVE_ADMIN, chaveWebhook } from '@/server/canais/segredos'
+import { CHAVE_ADMIN, CHAVE_EVOLUTION_GLOBAL, chaveWebhook } from '@/server/canais/segredos'
 import { getProvider } from '@/server/canais/registry'
 import { CHAVE_URL_PUBLICA } from '@/lib/canais/url-publica'
 import { medirBucket, COTA_BYTES } from '@/server/canais/midia-tick'
@@ -16,6 +16,7 @@ import type { EstadoConexao } from '@/lib/canais/estado-canal'
 export type CanalNoPainel = {
   id: string
   nome: string
+  provider: string
   telefone: string | null
   estado: EstadoConexao
   serverUrl: string
@@ -40,6 +41,8 @@ export type PainelDeCanais = {
   urlPublica: string | null
   
   temAdminToken: boolean
+  // Chave global da Evolution guardada (servidor inteiro).
+  temChaveEvolution: boolean
   canais: CanalNoPainel[]
   
   armazenamento: { usadoBytes: number; cotaBytes: number; medido: boolean } | null
@@ -74,6 +77,7 @@ export async function lerPainelDeCanais(): Promise<PainelDeCanais> {
     ehOwner: false,
     urlPublica: null,
     temAdminToken: false,
+    temChaveEvolution: false,
     canais: [],
     armazenamento: null,
   }
@@ -116,6 +120,7 @@ export async function lerPainelDeCanais(): Promise<PainelDeCanais> {
 
   const urlPublica = (await lerConfig(CHAVE_URL_PUBLICA))?.trim() || null
   const temAdminToken = Boolean((await getSecret(CHAVE_ADMIN))?.trim())
+  const temChaveEvolution = Boolean((await getSecret(CHAVE_EVOLUTION_GLOBAL))?.trim())
 
   
   
@@ -147,10 +152,12 @@ export async function lerPainelDeCanais(): Promise<PainelDeCanais> {
     ehOwner,
     urlPublica,
     temAdminToken,
+    temChaveEvolution,
     armazenamento,
     canais: ((data ?? []) as LinhaCanal[]).map((l) => ({
       id: l.id,
       nome: l.nome,
+      provider: l.provider,
       telefone: l.telefone ?? null,
       estado: estadoDaLinha(l.status_conexao),
       serverUrl: typeof l.config?.server_url === 'string' ? l.config.server_url : '',

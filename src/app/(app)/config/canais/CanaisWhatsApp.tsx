@@ -1,16 +1,19 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useEffect, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Check, Copy, Plus, QrCode, RefreshCw, Trash2, Save } from 'lucide-react'
 import {
   conectarCanal,
   conectarCanalCloud,
+  conectarCanalEvolution,
+  consultarEstadoEvolution,
   contarConversasDoCanal,
   gerarQr,
   religarRecebimento,
   removerCanal,
   salvarAdminToken,
+  salvarChaveEvolution,
   salvarServerUrl,
   salvarUrlPublica,
 } from '../acoes-canais'
@@ -47,7 +50,11 @@ const MODIFICADOR: Record<TomDoSelo, string> = {
 type Slot = 'url' | 'token' | 'canais' | 'exclusao'
 
 
-type TipoDeCanal = 'pareado' | 'oficial' | 'instagram'
+type TipoDeCanal = 'pareado' | 'evolution' | 'oficial' | 'instagram'
+
+// Enquanto o QR de um canal Evolution está aberto, a tela pergunta o estado a cada 3 s, por até 2 min.
+const INTERVALO_ESTADO_MS = 3000
+const MAX_CONSULTAS_ESTADO = 40
 
 export default function CanaisWhatsApp({
   inicial,
@@ -72,6 +79,9 @@ export default function CanaisWhatsApp({
   const [codigo, setCodigo] = useState<{ canalId: string; imagem: string | null } | null>(null)
 
   const [tipo, setTipo] = useState<TipoDeCanal>('pareado')
+  const [nomeEvo, setNomeEvo] = useState('')
+  const [servidorEvo, setServidorEvo] = useState('')
+  const [chaveEvo, setChaveEvo] = useState('')
   const [nomeOficial, setNomeOficial] = useState('')
   const [phoneNumberId, setPhoneNumberId] = useState('')
   const [accessToken, setAccessToken] = useState('')
@@ -94,6 +104,33 @@ export default function CanaisWhatsApp({
   const [excluindo, setExcluindo] = useState<{ canalId: string; conversas: number | null } | null>(
     null,
   )
+
+  const canalDoCodigo = codigo ? inicial.canais.find((c) => c.id === codigo.canalId) : undefined
+  const consultarEstado = canalDoCodigo?.provider === 'evolution' ? canalDoCodigo.id : null
+  useEffect(() => {
+    if (!consultarEstado) return
+    let consultas = 0
+    let parado = false
+    const id = setInterval(async () => {
+      consultas++
+      if (consultas > MAX_CONSULTAS_ESTADO) {
+        clearInterval(id)
+        return
+      }
+      const r = await consultarEstadoEvolution(consultarEstado).catch(() => null)
+      if (parado || !r || 'erro' in r) return
+      if (r.estado === 'conectado') {
+        parado = true
+        clearInterval(id)
+        setCodigo(null)
+        router.refresh()
+      }
+    }, INTERVALO_ESTADO_MS)
+    return () => {
+      parado = true
+      clearInterval(id)
+    }
+  }, [consultarEstado, router])
 
   function rodar(
     acao: () => Promise<
@@ -206,6 +243,7 @@ export default function CanaisWhatsApp({
   const podeCriar = inicial.ehDono && !faltaUrl && !faltaToken
   
   const podeCriarOficial = inicial.ehDono && !faltaUrl
+  const podeCriarEvolution = podeCriarOficial && inicial.temChaveEvolution
 
   return (
     <>
@@ -350,6 +388,15 @@ export default function CanaisWhatsApp({
               </button>
               <button
                 type="button"
+                className={`${local.opcaoTipo} ${tipo === 'evolution' ? local.opcaoTipoAtiva : ''}`}
+                onClick={() => setTipo('evolution')}
+                aria-pressed={tipo === 'evolution'}
+                disabled={pendente}
+              >
+                WhatsApp (Evolution)
+              </button>
+              <button
+                type="button"
                 className={`${local.opcaoTipo} ${tipo === 'oficial' ? local.opcaoTipoAtiva : ''}`}
                 onClick={() => setTipo('oficial')}
                 aria-pressed={tipo === 'oficial'}
@@ -374,6 +421,82 @@ export default function CanaisWhatsApp({
                 criado={instagramCriado}
                 aoCriar={setInstagramCriado}
               />
+            ) : tipo === 'evolution' ? (
+              <>
+                <div className={estilos.campo}>
+                  <label className={estilos.rotulo} htmlFor="evo-chave">
+                    Chave global da Evolution
+                  </label>
+                  <div className={estilos.linhaForm}>
+                    <Entrada
+                      id="evo-chave"
+                      type="password"
+                      value={chaveEvo}
+                      onChange={(e) => setChaveEvo(e.target.value)}
+                      placeholder={
+                        inicial.temChaveEvolution
+                          ? 'Configurado — cole outra pra trocar'
+                          : 'A AUTHENTICATION_API_KEY do seu servidor Evolution'
+                      }
+                      disabled={!podeCriarOficial}
+                      readOnly={pendente}
+                      aria-busy={pendente ? true : undefined}
+                      autoComplete="off"
+                    />
+                    <Botao
+                      variante="secundario"
+                      type="button"
+                      onClick={() => rodar(() => salvarChaveEvolution(chaveEvo), 'canais', () => setChaveEvo(''))}
+                      carregando={pendente}
+                      desabilitado={!podeCriarOficial || !chaveEvo.trim()}
+                    >
+                      <Save size={16} strokeWidth={1.75} /> Salvar
+                    </Botao>
+                  </div>
+                  <p className={estilos.ajuda}>
+                    Ela fica guardada criptografada, vale para todos os números da Evolution e nunca
+                    mais aparece nesta tela. Só é usada para criar instâncias.
+                  </p>
+                </div>
+                <div className={estilos.linhaForm}>
+                  <Entrada
+                    value={nomeEvo}
+                    onChange={(e) => setNomeEvo(e.target.value)}
+                    placeholder="Nome do canal (ex.: Comercial)"
+                    disabled={!podeCriarEvolution}
+                    readOnly={pendente}
+                    aria-busy={pendente ? true : undefined}
+                    aria-label="Nome do canal na Evolution"
+                  />
+                  <Entrada
+                    value={servidorEvo}
+                    onChange={(e) => setServidorEvo(e.target.value)}
+                    placeholder="https://evolution.exemplo.com"
+                    disabled={!podeCriarEvolution}
+                    readOnly={pendente}
+                    aria-busy={pendente ? true : undefined}
+                    aria-label="Endereço do servidor Evolution"
+                  />
+                  <Botao
+                    variante="primario"
+                    type="button"
+                    onClick={() =>
+                      rodar(() => conectarCanalEvolution({ nome: nomeEvo, serverUrl: servidorEvo }), 'canais', () => {
+                        setNomeEvo('')
+                      })
+                    }
+                    carregando={pendente}
+                    desabilitado={!podeCriarEvolution || !nomeEvo.trim() || !servidorEvo.trim()}
+                  >
+                    <Plus size={16} strokeWidth={1.75} /> Conectar
+                  </Botao>
+                </div>
+                <p className={estilos.ajuda}>
+                  {inicial.temChaveEvolution
+                    ? 'Isso cria uma instância no seu servidor Evolution. Depois, use “Gerar código” na lista abaixo para parear o número.'
+                    : 'Salve a chave global acima antes de conectar um número.'}
+                </p>
+              </>
             ) : tipo === 'pareado' ? (
               <>
                 <div className={estilos.linhaForm}>
