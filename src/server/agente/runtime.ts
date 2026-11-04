@@ -80,7 +80,7 @@ import { lerHorarioDeAtendimento } from '@/server/agente/horario'
 import { avaliarAtendimento } from '@/lib/agente/horario-atendimento'
 import { cortarBloco, montarHistorico } from '@/lib/canais/historico-agente'
 import { montarBlocoConhecimento } from '@/lib/canais/bloco-conhecimento'
-import { aplicarDisclosure, linhaDoDisclosure, precisaDisclosure } from '@/lib/canais/disclosure'
+import { aplicarDisclosure, precisaDisclosure } from '@/lib/canais/disclosure'
 import { decidirPreSend } from '@/lib/canais/presend'
 import { CONFIRMACAO_HUMANO } from '@/lib/canais/humano'
 import { classificarErroMeta } from '@/lib/canais/erroMeta'
@@ -564,8 +564,9 @@ async function comIdentificacao(
   
   
   
-  const corpo = devida ? (aplicarDisclosure([texto], linhaDoDisclosure())[0] ?? texto) : texto
-  return comCabecalho(corpo, quem.nome, falaWhatsapp(quem.provider))
+  const whatsapp = falaWhatsapp(quem.provider)
+  const corpo = devida ? aplicarDisclosure(texto, whatsapp) : texto
+  return comCabecalho(corpo, quem.nome, whatsapp)
 }
 
 // Quem assina a mensagem: o nome que o cliente vê e o canal (para saber se usa negrito).

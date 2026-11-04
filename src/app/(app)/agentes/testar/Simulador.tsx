@@ -278,15 +278,16 @@ export default function Simulador({
   )
 }
 
-// Mostra `*assim*` em negrito, como o WhatsApp mostra. O resto do texto sai como veio.
+// Mostra `*assim*` em negrito e `_assim_` em itálico, como o WhatsApp mostra. O resto do
+// texto sai como veio.
 function comNegritoDoWhatsapp(texto: string): ReactNode[] {
   const partes: ReactNode[] = []
-  const negrito = /(?<![\p{L}\p{N}*])\*([^*\n]{1,200})\*(?![\p{L}\p{N}*])/gu
+  const marca = /(?<![\p{L}\p{N}*_])(\*([^*\n]{1,200})\*|_([^_\n]{1,400})_)(?![\p{L}\p{N}*_])/gu
   let ultimo = 0
-  for (const m of texto.matchAll(negrito)) {
+  for (const m of texto.matchAll(marca)) {
     const inicio = m.index ?? 0
     if (inicio > ultimo) partes.push(texto.slice(ultimo, inicio))
-    partes.push(<strong key={inicio}>{m[1]}</strong>)
+    partes.push(m[2] !== undefined ? <strong key={inicio}>{m[2]}</strong> : <em key={inicio}>{m[3]}</em>)
     ultimo = inicio + m[0].length
   }
   if (ultimo < texto.length) partes.push(texto.slice(ultimo))
