@@ -63,6 +63,7 @@ import {
   apagarInstancia,
   conectarInstancia,
   criarInstancia,
+  nomeTecnicoDaInstancia,
   estadoDaInstancia,
   registrarWebhookEvolution,
 } from '@/server/canais/evolution-api'
@@ -400,6 +401,7 @@ export async function criarCanalEvolution(
     throw new Error('Falta a "Chave global da Evolution". Salve-a na aba da Evolution antes de conectar um número.')
 
   const segredoWebhook = cunharSegredo()
+  const instanciaPedida = nomeTecnicoDaInstancia(nome)
 
   const { data: linha, error } = await admin()
     .from('canais')
@@ -407,7 +409,7 @@ export async function criarCanalEvolution(
       workspace_id: workspaceId,
       provider: SLUG_EVOLUTION,
       nome,
-      external_id: nome,
+      external_id: instanciaPedida,
       status_conexao: 'desconectado',
       config: { server_url: serverUrl },
     })
@@ -423,7 +425,7 @@ export async function criarCanalEvolution(
 
   let criada: { instancia: string; apiKey: string | null }
   try {
-    criada = await criarInstancia(serverUrl, chaveGlobal, nome)
+    criada = await criarInstancia(serverUrl, chaveGlobal, instanciaPedida)
   } catch (err) {
     await desfazerCanal(workspaceId, canalId)
     throw err
@@ -450,7 +452,7 @@ export async function criarCanalEvolution(
     )
   }
 
-  if (instancia !== nome) {
+  if (instancia !== instanciaPedida) {
     const { error: erroDoNome } = await admin()
       .from('canais')
       .update({ external_id: instancia })

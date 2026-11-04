@@ -102,6 +102,23 @@ export function extrairChaveDaInstancia(resposta: unknown): string | null {
   return null
 }
 
+// Nome técnico da instância na Evolution: só minúsculas, números e hífen, mais um sufixo
+// aleatório. Nome com espaço ou parêntese (ex.: "Trilhas de Aruanda (GuIA)") cria a instância,
+// mas o QR dela não pareia. O nome que a pessoa digitou fica só na tela do CRM.
+export function nomeTecnicoDaInstancia(
+  nome: string,
+  sufixo: () => string = () => Math.random().toString(36).slice(2, 8),
+): string {
+  const base = nome
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .slice(0, 32)
+    .replace(/^-+|-+$/g, '')
+  return `${base || 'crm'}-${sufixo()}`
+}
+
 export async function criarInstancia(
   serverUrl: string,
   chaveGlobal: string,
