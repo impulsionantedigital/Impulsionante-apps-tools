@@ -210,8 +210,8 @@ export async function verificarEvento(
   
   const r = conferirIdentidade(
     {
-      tokenDeclarado: tokenDeclarado(envelope),
-      nomeDaInstancia: nomeDaInstancia(envelope),
+      tokenDeclarado: tokenDeclarado(envelope, canal.provider),
+      nomeDaInstancia: nomeDaInstancia(envelope, canal.provider),
       tokenDoCanal: token,
       externalId: canal.external_id,
     },
