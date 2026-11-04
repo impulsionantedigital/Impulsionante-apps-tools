@@ -5,9 +5,11 @@ import { deleteSecret, getSecret, setSecret } from '@/server/secrets'
 import {
   credenciaisCloud,
   credenciaisDeCanal,
+  credenciaisEvolution,
   credenciaisInstagram,
   PISO_SEGREDO_CANAL,
   SLUG_CLOUD,
+  SLUG_EVOLUTION,
   SLUG_INSTAGRAM,
   SLUG_UAZAPI,
   type CanalCreds,
@@ -15,6 +17,8 @@ import {
 
 
 export const CHAVE_ADMIN = 'uazapi_admin_token'
+// Chave global da Evolution (AUTHENTICATION_API_KEY), do servidor inteiro. Só cria instâncias.
+export const CHAVE_EVOLUTION_GLOBAL = 'evolution_global_key'
 export const chaveToken = (canalId: string): string => `uazapi_token_${canalId}`
 export const chaveWebhook = (canalId: string): string => `uazapi_webhook_secret_${canalId}`
 
@@ -68,6 +72,16 @@ function formaDeCredencial(canal: CanalParaCredencial): FormaDeCredencial | null
         configFaltando: !canal.externalId,
         construir: (token) =>
           credenciaisInstagram({ accessToken: token, contaId: canal.externalId as string }),
+      }
+    case SLUG_EVOLUTION:
+      return {
+        configFaltando: !canal.serverUrl || !canal.externalId,
+        construir: (token) =>
+          credenciaisEvolution({
+            serverUrl: canal.serverUrl,
+            instancia: canal.externalId as string,
+            apiKey: token,
+          }),
       }
     default:
       return null

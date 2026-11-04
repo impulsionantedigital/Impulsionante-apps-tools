@@ -21,7 +21,10 @@ export const SLUG_UAZAPI = 'uazapi'
 export const SLUG_INSTAGRAM = 'instagram'
 
 
-export const SLUGS = [SLUG_UAZAPI, 'simulador', SLUG_CLOUD, SLUG_INSTAGRAM] as const
+export const SLUG_EVOLUTION = 'evolution'
+
+
+export const SLUGS = [SLUG_UAZAPI, 'simulador', SLUG_CLOUD, SLUG_INSTAGRAM, SLUG_EVOLUTION] as const
 export type ProviderSlug = (typeof SLUGS)[number]
 
 
@@ -57,7 +60,16 @@ export type CredsInstagram = {
   readonly contaId: string
 }
 
-export type CanalCreds = CredsUazapi | CredsCloud | CredsInstagram
+// Evolution API v2. A `apiKey` é a chave DA INSTÂNCIA (o `hash` do create), nunca a global.
+export type CredsEvolution = {
+  readonly __validadoEvolution: unique symbol
+  readonly tipo: typeof SLUG_EVOLUTION
+  readonly serverUrl: string
+  readonly instancia: string
+  readonly apiKey: string
+}
+
+export type CanalCreds = CredsUazapi | CredsCloud | CredsInstagram | CredsEvolution
 
 
 export function segredosDe(creds: CanalCreds): string[] {
@@ -70,6 +82,8 @@ export function segredosDe(creds: CanalCreds): string[] {
     
     case SLUG_INSTAGRAM:
       return [creds.accessToken]
+    case SLUG_EVOLUTION:
+      return [creds.apiKey, creds.serverUrl]
     default: {
       const _exaustivo: never = creds
       return _exaustivo
@@ -106,6 +120,20 @@ export function credenciaisCloud(bruto: {
   
   
   return { tipo: SLUG_CLOUD, accessToken, phoneNumberId } as unknown as CanalCreds
+}
+
+
+export function credenciaisEvolution(bruto: {
+  serverUrl: string
+  instancia: string
+  apiKey: string
+}): CanalCreds | null {
+  const serverUrl = typeof bruto?.serverUrl === 'string' ? bruto.serverUrl.trim() : ''
+  const instancia = typeof bruto?.instancia === 'string' ? bruto.instancia.trim() : ''
+  const apiKey = typeof bruto?.apiKey === 'string' ? bruto.apiKey.trim() : ''
+  if (serverUrl.length < PISO_SEGREDO_CANAL || apiKey.length < PISO_SEGREDO_CANAL) return null
+  if (!instancia) return null
+  return { tipo: SLUG_EVOLUTION, serverUrl, instancia, apiKey } as unknown as CanalCreds
 }
 
 

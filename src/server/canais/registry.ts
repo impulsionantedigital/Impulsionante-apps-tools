@@ -33,6 +33,7 @@ import { instagramAdapter } from '@/server/canais/providers/instagram'
 import {
   ehProviderSlug,
   SLUG_CLOUD,
+  SLUG_EVOLUTION,
   SLUG_INSTAGRAM,
   type CanalAdapter,
   type ProviderSlug,
@@ -63,6 +64,7 @@ const ADAPTERS: Record<ProviderSlug, CanalAdapter> = {
   
   
   [SLUG_INSTAGRAM]: instagramAdapter,
+  [SLUG_EVOLUTION]: simuladorAdapter, // trocado na Task 2
 }
 
 

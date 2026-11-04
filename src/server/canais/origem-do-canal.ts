@@ -5,7 +5,7 @@
 
 
 
-import { SLUG_CLOUD, SLUG_INSTAGRAM, SLUG_UAZAPI } from '@/server/canais/types'
+import { SLUG_CLOUD, SLUG_EVOLUTION, SLUG_INSTAGRAM, SLUG_UAZAPI } from '@/server/canais/types'
 
 
 const ORIGEM_PADRAO = 'whatsapp'
@@ -22,6 +22,7 @@ const ORIGEM_POR_PROVIDER: Record<string, string> = Object.assign(Object.create(
   
   
   [SLUG_INSTAGRAM]: 'instagram',
+  [SLUG_EVOLUTION]: 'whatsapp',
 })
 
 
