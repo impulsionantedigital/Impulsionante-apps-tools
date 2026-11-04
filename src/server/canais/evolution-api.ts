@@ -9,9 +9,12 @@ export const EVENTOS_DO_WEBHOOK = ['MESSAGES_UPSERT', 'MESSAGES_UPDATE', 'CONNEC
 
 export type EstadoEvolution = 'open' | 'connecting' | 'close'
 
-type Deps = { fetchFn?: typeof fetch }
+// `tetoResposta`: recusa a resposta pelo `content-length` antes de ler o corpo (anexo em base64).
+type Deps = { fetchFn?: typeof fetch; tetoResposta?: number }
 
-class ErroHttp extends Error {
+export class ErroRespostaGrande extends Error {}
+
+export class ErroHttp extends Error {
   constructor(
     mensagem: string,
     readonly status: number,
@@ -39,6 +42,11 @@ async function chamar(
     })
   } catch (err) {
     throw new Error(`Não consegui falar com o servidor de mensagens: ${redigirValores(err, segredos)}`)
+  }
+  const anunciado = Number(r.headers.get('content-length'))
+  if (deps.tetoResposta !== undefined && Number.isFinite(anunciado) && anunciado > deps.tetoResposta) {
+    await r.body?.cancel().catch(() => {})
+    throw new ErroRespostaGrande('resposta maior que o teto')
   }
   let dados: Record<string, unknown> = {}
   try {

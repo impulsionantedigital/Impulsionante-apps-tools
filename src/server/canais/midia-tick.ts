@@ -14,7 +14,9 @@ import 'server-only'
 import { criarOrcamento, type Orcamento } from '@/lib/orcamento-tick'
 import { admin } from '@/server/supabase'
 import { refNaoValidada } from '@/server/canais/types'
-import { baixarMidia, validarUrlDeMidia, TIMEOUT_MS } from '@/server/canais/midia'
+import { baixarMidia, validarUrlDeMidia, TIMEOUT_MS, type ResultadoDownload } from '@/server/canais/midia'
+import { baixarMidiaEvolution } from '@/server/canais/midia-evolution'
+import { SLUG_EVOLUTION } from '@/server/canais/types'
 import type { MidiaLinha } from '@/server/canais/leitura'
 
 
@@ -140,7 +142,12 @@ async function processar(
   const semCota = (): Desfecho => ({ midia, tag: 'sem_cota' })
 
   const conversa = umEmbed<{ canais?: unknown }>(bruta.conversas)
-  const canal = umEmbed<{ config?: { server_url?: string } }>(conversa?.canais)
+  const canal = umEmbed<{
+    id?: string
+    provider?: string
+    external_id?: string | null
+    config?: { server_url?: string }
+  }>(conversa?.canais)
   const serverUrl = canal?.config?.server_url
   
   
@@ -152,10 +159,12 @@ async function processar(
   const cru = (midia as { refExterna?: unknown }).refExterna
   if (typeof cru !== 'string') return erro()
 
-  const url = validarUrlDeMidia(refNaoValidada(cru), serverUrl)
+  // Evolution: `refExterna` é o id da mensagem, não uma URL — quem abre o arquivo é a instância.
+  const ehEvolution = canal?.provider === SLUG_EVOLUTION
+  const url = ehEvolution ? null : validarUrlDeMidia(refNaoValidada(cru), serverUrl)
   
   
-  if (!url) return erro()
+  if (!ehEvolution && !url) return erro()
 
   const ws = bruta.workspace_id
   const jaUsado = acervo.porWorkspace.get(ws) ?? 0
@@ -170,7 +179,13 @@ async function processar(
   
   
   const folga = Math.min(COTA_BYTES - jaUsado, COTA_DEPLOY_BYTES - acervo.total)
-  const r = await baixarMidia(url, serverUrl, {}, folga)
+  const r: ResultadoDownload = ehEvolution
+    ? await baixarMidiaEvolution(
+        { id: canal?.id ?? '', serverUrl, externalId: canal?.external_id ?? null },
+        cru,
+        folga,
+      )
+    : await baixarMidia(url!, serverUrl, {}, folga)
   if (!r.ok) {
     
     
@@ -270,7 +285,7 @@ export async function drenarMidia(
   
   const { data, error } = await admin()
     .from('mensagens')
-    .select('id, workspace_id, midia, conversa_id, conversas!inner(canal_id, canais!inner(config))')
+    .select('id, workspace_id, midia, conversa_id, conversas!inner(canal_id, canais!inner(id, provider, external_id, config))')
     .in('id', ids)
     .order('criado_em', { ascending: true })
   
