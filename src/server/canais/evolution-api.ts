@@ -43,16 +43,13 @@ async function chamar(
   } catch (err) {
     throw new Error(`Não consegui falar com o servidor de mensagens: ${redigirValores(err, segredos)}`)
   }
-  const anunciado = Number(r.headers.get('content-length'))
-  if (deps.tetoResposta !== undefined && Number.isFinite(anunciado) && anunciado > deps.tetoResposta) {
-    await r.body?.cancel().catch(() => {})
-    throw new ErroRespostaGrande('resposta maior que o teto')
-  }
   let dados: Record<string, unknown> = {}
   try {
-    const lido = (await r.json()) as unknown
+    const bruto = deps.tetoResposta === undefined ? await r.text() : await lerComTeto(r, deps.tetoResposta)
+    const lido = JSON.parse(bruto) as unknown
     dados = lido && typeof lido === 'object' ? (lido as Record<string, unknown>) : {}
-  } catch {
+  } catch (err) {
+    if (err instanceof ErroRespostaGrande) throw err
     dados = {}
   }
   if (!r.ok) {
@@ -62,6 +59,31 @@ async function chamar(
     )
   }
   return dados
+}
+
+// Lê o corpo contando os bytes que CHEGAM (o `content-length` pode faltar ou mentir) e corta a
+// leitura assim que passar do teto.
+async function lerComTeto(r: Response, teto: number): Promise<string> {
+  const anunciado = Number(r.headers.get('content-length') ?? NaN)
+  if (Number.isFinite(anunciado) && anunciado > teto) {
+    await r.body?.cancel().catch(() => {})
+    throw new ErroRespostaGrande('resposta maior que o teto')
+  }
+  if (!r.body) return ''
+  const leitor = r.body.getReader()
+  const pedacos: Uint8Array[] = []
+  let total = 0
+  for (;;) {
+    const { done, value } = await leitor.read()
+    if (done) break
+    total += value.byteLength
+    if (total > teto) {
+      await leitor.cancel().catch(() => {})
+      throw new ErroRespostaGrande('resposta maior que o teto')
+    }
+    pedacos.push(value)
+  }
+  return new TextDecoder().decode(Buffer.concat(pedacos))
 }
 
 const caminho = (serverUrl: string, rota: string, instancia: string): string =>

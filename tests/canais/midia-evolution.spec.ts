@@ -56,6 +56,24 @@ describe('baixarMidiaEvolution', () => {
     })
   })
 
+  it('resposta sem content-length maior que o teto é cortada durante a leitura', async () => {
+    let enviados = 0
+    const pedaco = new Uint8Array(1024 * 1024).fill(65)
+    const corpo = new ReadableStream<Uint8Array>({
+      pull(ctrl) {
+        enviados += pedaco.byteLength
+        if (enviados > 200 * 1024 * 1024) ctrl.close()
+        else ctrl.enqueue(pedaco)
+      },
+    })
+    const fetchFn = vi.fn(async () => new Response(corpo, { status: 201 })) as unknown as typeof fetch
+    expect(await baixarMidiaEvolution(canal, 'MSG1', Number.POSITIVE_INFINITY, { fetchFn })).toEqual({
+      ok: false,
+      motivo: 'grande',
+    })
+    expect(enviados).toBeLessThan(40 * 1024 * 1024)
+  })
+
   it('erro HTTP vira http; canal sem instância vira destino_recusado', async () => {
     expect(await baixarMidiaEvolution(canal, 'MSG1', 1000, { fetchFn: resposta({}, 500) })).toEqual({
       ok: false,
