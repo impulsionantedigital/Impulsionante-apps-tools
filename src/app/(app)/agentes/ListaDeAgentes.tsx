@@ -11,7 +11,7 @@ import { criarAssistente } from './acoes'
 
 import { fraseDeResponderPorFora } from '@/lib/agente/quem-responde'
 import { chaveDaPersona } from '@/lib/agente/chave-da-persona'
-import { TETO_NOME, TETO_SOBRE } from '@/lib/agente/tetos-persona'
+import { TETO_INSTRUCOES, TETO_NOME, TETO_SOBRE } from '@/lib/agente/tetos-persona'
 import type { PainelDoAgente } from '@/server/agente/painel'
 import Botao from '@/components/ui/Botao'
 import EstadoVazio from '@/components/ui/EstadoVazio'
@@ -26,6 +26,7 @@ type RascunhoNovo = {
   nome: string
   tratamento: 'voce' | 'senhor'
   sobreONegocio: string
+  instrucoes: string
 }
 
 const RASCUNHO_NOVO: RascunhoNovo = {
@@ -33,6 +34,7 @@ const RASCUNHO_NOVO: RascunhoNovo = {
   nome: '',
   tratamento: 'voce',
   sobreONegocio: '',
+  instrucoes: '',
 }
 
 
@@ -153,6 +155,28 @@ export default function ListaDeAgentes({ inicial }: { inicial: PainelDoAgente })
                 placeholder="Vendemos bolo caseiro por encomenda em Bauru. Entregamos de segunda a sábado."
                 value={rascunho.sobreONegocio}
                 onChange={(e) => setRascunho({ ...rascunho, sobreONegocio: e.target.value })}
+              />
+            </Campo>
+
+            <Campo
+              rotulo="Personalidade, tom e instruções"
+              className={estilos.campoLargo}
+              ajuda={
+                <span
+                  className={
+                    rascunho.instrucoes.length >= TETO_INSTRUCOES ? estilos.contadorCheio : estilos.contador
+                  }
+                >
+                  {rascunho.instrucoes.length} / {TETO_INSTRUCOES}
+                </span>
+              }
+            >
+              <AreaTexto
+                maxLength={TETO_INSTRUCOES}
+                rows={5}
+                placeholder={'Fale de um jeito acolhedor e calmo.\nExplique com calma quando a pessoa não conhece o assunto.'}
+                value={rascunho.instrucoes}
+                onChange={(e) => setRascunho({ ...rascunho, instrucoes: e.target.value })}
               />
             </Campo>
           </div>

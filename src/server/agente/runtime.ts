@@ -71,7 +71,8 @@ import { buscarNaBase, TIPOS_DO_BLOCO_AUTOMATICO } from '@/server/agente/busca-b
 
 import { cortadoPeloPrazo, rodarUmaRodada, type RodadaResultado } from '@/server/agente/rodada'
 import { registrarCusto } from '@/server/agente/custo'
-import { contarAvisosEntregues, textoParaOCanal, TETO_BOLHAS } from '@/server/agente/saida'
+import { contarAvisosEntregues, falaWhatsapp, textoParaOCanal, TETO_BOLHAS } from '@/server/agente/saida'
+import { comCabecalho } from '@/lib/canais/cabecalho-agente'
 import { enviarMensagem } from '@/server/canais/envio'
 import { motivoDeBloqueioAtual } from '@/server/license/bloqueio'
 import { montarPrompt } from '@/lib/canais/prompt-agente'
@@ -244,7 +245,10 @@ export async function atenderUmJob(
     
     
     if (decisao.motivo === 'pediu_humano') {
-      await passarParaHumano(ws, job.conversa_id, agoraIso)
+      await passarParaHumano(ws, job.conversa_id, agoraIso, {
+        nome: ctx.persona.nome,
+        provider: ctx.canal?.provider,
+      })
     }
 
     if (RECUSAS_QUE_MATAM.has(decisao.motivo)) {
@@ -515,6 +519,7 @@ export async function atenderUmJob(
     job.conversa_id,
     textoParaOCanal(rodada.texto, pos.canal?.provider),
     agoraIso,
+    { nome: pos.persona.nome, provider: pos.canal?.provider },
   )
 
   
@@ -549,6 +554,7 @@ async function comIdentificacao(
   conversaId: string,
   texto: string,
   agoraIso: string,
+  quem: Identidade,
 ): Promise<string> {
   
   
@@ -558,11 +564,20 @@ async function comIdentificacao(
   
   
   
-  return devida ? (aplicarDisclosure([texto], linhaDoDisclosure())[0] ?? texto) : texto
+  const corpo = devida ? (aplicarDisclosure([texto], linhaDoDisclosure())[0] ?? texto) : texto
+  return comCabecalho(corpo, quem.nome, falaWhatsapp(quem.provider))
 }
 
+// Quem assina a mensagem: o nome que o cliente vê e o canal (para saber se usa negrito).
+type Identidade = { nome: string; provider: string | null | undefined }
 
-async function passarParaHumano(ws: string, conversaId: string, agoraIso: string): Promise<void> {
+
+async function passarParaHumano(
+  ws: string,
+  conversaId: string,
+  agoraIso: string,
+  quem: Identidade,
+): Promise<void> {
   const { admin } = await import('@/server/supabase')
   
   
@@ -606,7 +621,7 @@ async function passarParaHumano(ws: string, conversaId: string, agoraIso: string
   
   
   try {
-    const texto = await comIdentificacao(ws, conversaId, CONFIRMACAO_HUMANO, agoraIso)
+    const texto = await comIdentificacao(ws, conversaId, CONFIRMACAO_HUMANO, agoraIso, quem)
     await enviarMensagem(ws, conversaId, texto, { autor: 'agente', tetoBolhas: TETO_BOLHAS })
   } catch (err) {
     console.warn('[agente/runtime] a confirmacao da rota humana nao saiu:', redigirValores(err, []))

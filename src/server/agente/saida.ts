@@ -7,9 +7,13 @@ import { getProvider } from '@/server/canais/registry'
 import { mdParaWhatsapp } from '@/lib/whatsapp/mdParaWhatsapp'
 
 
+export function falaWhatsapp(provider: string | null | undefined): boolean {
+  if (typeof provider !== 'string' || !provider) return false
+  return getProvider(provider)?.capabilities.sintaxeWhatsapp === true
+}
+
 export function textoParaOCanal(texto: string, provider: string | null | undefined): string {
-  if (typeof provider !== 'string' || !provider) return texto
-  return getProvider(provider)?.capabilities.sintaxeWhatsapp === true ? mdParaWhatsapp(texto) : texto
+  return falaWhatsapp(provider) ? mdParaWhatsapp(texto) : texto
 }
 
 
@@ -29,7 +33,9 @@ export async function contarAvisosEntregues(
       .eq('direcao', 'saida')
       .eq('autor', 'agente')
       .in('status', ['enviada', 'entregue', 'lida'])
-      .like('texto', `${PREFIXO_BUSCAVEL_DO_DISCLOSURE}%`)
+      // O aviso pode vir logo abaixo do nome do assistente, por isso o `%` dos dois lados; o
+      // `carregaDisclosure` abaixo confere de verdade.
+      .like('texto', `%${PREFIXO_BUSCAVEL_DO_DISCLOSURE}%`)
       .order('origem_em', { ascending: false })
       .limit(1)
     if (error) throw error

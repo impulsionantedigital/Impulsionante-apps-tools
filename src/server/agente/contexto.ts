@@ -165,7 +165,7 @@ export function decidirRodada(e: EstadoDoTurno): DecisaoDeRodada {
 }
 
 
-const PERSONA_VAZIA = { nome: '', tratamento: 'voce' as const, sobreONegocio: '' }
+const PERSONA_VAZIA = { nome: '', tratamento: 'voce' as const, sobreONegocio: '', instrucoes: '' }
 
 
 
@@ -176,7 +176,7 @@ export async function carregarContexto(
   conversa: ConversaDoTurno | null
   canal: CanalDoTurno | null
   mensagens: MensagemDoPrompt[]
-  persona: { nome: string; tratamento: 'voce' | 'senhor'; sobreONegocio: string }
+  persona: { nome: string; tratamento: 'voce' | 'senhor'; sobreONegocio: string; instrucoes: string }
   
   assistenteId: string | null
 }> {
@@ -268,7 +268,7 @@ export async function carregarContexto(
   
   const { data: personaBruta, error: erroPersona } = await db
     .from('assistentes')
-    .select('id, nome, tratamento, sobre_o_negocio')
+    .select('id, nome, tratamento, sobre_o_negocio, instrucoes')
     .eq('workspace_id', job.workspace_id)
     .eq(agenteDoCanal ? 'id' : 'padrao', agenteDoCanal ?? true)
     .maybeSingle()
@@ -280,7 +280,7 @@ export async function carregarContexto(
   if (erroPersona) throw new Error('falha ao ler a persona do turno')
 
   const p = personaBruta as
-    | { id?: string | null; nome?: string; tratamento?: string; sobre_o_negocio?: string }
+    | { id?: string | null; nome?: string; tratamento?: string; sobre_o_negocio?: string; instrucoes?: string }
     | null
 
   return {
@@ -294,6 +294,7 @@ export async function carregarContexto(
           nome: p.nome ?? '',
           tratamento: p.tratamento === 'senhor' ? 'senhor' : 'voce',
           sobreONegocio: p.sobre_o_negocio ?? '',
+          instrucoes: p.instrucoes ?? '',
         }
       : PERSONA_VAZIA,
     

@@ -7,6 +7,7 @@ export function chaveDaPersona(
     nome: string
     tratamento: 'voce' | 'senhor'
     sobreONegocio: string
+    instrucoes: string
   },
 ): string {
   return JSON.stringify([
@@ -15,5 +16,6 @@ export function chaveDaPersona(
     persona.nome,
     persona.tratamento,
     persona.sobreONegocio,
+    persona.instrucoes,
   ])
 }

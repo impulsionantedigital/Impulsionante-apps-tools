@@ -1,3 +1,4 @@
+import { semCabecalho } from '@/lib/canais/cabecalho-agente'
 
 
 
@@ -32,7 +33,8 @@ export const PREFIXO_BUSCAVEL_DO_DISCLOSURE = (() => {
 
 
 export function carregaDisclosure(texto: string | null | undefined): boolean {
-  return (texto ?? '').trimStart().startsWith(linhaDoDisclosure())
+  // A mensagem gravada pode começar com o nome do assistente em negrito (`*Nome:*`).
+  return semCabecalho(texto ?? '').trimStart().startsWith(linhaDoDisclosure())
 }
 
 

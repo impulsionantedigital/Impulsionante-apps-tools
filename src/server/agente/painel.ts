@@ -44,6 +44,7 @@ export type AssistenteNoPainel = {
   nome: string
   tratamento: 'voce' | 'senhor'
   sobreONegocio: string
+  instrucoes: string
   padrao: boolean
   
   canais: Array<{ id: string; nome: string }> | null
@@ -89,7 +90,7 @@ export async function lerAssistentesDoWorkspace(
   const cliente = await criarClienteServidor()
   const { data, error } = await cliente
     .from('assistentes')
-    .select('id, nome_interno, nome, tratamento, sobre_o_negocio, padrao')
+    .select('id, nome_interno, nome, tratamento, sobre_o_negocio, instrucoes, padrao')
     .eq('workspace_id', ws)
     .order('criado_em', { ascending: true })
   if (error) throw new Error('falha ao ler os assistentes deste espaço de trabalho')
@@ -100,6 +101,7 @@ export async function lerAssistentesDoWorkspace(
       nome?: string
       tratamento?: string
       sobre_o_negocio?: string
+      instrucoes?: string
       padrao?: boolean | null
     }>
   ).map((a) => ({
@@ -108,6 +110,7 @@ export async function lerAssistentesDoWorkspace(
     nome: a.nome ?? '',
     tratamento: a.tratamento === 'senhor' ? ('senhor' as const) : ('voce' as const),
     sobreONegocio: a.sobre_o_negocio ?? '',
+    instrucoes: a.instrucoes ?? '',
     padrao: Boolean(a.padrao),
   }))
 }

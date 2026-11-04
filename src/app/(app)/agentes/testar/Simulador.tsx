@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import { Eraser, Send } from 'lucide-react'
 import { limpar, simular, type MotivoDaSimulacao } from './acoes'
@@ -209,7 +209,7 @@ export default function Simulador({
                     <span className={local.quem}>
                       {b.autor === 'agente' ? 'Assistente' : 'Você, como cliente'}
                     </span>
-                    <p className={local.texto}>{b.texto}</p>
+                    <p className={local.texto}>{comNegritoDoWhatsapp(b.texto)}</p>
                   </li>
                 ))}
               </ol>
@@ -276,4 +276,19 @@ export default function Simulador({
       </section>
     </>
   )
+}
+
+// Mostra `*assim*` em negrito, como o WhatsApp mostra. O resto do texto sai como veio.
+function comNegritoDoWhatsapp(texto: string): ReactNode[] {
+  const partes: ReactNode[] = []
+  const negrito = /(?<![\p{L}\p{N}*])\*([^*\n]{1,200})\*(?![\p{L}\p{N}*])/gu
+  let ultimo = 0
+  for (const m of texto.matchAll(negrito)) {
+    const inicio = m.index ?? 0
+    if (inicio > ultimo) partes.push(texto.slice(ultimo, inicio))
+    partes.push(<strong key={inicio}>{m[1]}</strong>)
+    ultimo = inicio + m[0].length
+  }
+  if (ultimo < texto.length) partes.push(texto.slice(ultimo))
+  return partes
 }

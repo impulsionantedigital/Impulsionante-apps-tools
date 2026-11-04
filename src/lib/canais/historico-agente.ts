@@ -18,6 +18,7 @@
 
 
 import { cortarNoTeto } from '@/lib/canais/grafema'
+import { semCabecalho } from '@/lib/canais/cabecalho-agente'
 
 
 export const TETO_MENSAGENS_THREAD = 30
@@ -58,7 +59,7 @@ const FRAGMENTOS_FECHA = /[⎞⎟⎠⎤⎥⎦⎫⎬⎭⎱⎵⌝⌟⌌⌎⏋⏌�
 
 export function rotularAutor(autor: AutorDaMensagem, texto: string): string {
   const corpo = neutralizarCerca(texto)
-  if (autor === 'agente') return `[assistente] ${corpo}`
+  if (autor === 'agente') return `[assistente] ${semCabecalho(corpo)}`
   if (autor === 'membro' || autor === 'aparelho') return `[atendente] ${corpo}`
   return corpo
 }
@@ -99,7 +100,10 @@ export function montarHistorico(msgs: MensagemDoPrompt[]): FalaDoModelo[] {
     const corpo = neutralizarCerca(truncarTexto(m.texto))
     return {
       role: (m.direcao === 'entrada' ? 'user' : 'assistant') as 'user' | 'assistant',
-      content: m.direcao === 'entrada' ? corpo : rotularAutor(m.autor, corpo),
+      // A fala do próprio assistente vai sem rótulo e sem o nome em cima: com eles, o modelo
+      // passa a copiar o rótulo na resposta. Fala de pessoa do time continua com "[atendente]".
+      content:
+        m.direcao === 'entrada' ? corpo : m.autor === 'agente' ? semCabecalho(corpo) : rotularAutor(m.autor, corpo),
     }
   })
   return cortarBloco(falas, (f) => f.content.length)

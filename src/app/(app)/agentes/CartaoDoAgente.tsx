@@ -24,7 +24,7 @@ import {
   motivoDeNaoTrocarNumero,
   seloDoAgente,
 } from '@/lib/agente/quem-responde'
-import { TETO_NOME, TETO_SOBRE } from '@/lib/agente/tetos-persona'
+import { TETO_INSTRUCOES, TETO_NOME, TETO_SOBRE } from '@/lib/agente/tetos-persona'
 import type { AssistenteNoPainel, CanalNoPainelDoAgente } from '@/server/agente/painel'
 import Botao from '@/components/ui/Botao'
 import Pill from '@/components/ui/Pill'
@@ -69,6 +69,7 @@ export default function CartaoDoAgente({
   const [nome, setNome] = useState(agente.nome)
   const [tratamento, setTratamento] = useState(agente.tratamento)
   const [sobre, setSobre] = useState(agente.sobreONegocio)
+  const [instrucoes, setInstrucoes] = useState(agente.instrucoes)
 
   function rodar(acao: () => Promise<Resultado>, aoDarCerto?: () => void) {
     setErro(null)
@@ -205,6 +206,31 @@ export default function CartaoDoAgente({
               />
             </Campo>
 
+            <Campo
+              rotulo="Personalidade, tom e instruções"
+              className={estilos.campoLargo}
+              ajuda={
+                <>
+                  Como ele deve se portar: jeito de falar, o que priorizar, o que evitar. Ele segue
+                  isto, mas nunca acima das regras de segurança — continua sem inventar e sem prometer
+                  o que não pode fazer.{' '}
+                  <span
+                    className={instrucoes.length >= TETO_INSTRUCOES ? estilos.contadorCheio : estilos.contador}
+                  >
+                    {instrucoes.length} / {TETO_INSTRUCOES}
+                  </span>
+                </>
+              }
+            >
+              <AreaTexto
+                maxLength={TETO_INSTRUCOES}
+                rows={6}
+                placeholder={'Fale de um jeito acolhedor e calmo.\nExplique com calma quando a pessoa não conhece o assunto.\nTermine sugerindo o próximo passo.'}
+                value={instrucoes}
+                onChange={(e) => setInstrucoes(e.target.value)}
+              />
+            </Campo>
+
             {}
             {}
             {canais && canais.length > 0 ? (
@@ -319,6 +345,7 @@ export default function CartaoDoAgente({
                       nome,
                       tratamento,
                       sobreONegocio: sobre,
+                      instrucoes,
                     }),
                   )
                 }

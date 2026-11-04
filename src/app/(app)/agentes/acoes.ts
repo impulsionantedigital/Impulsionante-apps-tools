@@ -21,7 +21,7 @@ import { temPrecoConhecido } from '@/server/agente/custo'
 
 
 
-import { TETO_NOME, TETO_SOBRE } from '@/lib/agente/tetos-persona'
+import { TETO_INSTRUCOES, TETO_NOME, TETO_SOBRE } from '@/lib/agente/tetos-persona'
 
 
 
@@ -169,6 +169,10 @@ const Persona = z.object({
   sobreONegocio: z
     .string()
     .max(TETO_SOBRE, `O texto pode ter no máximo ${TETO_SOBRE} caracteres.`),
+  instrucoes: z
+    .string()
+    .max(TETO_INSTRUCOES, `As instruções podem ter no máximo ${TETO_INSTRUCOES} caracteres.`)
+    .default(''),
 })
 
 
@@ -228,6 +232,7 @@ export async function criarAssistente(dados: {
   nome: string
   tratamento: string
   sobreONegocio: string
+  instrucoes?: string
 }): Promise<ResultadoSimples> {
   await exigirEngineLiberado()
   const ws = await wsDaSessao()
@@ -253,6 +258,7 @@ export async function criarAssistente(dados: {
         nome: r.data.nome,
         tratamento: r.data.tratamento,
         sobre_o_negocio: r.data.sobreONegocio,
+        instrucoes: r.data.instrucoes,
         padrao: !padrao,
       })
       .select('id')
@@ -271,6 +277,7 @@ export async function editarAssistente(dados: {
   nome: string
   tratamento: string
   sobreONegocio: string
+  instrucoes?: string
 }): Promise<ResultadoSimples> {
   await exigirEngineLiberado()
   const ws = await wsDaSessao()
@@ -286,6 +293,7 @@ export async function editarAssistente(dados: {
         nome: r.data.nome,
         tratamento: r.data.tratamento,
         sobre_o_negocio: r.data.sobreONegocio,
+        instrucoes: r.data.instrucoes,
         atualizado_em: new Date().toISOString(),
       })
       .eq('workspace_id', ws)
